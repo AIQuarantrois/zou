@@ -176,6 +176,22 @@ export const MIGRATIONS: Migration[] = [
        ON CONFLICT (source) DO NOTHING`,
     ],
   },
+  {
+    id: "003_plan_feedback",
+    statements: [
+      // Avis (« ce plan vous a-t-il aidé ? ») et signalements d'erreur sur les plans de l'application. Sans compte possible.
+      `CREATE TABLE IF NOT EXISTS plan_feedback (
+         id bigserial PRIMARY KEY,
+         plan text NOT NULL,
+         kind text NOT NULL CHECK (kind IN ('avis', 'erreur')),
+         helpful boolean,
+         message text,
+         user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+         created_at timestamptz NOT NULL DEFAULT now()
+       )`,
+      `CREATE INDEX IF NOT EXISTS plan_feedback_plan_idx ON plan_feedback (plan, created_at DESC)`,
+    ],
+  },
 ];
 
 type Run = (text: string, params?: unknown[]) => Promise<Record<string, unknown>[]>;

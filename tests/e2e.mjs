@@ -64,6 +64,8 @@ const prosContact = await M("app/api/pros/[id]/contact/route.ts");
 const adminPros = await M("app/api/admin/pros/route.ts");
 const adminProId = await M("app/api/admin/pros/[id]/route.ts");
 const contact = await M("app/api/contact/route.ts");
+const feedback = await M("app/api/feedback/route.ts");
+const adminFeedback = await M("app/api/admin/feedback/route.ts");
 const ask = await M("app/api/ask/route.ts");
 const cron = await M("app/api/cron/reminders/route.ts");
 
@@ -71,7 +73,7 @@ const cron = await M("app/api/cron/reminders/route.ts");
 let r = await call(migrate, "POST", "/api/admin/migrate");
 assert.equal(r.status, 401); ok("migration refusée sans jeton");
 r = await call(migrate, "POST", "/api/admin/migrate", { headers: ADMIN, json: {} });
-assert.equal(r.status, 200); assert.deepEqual(r.data.applied, ["001_init", "002_legal_sources"]); ok("migration appliquée");
+assert.equal(r.status, 200); assert.deepEqual(r.data.applied, ["001_init", "002_legal_sources", "003_plan_feedback"]); ok("migration appliquée");
 r = await call(migrate, "POST", "/api/admin/migrate", { headers: ADMIN, json: {} });
 assert.deepEqual(r.data.applied, []); ok("migration idempotente");
 
@@ -208,6 +210,17 @@ r = await call(prosMe, "PATCH", "/api/pros/me", { json: { bio: "Droit du travail
 
 // --- contact support
 r = await call(contact, "POST", "/api/contact", { json: { name: "Rajo", email: "rajo@example.com", message: "Une question sur ZOU, merci." } }); assert.equal(r.status, 201); ok("formulaire de contact");
+
+// --- retours sur les plans (sans compte)
+r = await call(feedback, "POST", "/api/feedback", { json: { plan: "vie.visa", kind: "avis", helpful: true } }); assert.equal(r.status, 201); ok("avis sur un plan");
+r = await call(feedback, "POST", "/api/feedback", { json: { plan: "vie.visa", kind: "avis" } }); assert.equal(r.status, 400); ok("avis sans réponse refusé");
+r = await call(feedback, "POST", "/api/feedback", { json: { plan: "vie.visa", kind: "erreur", message: "court" } }); assert.equal(r.status, 400); ok("signalement trop court refusé");
+r = await call(feedback, "POST", "/api/feedback", { json: { plan: "vie.visa", kind: "erreur", message: "L'article 13 est mal cité dans l'étape 2." } }); assert.equal(r.status, 201); ok("signalement d'erreur");
+r = await call(feedback, "POST", "/api/feedback", { json: { plan: "Vie VISA!", kind: "avis", helpful: false } }); assert.equal(r.status, 400); ok("identifiant de plan invalide refusé");
+r = await call(adminFeedback, "GET", "/api/admin/feedback"); assert.equal(r.status, 401); ok("lecture des retours refusée sans jeton");
+r = await call(adminFeedback, "GET", "/api/admin/feedback?kind=erreur", { headers: ADMIN });
+assert.equal(r.data.feedback.length, 1); assert.match(r.data.feedback[0].message, /article 13/);
+assert.equal(Number(r.data.stats.find((x) => x.plan === "vie.visa").oui), 1); ok("admin : signalements et statistiques par plan");
 
 // --- rappels (cron)
 r = await call(cron, "GET", "/api/cron/reminders"); assert.equal(r.status, 401); ok("cron refusé sans jeton");

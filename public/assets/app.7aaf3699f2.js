@@ -3149,10 +3149,81 @@ TOOL_FN["controle-cdd"] = function (v, H) {
 
   /* ================= My cases ================= */
 
+  /* ----- Rappels dans l'application : dates des 7 prochains jours (bandeau d'accueil, pastilles) ----- */
+  function soonDates(maxDays) {
+    return state.dates.map(function (d) { return { d: d, n: diffDays(today(), parse(d.date)) }; })
+      .filter(function (x) { return x.n >= 0 && x.n <= maxDays; })
+      .sort(function (a, b) { return a.n - b.n; });
+  }
+  function whenText(n) { return n === 0 ? "Aujourd'hui" : n === 1 ? "Demain" : "Dans " + n + " jours"; }
+  function setBadge(nodes, n) {
+    nodes.forEach(function (b) {
+      b.querySelectorAll(".badge, .badge-sr").forEach(function (x) { x.remove(); });
+      if (n > 0) {
+        b.appendChild(el("span", "badge", String(n)));
+        b.appendChild(el("span", "sr badge-sr", " (" + plural(n, "date", "dates") + " cette semaine)"));
+      }
+    });
+  }
+  function renderReminders() {
+    var items = soonDates(7), n = items.length;
+    var box = $("#homeSoon");
+    if (box) {
+      box.hidden = !n;
+      $("#homeSoonT").textContent = n ? plural(n, "date", "dates") + " cette semaine" : "Cette semaine";
+      var ul = $("#homeSoonList");
+      ul.textContent = "";
+      items.slice(0, 3).forEach(function (x) {
+        var li = el("li"), b = el("button", "topic");
+        b.type = "button"; b.setAttribute("data-go", "agenda");
+        b.appendChild(el("span", "topic-t", x.d.title));
+        b.appendChild(el("span", "topic-n" + (x.n <= 1 ? " soon" : ""), whenText(x.n)));
+        b.appendChild(el("span", "topic-d", fmtLong(parse(x.d.date)) + (x.d.dossier ? " · " + (dossierLabel(x.d.dossier) || "") : "")));
+        li.appendChild(b); ul.appendChild(li);
+      });
+    }
+    setBadge($$(".tab[data-tab='space']"), n);
+    setBadge($$(".subnav button[data-go='agenda']"), n);
+    setBadge($$(".head-link[data-nav='space']"), n);
+  }
+
+  /* ----- Installation : le bandeau du navigateur est intercepté, ZOU propose l'installation là où c'est utile ----- */
+  var installEvt = null;
+  function standalone() { return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true; }
+  function isIos() { return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream; }
+  function canInstall() { return !standalone() && (!!installEvt || isIos()); }
+  function installDismissed() {
+    try { var t = parseInt(localStorage.getItem("zou_inst_off") || "0", 10); return !!t && Date.now() - t < 30 * 86400000; } catch (e) { return false; }
+  }
+  function renderInstall() {
+    var can = canInstall(), ios = !installEvt && isIos();
+    var sec = $("#installSec"); if (sec) sec.hidden = !can;
+    var desc = $("#installDesc"); if (desc) desc.textContent = ios ? "Dans Safari : Partager, puis « Sur l'écran d'accueil »" : "Accès direct depuis l'écran d'accueil, même hors ligne";
+    var card = $("#agendaInstall");
+    if (card) {
+      card.hidden = !(can && state.dates.length && !installDismissed());
+      var txt = $("#agendaInstallTxt");
+      if (txt) txt.textContent = ios ? "Pour retrouver vos rappels d'un geste : dans Safari, touchez Partager puis « Sur l'écran d'accueil »." : "Installez ZOU sur votre téléphone : vos rappels et vos dossiers à un geste, même sans connexion.";
+      var ib = $("#agendaInstallBtn"); if (ib) ib.hidden = ios;
+    }
+  }
+  function doInstall() {
+    if (installEvt) {
+      var e = installEvt; installEvt = null;
+      e.prompt();
+      Promise.resolve(e.userChoice).then(renderInstall, renderInstall);
+    } else if (isIos()) toast("Dans Safari, touchez Partager puis « Sur l'écran d'accueil ».");
+    renderInstall();
+  }
+  window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); installEvt = e; renderInstall(); });
+  window.addEventListener("appinstalled", function () { installEvt = null; renderInstall(); toast("ZOU est installé sur votre appareil."); });
+
   function renderAll() {
     renderHome();
     renderMenus();
     renderHomeDates();
+    renderReminders();
+    renderInstall();
     renderVault();
     renderAgenda();
     renderCases();
@@ -3805,6 +3876,8 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       if (!$("#moreSheet").hidden) { var fb = $("#moreSheet button"); if (fb) fb.focus({ preventScroll: true }); }
       return;
     }
+    if (kind === "install") { closeMenus(); doInstall(); return; }
+    if (kind === "install-later") { try { localStorage.setItem("zou_inst_off", String(Date.now())); } catch (e2) { /* ignore */ } renderInstall(); return; }
     /* Any other click outside an open menu closes it */
     if (!$("#mega").hidden && !t.closest("#mega")) closeMenus();
     if (!$("#moreSheet").hidden && !t.closest("#moreSheet")) closeMenus();
@@ -3980,6 +4053,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   // lieux, points d'attention, lettre pré-remplie et sources. Les réponses restent sur l'appareil (et sur le
   // compte si la personne est connectée : voir desired() / pull()).
   var VIES = {}, VIE_ORDER = [];
+  // Quand un juriste a relu un plan, ajouter { "<id du parcours>": { by: "Me Untel, avocat", date: "novembre 2026" } } : la mention s'affiche sous le plan.
+  var PLANS_DATE = "octobre 2026";
+  var VIE_REVIEW = {};
   function defVie(v) { VIES[v.id] = v; VIE_ORDER.push(v.id); }
   function vieState(id) {
     state.vies = state.vies || {};
@@ -4264,6 +4340,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     });
     acts.appendChild(askB); acts.appendChild(proB); acts.appendChild(edB); acts.appendChild(rsB);
     box.appendChild(acts);
+    renderVieFeedback(v, box);
     if (v.sources && v.sources.length) {
       var det = el("details", "vie-sources");
       var sm = el("summary", "", "Les textes sur lesquels repose ce plan"); sm.appendChild(icon("i-down"));
@@ -4274,6 +4351,82 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       box.appendChild(det);
     }
     box.appendChild(el("p", "vie-disclaimer", "Information juridique générale tirée des textes cités, pas un avis personnalisé. En cas de doute, faites-vous conseiller par un professionnel."));
+    var rv = VIE_REVIEW[v.id];
+    box.appendChild(el("p", "vie-verif", "Plan rédigé en " + PLANS_DATE + " d'après les textes cités. " + (rv ? "Relu par " + rv.by + " (" + rv.date + ")." : "Relecture par un juriste : à venir.")));
+  }
+
+  /* Retour sur un plan : « Ce plan vous a-t-il aidé ? » et signalement d'une erreur (sans compte, voir /api/feedback). */
+  function fbSeen(id, mark) {
+    try {
+      var m = JSON.parse(localStorage.getItem("zou_fb_v1") || "{}");
+      if (!mark) return !!m[id];
+      m[id] = 1; localStorage.setItem("zou_fb_v1", JSON.stringify(m));
+    } catch (e) { /* sans stockage : on redemandera */ }
+    return false;
+  }
+  function renderVieFeedback(v, box) {
+    if (!CAPS.database) return;
+    var plan = "vie." + v.id;
+    var sec = el("section", "vie-fb");
+    var h = el("h2", "", "Ce plan vous a-t-il aidé ?"); h.id = "vie-fb-h";
+    sec.setAttribute("aria-labelledby", "vie-fb-h");
+    var body = el("div", "vie-fb-body"), errBox = el("div", "vie-fb-body");
+    sec.appendChild(h); sec.appendChild(body); sec.appendChild(errBox);
+    function send(payload, done) {
+      request("POST", "/api/feedback", Object.assign({ plan: plan }, payload)).then(done, function (e) { toast(errText(e)); });
+    }
+    function say(node, text) { node.textContent = ""; node.appendChild(el("p", "sub", text)); }
+    function form(node, o) {
+      node.textContent = "";
+      var id = "vie-fb-" + o.id;
+      var lab = el("label", "", o.label); lab.setAttribute("for", id);
+      var ta = el("textarea"); ta.id = id; ta.maxLength = 1500; ta.rows = 3;
+      var err = el("p", "err"); err.setAttribute("role", "alert");
+      var btn = el("button", "btn btn-sm", o.button); btn.type = "button";
+      btn.addEventListener("click", function () {
+        var msg = ta.value.trim();
+        if (o.min && msg.length < o.min) { err.textContent = "Décrivez l'erreur en quelques mots (au moins " + o.min + " caractères)."; ta.focus(); return; }
+        btn.disabled = true;
+        send(o.payload(msg), function () { o.done(); });
+        setTimeout(function () { btn.disabled = false; }, 1500);
+      });
+      node.appendChild(lab);
+      if (o.hint) node.appendChild(el("p", "hint", o.hint));
+      node.appendChild(ta); node.appendChild(err); node.appendChild(btn);
+      ta.focus();
+    }
+    function errorLink() {
+      errBox.textContent = "";
+      var b = el("button", "link-btn small", "Signaler une erreur dans ce plan"); b.type = "button";
+      b.addEventListener("click", function () {
+        form(errBox, {
+          id: "err", label: "Quelle erreur avez-vous repérée ?", hint: "Citez l'étape ou l'article concerné si possible.", button: "Envoyer le signalement", min: 10,
+          payload: function (m) { return { kind: "erreur", message: m }; },
+          done: function () { say(errBox, "Merci : votre signalement est transmis. Nous le vérifions sur le texte de loi."); }
+        });
+      });
+      errBox.appendChild(b);
+    }
+    if (fbSeen(plan)) say(body, "Merci pour votre retour.");
+    else {
+      var row = el("div", "vie-fb-row");
+      var yes = el("button", "btn btn-ghost btn-sm", "Oui"), no = el("button", "btn btn-ghost btn-sm", "Pas vraiment");
+      yes.type = "button"; no.type = "button";
+      yes.addEventListener("click", function () {
+        send({ kind: "avis", helpful: true }, function () { fbSeen(plan, true); say(body, "Merci, content que ce plan vous ait servi."); });
+      });
+      no.addEventListener("click", function () {
+        form(body, {
+          id: "no", label: "Qu'est-ce qui manquait ou n'était pas clair ? (facultatif)", button: "Envoyer",
+          payload: function (m) { return { kind: "avis", helpful: false, message: m || undefined }; },
+          done: function () { fbSeen(plan, true); say(body, "Merci, votre retour nous aide à améliorer ce plan."); }
+        });
+      });
+      row.appendChild(yes); row.appendChild(no);
+      body.appendChild(row);
+    }
+    errorLink();
+    box.appendChild(sec);
   }
 
   function renderVieLetter(v, s, L, box) {
@@ -6718,6 +6871,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     SYNC_READY = true;
     return request("GET", "/api/health").then(function (h) {
       CAPS = h.capabilities || CAPS;
+      if (CAPS.database && cur && cur.name === "vie") renderVie(cur.arg); // le bloc « retour » dépend de l'API
       if (!CAPS.database) { renderAccount(); return; }
       loadPros();
       if (!CAPS.auth) { renderAccount(); return; }

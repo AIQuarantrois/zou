@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
-<link rel="stylesheet" href="/assets/app.1fad0f957a.css">
+<link rel="stylesheet" href="/assets/app.4e5075b9e0.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -84,6 +84,11 @@
               <button class="send" type="submit" aria-label="Lancer la recherche"><svg class="ico"><use href="#i-arrow"/></svg></button>
             </form>
             <div class="suggest" id="suggest"></div>
+          </div>
+
+          <div class="section" id="homeSoon" hidden>
+            <div class="section-head"><h2 id="homeSoonT">Cette semaine</h2><button class="link-btn small" data-go="agenda">Ouvrir l'agenda</button></div>
+            <ul class="topics" id="homeSoonList"></ul>
           </div>
 
           <div class="section life">
@@ -628,6 +633,13 @@
             <h1 id="h-agenda" class="h-display">Agenda</h1>
             <p class="lede">Les dates qui comptent, avec un rappel avant chacune.</p>
           </div>
+          <div class="install-card" id="agendaInstall" hidden>
+            <p id="agendaInstallTxt">Installez ZOU sur votre téléphone : vos rappels et vos dossiers à un geste, même sans connexion.</p>
+            <div class="install-actions">
+              <button class="btn btn-sm" type="button" data-act="install" id="agendaInstallBtn">Installer</button>
+              <button class="link-btn small" type="button" data-act="install-later">Plus tard</button>
+            </div>
+          </div>
           <div id="agendaTable"></div>
           <form class="calc form-card" id="agendaForm" novalidate>
             <div class="calc-title"><h2>Ajouter une date</h2></div>
@@ -1086,6 +1098,10 @@
       <li><button class="q-row" data-go="texts"><span class="q-text"><span class="g-title">Textes juridiques</span><span class="g-desc">Les sources de chaque réponse</span></span><span class="q-end"><svg class="ico ico-s" aria-hidden="true"><use href="#i-chev"/></svg></span></button></li>
       <li><button class="q-row" data-go="page.help"><span class="q-text"><span class="g-title">Centre d'aide</span><span class="g-desc">Questions fréquentes, nous écrire</span></span><span class="q-end"><svg class="ico ico-s" aria-hidden="true"><use href="#i-chev"/></svg></span></button></li>
     </ul></section>
+  <section id="installSec" hidden><h2 class="sheet-h">Application</h2>
+    <ul>
+      <li><button class="q-row" data-act="install"><span class="q-text"><span class="g-title">Installer ZOU</span><span class="g-desc" id="installDesc">Accès direct depuis l'écran d'accueil, même hors ligne</span></span><span class="q-end"><svg class="ico ico-s" aria-hidden="true"><use href="#i-chev"/></svg></span></button></li>
+    </ul></section>
   <section><h2 class="sheet-h">Compte</h2>
     <ul>
       <li><button class="q-row" data-go="account"><span class="q-text"><span class="g-title">Mon compte</span><span class="g-desc">Sauvegarde, synchronisation, rappels</span></span><span class="q-end"><svg class="ico ico-s" aria-hidden="true"><use href="#i-chev"/></svg></span></button></li>
@@ -1103,7 +1119,7 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.c0048026b9.js"></script>
+<script src="/assets/app.7aaf3699f2.js"></script>
 <script src="/register-sw.js"></script>
 </body>
 </html>

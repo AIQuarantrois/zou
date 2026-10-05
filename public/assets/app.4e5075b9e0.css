@@ -551,7 +551,7 @@ details.src[open] > summary .ico, .src details[open] > summary .ico { transform:
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: grid; grid-template-columns: repeat(5, 1fr);
   background: #fff; border-top: 1px solid var(--rule); padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
 }
-.tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; background: none; border: 0; border-radius: var(--r); font-size: 12px; font-weight: 500; color: var(--ink-3); white-space: nowrap; }
+.tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; background: none; border: 0; border-radius: var(--r); font-size: 12px; font-weight: 500; color: var(--ink-3); white-space: nowrap; }
 .tab .ico { width: 24px; height: 24px; }
 .tab[aria-current="page"], .tab[aria-expanded="true"] { color: var(--accent); }
 .tab[aria-current="page"] { font-weight: 600; }
@@ -912,6 +912,21 @@ h1.h-display { font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem); font-weight: 700; l
 .vie-sources ul { margin: 6px 0 0; padding-left: 18px; font-size: 15px; color: var(--ink-2); display: flex; flex-direction: column; gap: 4px; }
 .vie-disclaimer { max-width: 760px; margin-top: 20px; font-size: 14px; color: var(--ink-3); }
 .vie-letter .letter-grid { margin-top: 4px; }
+/* Rappels, installation, retours */
+.badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 999px; background: #B42318; color: #fff; font-size: 11px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.tab .badge { position: absolute; top: 4px; left: calc(50% + 6px); margin: 0; }
+.topic-n.soon { color: #B42318; font-weight: 700; }
+.install-card { max-width: 760px; margin: 0 0 24px; padding: 14px 16px; border-radius: var(--r-lg); background: var(--wash); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+.install-card p { font-size: 15px; color: var(--ink-2); max-width: 48ch; }
+.install-actions { display: flex; align-items: center; gap: 12px; }
+.vie-fb { max-width: 760px; margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 12px; }
+.vie-fb h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; }
+.vie-fb-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.vie-fb-body { display: flex; flex-direction: column; gap: 12px; }
+.vie-fb label { font-size: 15px; font-weight: 600; }
+.vie-fb .hint { font-size: 14px; color: var(--ink-3); }
+.vie-fb textarea { width: 100%; min-height: 88px; }
+.vie-verif { max-width: 760px; margin-top: 8px; font-size: 14px; color: var(--ink-3); }
 /* Thèmes : accueil, menu, services */
 .topics { margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); border-top: 1px solid var(--rule); }
 @media (min-width: 800px) { .topics { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 40px; } }
