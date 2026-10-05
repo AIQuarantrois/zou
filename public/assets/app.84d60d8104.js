@@ -1187,7 +1187,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   var toastEl = $("#toast");
   var toastTimer;
   var SPACE = [["cases", "Dossiers"], ["vault", "Coffre"], ["agenda", "Agenda"]];
-  var VALID = { home: 1, services: 1, guide: 1, tool: 1, model: 1, answer: 1, ask: 1, flow: 1, cases: 1, vault: 1, agenda: 1, pros: 1, prospace: 1, account: 1, urgent: 1, where: 1, texts: 1, page: 1 };
+  var VALID = { home: 1, services: 1, guide: 1, tool: 1, model: 1, answer: 1, ask: 1, vie: 1, flow: 1, cases: 1, vault: 1, agenda: 1, pros: 1, prospace: 1, account: 1, urgent: 1, where: 1, texts: 1, page: 1 };
   var TITLES = {
     home: "Accueil", services: "Services", answer: "Combien de préavis pour démissionner", ask: "Réponse", flow: "Démissionner", cases: "Mes dossiers", vault: "Mon coffre",
     agenda: "Mon agenda", pros: "Professionnels", prospace: "Espace professionnel", account: "Mon compte", urgent: "Urgence", where: "Où aller", texts: "Textes juridiques"
@@ -1255,7 +1255,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     var tkey = key;
     if (name === "urgent" || name === "where" || name === "texts" || name === "account" || name === "page") tkey = "more";
     if (inServices) tkey = "services";
-    if (name === "answer" || name === "ask") tkey = "home";
+    if (name === "answer" || name === "ask" || name === "vie") tkey = "home";
     $$("[data-tab]").forEach(function (b) {
       if (b.getAttribute("data-tab") === tkey) b.setAttribute("aria-current", "page");
       else b.removeAttribute("aria-current");
@@ -1277,6 +1277,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (name === "model" && !MODELREG[arg]) { name = "services"; arg = ""; }
     if (name === "page" && !PAGES[arg]) { name = "home"; arg = ""; }
     if (name === "ask" && !askQ) { name = "home"; arg = ""; }
+    if (name === "vie" && !VIES[arg]) { name = "services"; arg = "famille"; }
     cur = { name: name, arg: arg };
     views.forEach(function (v) { v.hidden = v.getAttribute("data-view") !== name; });
     setNav(name, arg);
@@ -1286,6 +1287,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (name === "model") renderModel(arg);
     if (name === "page") renderPage(arg);
     if (name === "flow") { flowFill(); flowRender(); }
+    if (name === "vie") renderVie(arg);
     if (name === "pros") renderPros();
     if (name === "texts") initTexts();
     if (name === "urgent") initUrgent();
@@ -1298,6 +1300,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (name === "tool") title = TOOLREG[arg].title;
     if (name === "model") title = MODELREG[arg].title;
     if (name === "page") title = PAGES[arg].title;
+    if (name === "vie") title = VIES[arg].title;
     document.title = (title && name !== "home" ? title + " | " : "") + "ZOU";
     window.scrollTo(0, 0);
     if (booted && !opts.noFocus) {
@@ -2456,7 +2459,8 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     { key: "penal", cat: "Procédure pénale", d: "Plainte, garde à vue, détention, recours" },
     { key: "civil", cat: "Procédure civile", d: "Appel, délais de procédure, arbitrage" },
     { key: "social", cat: "Protection sociale", d: "Accident du travail, maternité, pension, cotisations" },
-    { key: "sante", cat: "Santé et sécurité", d: "Lieu de travail, médecine du travail, contrôle" }
+    { key: "sante", cat: "Santé et sécurité", d: "Lieu de travail, médecine du travail, contrôle" },
+    { key: "famille", cat: "Famille", d: "Naissance, mariage, séparation, décès et héritage, enfants" }
   ];
   var DOM_BY_KEY = {};
   DOMS.forEach(function (d) { DOM_BY_KEY[d.key] = d; });
@@ -2674,6 +2678,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   var HOME_TILES = ["tool:notice", "flow:demission", "guide:licenciement-abusif", "guide:immatriculer-terrain", "guide:porter-plainte", "guide:accident-travail-declaration-delais"];
   var SUGGEST = ["préavis démission", "titre foncier", "porter plainte", "congé maternité", "salaire impayé"];
   function renderHome() {
+    renderLife();
     var box = $("#homeTiles");
     box.textContent = "";
     var items = HOME_TILES.map(function (k) { return ITEM_BY_KEY[k]; }).filter(Boolean);
@@ -3142,7 +3147,13 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     { kind: "Loi", name: "Procédure civile : modifications du Code de procédure civile", ref: "Loi n° 2016-039", dom: "civil" },
     { kind: "Code", name: "Code de prévoyance sociale", ref: "", dom: "social" },
     { kind: "Code", name: "Code d'hygiène et de sécurité du travail", ref: "", dom: "sante" },
-    { kind: "Guide", name: "Guide sur les normes internationales du travail", ref: "Organisation internationale du Travail", dom: "travail" }
+    { kind: "Guide", name: "Guide sur les normes internationales du travail", ref: "Organisation internationale du Travail", dom: "travail" },
+    { kind: "Loi", name: "État civil : déclarer les naissances, décès et mariages, jugements supplétifs", ref: "Loi n° 2018-027", dom: "famille" },
+    { kind: "Loi", name: "Mariage, divorce et régimes matrimoniaux", ref: "Loi n° 2007-022", dom: "famille" },
+    { kind: "Loi", name: "Droits et protection des enfants", ref: "Loi n° 2007-023", dom: "famille" },
+    { kind: "Loi", name: "Nationalité malagasy : modifications du Code de la nationalité", ref: "Loi n° 2016-038", dom: "famille" },
+    { kind: "Loi", name: "Successions, testaments et donations", ref: "Loi n° 68-012 du 4 juillet 1968", dom: "famille" },
+    { kind: "Recueil", name: "Droits civils : personnes, famille, filiation, adoption, biens", ref: "Recueil de textes", dom: "famille" }
   ];
   var textsDT = null;
   function initTexts() {
@@ -3228,7 +3239,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       cols: [
         {
           key: "name", label: "Document", main: true, get: function (d) { return d.name; },
-          cell: function (d) { return titleCell(d.name, [d.dossier === "demission" ? "Démission" : "", d.example ? "Exemple" : "", USER && d.file ? "Fichier sauvegardé" : "", PENDING[d.id] ? "Envoi en cours" : ""].filter(Boolean)); }
+          cell: function (d) { return titleCell(d.name, [dossierLabel(d.dossier), d.example ? "Exemple" : "", USER && d.file ? "Fichier sauvegardé" : "", PENDING[d.id] ? "Envoi en cours" : ""].filter(Boolean)); }
         },
         {
           key: "type", label: "Type", w: "152px", get: function (d) { return d.type; },
@@ -3334,7 +3345,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         },
         {
           key: "title", label: "Échéance", main: true, get: function (d) { return d.title; },
-          cell: function (d) { return titleCell(d.title, [d.dossier === "demission" ? "Démission" : "", d.example ? "Exemple" : ""].filter(Boolean)); }
+          cell: function (d) { return titleCell(d.title, [dossierLabel(d.dossier), d.example ? "Exemple" : ""].filter(Boolean)); }
         },
         {
           key: "remind", label: "Rappel", w: "208px", get: function (d) { return d.channel; }, sort: function (d) { return d.remind; },
@@ -3365,6 +3376,18 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         desc: f.done ? "Les 6 étapes sont faites" : STEPS[f.step - 1], extra: plural(docs, "document", "documents") + ", " + plural(dates, "date", "dates")
       });
     }
+    Object.keys(state.vies || {}).forEach(function (id) {
+      var v = VIES[id], vs = state.vies[id];
+      if (!v || !vs.started) return;
+      var total = vieQuestions(v, vs.a).length, done = vs.step >= total;
+      var docs = state.docs.filter(function (d) { return d.dossier === "vie-" + id; }).length;
+      var dates = state.dates.filter(function (d) { return d.dossier === "vie-" + id; }).length;
+      out.push({
+        id: "vie-" + id, title: v.short, dom: "Famille", done: done, go: "vie." + id, pct: done ? 100 : Math.round(vs.step / (total + 1) * 100),
+        prog: done ? "Plan prêt" : "Question " + (vs.step + 1) + " sur " + total,
+        desc: done ? "Votre plan est prêt" : "À reprendre", extra: plural(docs, "document", "documents") + ", " + plural(dates, "date", "dates")
+      });
+    });
     Object.keys(state.guides || {}).forEach(function (id) {
       var s = state.guides[id], g = GUIDE_BY_ID[id];
       if (!g || !(s.steps.some(Boolean) || s.docs.some(Boolean))) return;
@@ -3893,6 +3916,882 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     });
   })();
 
+  /* ================= Parcours de vie (une question par écran, puis un plan personnalisé) ================= */
+  // Chaque parcours est décrit par des données : des questions (avec conditions d'affichage) et une fonction
+  // plan(réponses) qui renvoie ce qui s'applique à la personne : verdict, échéances calculées, étapes, pièces,
+  // lieux, points d'attention, lettre pré-remplie et sources. Les réponses restent sur l'appareil (et sur le
+  // compte si la personne est connectée : voir desired() / pull()).
+  var VIES = {}, VIE_ORDER = [];
+  function defVie(v) { VIES[v.id] = v; VIE_ORDER.push(v.id); }
+  function vieState(id) {
+    state.vies = state.vies || {};
+    if (!state.vies[id]) state.vies[id] = { a: {}, step: 0, started: false, checks: {}, letter: {} };
+    var s = state.vies[id];
+    s.a = s.a || {}; s.checks = s.checks || {}; s.letter = s.letter || {};
+    return s;
+  }
+  function vieQuestions(v, a) { return v.questions.filter(function (q) { return !q.when || q.when(a); }); }
+  function dayCount(n) { return plural(Math.abs(n), "jour", "jours"); }
+  function countdown(dateIso) {
+    var n = diffDays(today(), parse(dateIso));
+    if (n > 1) return { n: n, t: "Il reste " + dayCount(n), tone: n <= 7 ? "soon" : "ok" };
+    if (n === 1) return { n: n, t: "C'est demain", tone: "soon" };
+    if (n === 0) return { n: n, t: "C'est aujourd'hui", tone: "soon" };
+    return { n: n, t: "Dépassé depuis " + dayCount(n), tone: "late" };
+  }
+  function cite(s) { return el("span", "cite", s); }
+
+  var vieCur = { id: "", plan: null };
+
+  function renderVie(id) {
+    var v = VIES[id];
+    if (!v) { go("home"); return; }
+    var s = vieState(id);
+    vieCur.id = id;
+    $("#vieDom").textContent = v.short;
+    $("#vieBack").setAttribute("data-go", v.back || "services.famille");
+    $("#vieBack").lastChild.textContent = v.backLabel || "Famille";
+    var qs = vieQuestions(v, s.a);
+    if (s.step > qs.length) s.step = qs.length;
+    var box = $("#vieBody");
+    box.textContent = "";
+    var bar = $("#vieBar");
+    if (s.step < qs.length) {
+      bar.hidden = false;
+      bar.firstChild.style.width = Math.round((s.step / (qs.length + 1)) * 100) + "%";
+      bar.setAttribute("aria-valuenow", String(s.step + 1));
+      bar.setAttribute("aria-valuemax", String(qs.length));
+      $("#vieStep").textContent = "Question " + (s.step + 1) + " sur " + qs.length;
+      renderVieQuestion(v, s, qs[s.step], box);
+    } else {
+      bar.hidden = true;
+      $("#vieStep").textContent = "";
+      $("#vieDom").textContent = "";
+      renderViePlan(v, s, box);
+    }
+    document.title = v.title + " | ZOU";
+  }
+
+  function vieAnswer(q, val) {
+    var v = VIES[vieCur.id], s = vieState(vieCur.id);
+    s.a[q.id] = val;
+    s.started = true;
+    // Les réponses qui ne s'appliquent plus (question devenue masquée) sont oubliées.
+    var visible = {};
+    vieQuestions(v, s.a).forEach(function (x) { visible[x.id] = 1; });
+    Object.keys(s.a).forEach(function (k) { if (!visible[k]) delete s.a[k]; });
+    var qs = vieQuestions(v, s.a);
+    var idx = qs.indexOf(qs.filter(function (x) { return x.id === q.id; })[0]);
+    s.step = idx + 1;
+    save();
+    renderVie(vieCur.id);
+    focusVie();
+  }
+  function focusVie() {
+    var h = $("#vieBody h2, #vieBody h1");
+    if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
+    window.scrollTo(0, 0);
+  }
+  function vieBackStep() {
+    var s = vieState(vieCur.id);
+    if (s.step > 0) { s.step--; save(); renderVie(vieCur.id); focusVie(); }
+    else go(VIES[vieCur.id].back || "services.famille");
+  }
+
+  function renderVieQuestion(v, s, q, box) {
+    var wrap = el("div", "vie-q");
+    var h = el("h2", "vie-title", q.q);
+    h.id = "vie-q-" + q.id;
+    wrap.appendChild(h);
+    if (q.help) wrap.appendChild(el("p", "vie-help", q.help));
+    var cur = s.a[q.id];
+    if (q.type === "choice") {
+      var list = el("div", "vie-opts");
+      list.setAttribute("role", "radiogroup");
+      list.setAttribute("aria-labelledby", h.id);
+      q.options.forEach(function (o) {
+        var b = el("button", "vie-opt" + (o.tone ? " " + o.tone : ""));
+        b.type = "button";
+        b.setAttribute("role", "radio");
+        b.setAttribute("aria-checked", cur === o.v ? "true" : "false");
+        var txt = el("span", "vie-opt-txt");
+        txt.appendChild(el("span", "vie-opt-t", o.t));
+        if (o.d) txt.appendChild(el("span", "vie-opt-d", o.d));
+        b.appendChild(txt);
+        b.appendChild(icon("i-chev", "ico-s vie-opt-go"));
+        b.addEventListener("click", function () {
+          $$(".vie-opt", list).forEach(function (x) { x.setAttribute("aria-checked", "false"); });
+          b.setAttribute("aria-checked", "true");
+          setTimeout(function () { vieAnswer(q, o.v); }, 140);
+        });
+        list.appendChild(b);
+      });
+      wrap.appendChild(list);
+    } else if (q.type === "date") {
+      var f = el("div", "vie-date");
+      var lab = el("label", "sr", q.q); lab.setAttribute("for", "vie-in-" + q.id);
+      var inp = el("input"); inp.type = "date"; inp.id = "vie-in-" + q.id; inp.value = cur || "";
+      if (!q.future) inp.max = iso(today());
+      f.appendChild(lab); f.appendChild(inp);
+      var chips = el("div", "vie-chips");
+      (q.chips || [["Aujourd'hui", 0], ["Hier", -1], ["Il y a une semaine", -7]]).forEach(function (c) {
+        var cb = el("button", "chip-btn", c[0]); cb.type = "button";
+        cb.addEventListener("click", function () { inp.value = iso(addDays(today(), c[1])); go2(); });
+        chips.appendChild(cb);
+      });
+      f.appendChild(chips);
+      wrap.appendChild(f);
+      var err = el("p", "err"); err.setAttribute("role", "alert");
+      wrap.appendChild(err);
+      var nb = el("button", "btn", "Continuer"); nb.type = "button";
+      var go2 = function () {
+        if (!inp.value) { err.textContent = "Choisissez une date."; inp.focus(); return; }
+        if (!q.future && inp.value > iso(today())) { err.textContent = "La date ne peut pas être dans le futur."; inp.focus(); return; }
+        vieAnswer(q, inp.value);
+      };
+      nb.addEventListener("click", go2);
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go2(); } });
+      var row = el("div", "vie-nav");
+      row.appendChild(nb);
+      if (q.unknown) {
+        var ub = el("button", "link-btn", q.unknown); ub.type = "button";
+        ub.addEventListener("click", function () { vieAnswer(q, ""); });
+        row.appendChild(ub);
+      }
+      wrap.appendChild(row);
+    }
+    var back = el("button", "link-btn back vie-backstep");
+    back.type = "button";
+    back.appendChild(icon("i-back", "ico-s"));
+    back.appendChild(document.createTextNode(s.step > 0 ? "Question précédente" : "Retour"));
+    back.addEventListener("click", vieBackStep);
+    wrap.appendChild(back);
+    if (s.step === 0 && v.intro) {
+      var n = el("p", "vie-intro", v.intro);
+      wrap.insertBefore(n, wrap.firstChild);
+    }
+    box.appendChild(wrap);
+  }
+
+  function addVieDate(v, d) {
+    var exists = state.dates.some(function (x) { return x.dossier === "vie-" + v.id && x.title === d.title && x.date === d.date; });
+    if (exists) return false;
+    state.dates.push({ id: uid(), title: d.title, date: d.date, remind: d.remind != null ? d.remind : 7, channel: "E-mail", dossier: "vie-" + v.id });
+    save();
+    return true;
+  }
+
+  function section(box, title, cls) {
+    var sec = el("section", "vie-sec" + (cls ? " " + cls : ""));
+    sec.appendChild(el("h2", "", title));
+    box.appendChild(sec);
+    return sec;
+  }
+
+  function renderViePlan(v, s, box) {
+    var p = v.plan(s.a);
+    vieCur.plan = p;
+    var head = el("div", "vie-plan-head");
+    head.appendChild(el("span", "label", "Votre plan"));
+    var h1 = el("h1", "h-display", p.title);
+    head.appendChild(h1);
+    if (p.lede) head.appendChild(el("p", "lede", p.lede));
+    box.appendChild(head);
+
+    if (p.verdict) {
+      var vd = el("div", "vie-verdict " + (p.verdict.tone || "ok"));
+      vd.setAttribute("role", p.verdict.tone === "urgent" ? "alert" : "note");
+      vd.appendChild(el("strong", "", p.verdict.t));
+      if (p.verdict.d) vd.appendChild(el("p", "", p.verdict.d));
+      if (p.verdict.go) {
+        var vb = el("button", "btn btn-sm", p.verdict.go[1]); vb.type = "button"; vb.setAttribute("data-go", p.verdict.go[0]);
+        vd.appendChild(vb);
+      }
+      box.appendChild(vd);
+    }
+
+    if (p.deadlines && p.deadlines.length) {
+      var dl = section(box, p.deadlines.length > 1 ? "Vos dates limites" : "Votre date limite");
+      var grid = el("div", "vie-dl-grid");
+      p.deadlines.forEach(function (d) {
+        var c = countdown(d.date);
+        var card = el("div", "vie-dl " + c.tone);
+        card.appendChild(el("span", "vie-dl-t", d.title));
+        card.appendChild(el("span", "vie-dl-date", fmtLong(parse(d.date))));
+        card.appendChild(el("span", "vie-dl-cd", c.t));
+        if (d.why) { var w = el("p", "vie-dl-why", d.why + " "); if (d.cite) w.appendChild(cite(d.cite)); card.appendChild(w); }
+        if (c.n >= 0) {
+          var inAg = state.dates.some(function (x) { return x.dossier === "vie-" + v.id && x.title === d.title && x.date === d.date; });
+          var ab = el("button", "btn btn-ghost btn-sm", inAg ? "Dans votre agenda" : "Ajouter à mon agenda");
+          ab.type = "button"; ab.disabled = inAg;
+          ab.addEventListener("click", function () {
+            if (addVieDate(v, d)) { ab.textContent = "Dans votre agenda"; ab.disabled = true; toast("Date ajoutée à votre agenda" + (USER ? " : rappel par e-mail " + plural(d.remind != null ? d.remind : 7, "jour", "jours") + " avant." : ".")); }
+          });
+          card.appendChild(ab);
+        }
+        grid.appendChild(card);
+      });
+      dl.appendChild(grid);
+    }
+
+    function checklist(title, items, key, cls) {
+      if (!items || !items.length) return;
+      var sec = section(box, title, cls);
+      var ol = el(key === "steps" ? "ol" : "ul", "vie-list");
+      items.forEach(function (it, i) {
+        var ck = key + ":" + (it.k || it.t);
+        var li = el("li", "vie-item" + (s.checks[ck] ? " done" : ""));
+        var lab = el("label", "vie-check");
+        var cb = el("input"); cb.type = "checkbox"; cb.checked = !!s.checks[ck];
+        cb.addEventListener("change", function () {
+          s.checks[ck] = cb.checked; li.classList.toggle("done", cb.checked); save();
+        });
+        var body = el("span", "vie-item-b");
+        if (key === "steps") body.appendChild(el("span", "vie-n", String(i + 1)));
+        var tx = el("span", "vie-item-t", it.t);
+        body.appendChild(tx);
+        if (it.d) { var dd = el("span", "vie-item-d", it.d + (it.cite ? " " : "")); if (it.cite) dd.appendChild(cite(it.cite)); body.appendChild(dd); }
+        else if (it.cite) body.appendChild(cite(it.cite));
+        lab.appendChild(cb); lab.appendChild(body);
+        li.appendChild(lab);
+        if (it.go) {
+          var gb = el("button", "link-btn small", it.go[1]); gb.type = "button"; gb.setAttribute("data-go", it.go[0]);
+          li.appendChild(gb);
+        }
+        ol.appendChild(li);
+      });
+      sec.appendChild(ol);
+    }
+    if (p.result) {
+      var rs = section(box, p.result.title, "vie-result");
+      if (p.result.items) {
+        var ul = el("ul", "vie-heirs");
+        p.result.items.forEach(function (x) { var li = el("li"); li.appendChild(el("strong", "", x.t)); if (x.d) li.appendChild(el("span", "", x.d)); ul.appendChild(li); });
+        rs.appendChild(ul);
+      }
+      if (p.result.d) { var rp = el("p", "sub", p.result.d + " "); if (p.result.cite) rp.appendChild(cite(p.result.cite)); rs.appendChild(rp); }
+    }
+    checklist("Ce qu'il faut faire", p.steps, "steps");
+    checklist("À préparer", p.docs, "docs");
+    if (p.where && p.where.length) {
+      var ws = section(box, "Où aller");
+      var wl = el("ul", "vie-where");
+      p.where.forEach(function (w) { var li = el("li"); li.appendChild(el("strong", "", w.t)); if (w.d) { var sp = el("span", "", w.d + (w.cite ? " " : "")); if (w.cite) sp.appendChild(cite(w.cite)); li.appendChild(sp); } wl.appendChild(li); });
+      ws.appendChild(wl);
+    }
+    if (p.letter) renderVieLetter(v, s, p.letter, box);
+    if (p.points && p.points.length) {
+      var ps = section(box, "Bon à savoir");
+      var pl = el("ul", "points");
+      p.points.forEach(function (x) { var li = el("li", "point"); li.appendChild(el("strong", "", x.t)); var sp = el("span", "", (x.d || "") + (x.cite ? " " : "")); if (x.cite) sp.appendChild(cite(x.cite)); li.appendChild(sp); pl.appendChild(li); });
+      ps.appendChild(pl);
+    }
+    if (p.next && p.next.length) {
+      var ns = section(box, "Et ensuite");
+      var nl = el("div", "vie-next");
+      p.next.forEach(function (n) { var b = el("button", "vie-next-b"); b.type = "button"; b.setAttribute("data-go", n[0]); b.appendChild(el("span", "", n[1])); b.appendChild(icon("i-chev", "ico-s")); nl.appendChild(b); });
+      ns.appendChild(nl);
+    }
+    var acts = el("div", "vie-actions");
+    var askB = el("button", "btn", "Poser une question à l'assistant"); askB.type = "button";
+    askB.addEventListener("click", function () { go("home"); var ai = $("#askInput"); ai.value = p.ask || ""; ai.focus(); });
+    var proB = el("button", "btn btn-ghost", "Trouver un professionnel"); proB.type = "button"; proB.setAttribute("data-go", "pros");
+    var edB = el("button", "link-btn", "Modifier mes réponses"); edB.type = "button";
+    edB.addEventListener("click", function () { s.step = 0; save(); renderVie(v.id); focusVie(); });
+    var rsB = el("button", "link-btn", "Recommencer à zéro"); rsB.type = "button";
+    rsB.addEventListener("click", function () {
+      if (!window.confirm("Effacer vos réponses à ce parcours et recommencer ?")) return;
+      s.a = {}; s.step = 0; s.checks = {}; s.letter = {}; s.started = false; save(); renderVie(v.id); focusVie();
+    });
+    acts.appendChild(askB); acts.appendChild(proB); acts.appendChild(edB); acts.appendChild(rsB);
+    box.appendChild(acts);
+    if (v.sources && v.sources.length) {
+      var det = el("details", "vie-sources");
+      var sm = el("summary", "", "Les textes sur lesquels repose ce plan"); sm.appendChild(icon("i-down"));
+      det.appendChild(sm);
+      var sl = el("ul", "");
+      v.sources.forEach(function (x) { sl.appendChild(el("li", "", x)); });
+      det.appendChild(sl);
+      box.appendChild(det);
+    }
+    box.appendChild(el("p", "vie-disclaimer", "Information juridique générale tirée des textes cités, pas un avis personnalisé. En cas de doute, faites-vous conseiller par un professionnel."));
+  }
+
+  function renderVieLetter(v, s, L, box) {
+    var sec = section(box, L.title, "vie-letter");
+    if (L.lede) sec.appendChild(el("p", "sub", L.lede));
+    var grid = el("div", "letter-grid");
+    var form = el("div", "fields");
+    var vals = s.letter;
+    L.fields.forEach(function (f) {
+      if (vals[f.id] == null && f.init != null) vals[f.id] = typeof f.init === "function" ? f.init(s.a) : f.init;
+      var w = el("div", "field" + (f.wide ? " field-wide" : ""));
+      var id = "vl-" + v.id + "-" + f.id;
+      var lab = el("label", "", f.label); lab.setAttribute("for", id);
+      var inp = el(f.type === "textarea" ? "textarea" : "input");
+      if (f.type !== "textarea") inp.type = f.type || "text"; else inp.rows = 4;
+      inp.id = id; inp.value = vals[f.id] || ""; if (f.ph) inp.placeholder = f.ph;
+      inp.addEventListener("input", function () { vals[f.id] = inp.value; paint(); });
+      inp.addEventListener("change", function () { save(); });
+      w.appendChild(lab); w.appendChild(inp);
+      form.appendChild(w);
+    });
+    var col = el("div", "sheet-col");
+    var sheet = el("div", "sheet");
+    col.appendChild(sheet);
+    grid.appendChild(form); grid.appendChild(col);
+    sec.appendChild(grid);
+    var acts = el("div", "model-actions");
+    var cp = el("button", "btn", "Copier la lettre"); cp.type = "button";
+    cp.addEventListener("click", function () { copyText(L.text(vals, s.a), "Lettre copiée."); });
+    var sv = el("button", "btn btn-ghost", "Enregistrer dans mon coffre"); sv.type = "button";
+    sv.addEventListener("click", function () {
+      var txt = L.text(vals, s.a), ex = state.docs.filter(function (d) { return d.vieLetter === v.id; })[0];
+      if (ex) { ex.content = txt; ex.added = iso(today()); toast("Lettre mise à jour dans le coffre."); }
+      else { state.docs.unshift({ id: uid(), name: L.title, type: "Lettre", added: iso(today()), size: "", dossier: "vie-" + v.id, content: txt, vieLetter: v.id }); toast("Lettre enregistrée dans le coffre."); }
+      save(); renderAll();
+    });
+    acts.appendChild(cp); acts.appendChild(sv);
+    sec.appendChild(acts);
+    function paint() {
+      sheet.textContent = "";
+      L.text(vals, s.a).split("\n\n").forEach(function (para) {
+        var pe = el("p", "", para); pe.style.whiteSpace = "pre-line"; sheet.appendChild(pe);
+      });
+    }
+    paint();
+  }
+
+  function dossierLabel(k) {
+    if (k === "demission") return "Démission";
+    if (k && k.indexOf("vie-") === 0 && VIES[k.slice(4)]) return VIES[k.slice(4)].short;
+    return "";
+  }
+
+  /* ---------- Parcours Famille ---------- */
+  var EC = "Loi n° 2018-027 relative à l'état civil";
+  var MAR = "Loi n° 2007-022 relative au mariage et aux régimes matrimoniaux";
+  var SUC = "Loi n° 68-012 du 4 juillet 1968 relative aux successions, testaments et donations";
+  var ENF = "Loi n° 2007-023 sur les droits et la protection des enfants";
+  var NAT = "Loi n° 2016-038 modifiant le Code de la nationalité malagasy";
+  function plus(dateIso, n) { return iso(addDays(parse(dateIso), n)); }
+  function fmt(dateIso) { return fmtLong(parse(dateIso)); }
+
+  /* 1. Naissance */
+  defVie({
+    id: "naissance", short: "Naissance", title: "Déclarer la naissance d'un enfant",
+    situation: "Un enfant vient de naître", desc: "Délai, qui déclare, où aller, reconnaissance par le père, nationalité", time: "3 min",
+    keys: /naissance|naître|nouveau-n[ée]|bébé|declarer (un|mon) enfant|acte de naissance de mon (fils|enfant|bébé)/i,
+    intro: "Quelques questions pour savoir qui doit déclarer la naissance, où, et avant quelle date.",
+    questions: [
+      { id: "date", type: "date", q: "Quand l'enfant est-il né ?", help: "La date compte : la déclaration doit être faite dans un délai précis." },
+      { id: "lieu", type: "choice", q: "Où l'accouchement a-t-il eu lieu ?", options: [
+        { v: "fs", t: "Dans un hôpital, une maternité ou un centre de santé" },
+        { v: "pro", t: "Ailleurs, avec un médecin ou une sage-femme" },
+        { v: "seul", t: "Ailleurs, sans médecin ni sage-femme" }
+      ] },
+      { id: "maries", type: "choice", q: "Les parents sont-ils mariés ?", help: "Mariés à la mairie ou selon les traditions, avec un acte de mariage.", options: [
+        { v: "oui", t: "Oui" }, { v: "non", t: "Non" }
+      ] },
+      { id: "pere", type: "choice", when: function (a) { return a.maries === "non"; }, q: "Le père veut-il reconnaître l'enfant ?", options: [
+        { v: "oui", t: "Oui" }, { v: "non", t: "Non" }, { v: "nsp", t: "Je ne sais pas encore" }
+      ] },
+      { id: "nat", type: "choice", q: "L'un des parents est-il malagasy ?", options: [
+        { v: "deux", t: "Oui, les deux" }, { v: "pere", t: "Oui, le père" }, { v: "mere", t: "Oui, la mère" }, { v: "aucun", t: "Non, aucun des deux" }
+      ] },
+      { id: "zone", type: "choice", q: "La commune du lieu de naissance est-elle facile d'accès ?", help: "Dans certaines zones reculées, le Chef de Fokontany peut recevoir la déclaration.", options: [
+        { v: "commune", t: "Oui, on peut aller à la mairie" }, { v: "recule", t: "Non, c'est une zone éloignée ou rurale" }
+      ] }
+    ],
+    plan: function (a) {
+      var lim = plus(a.date, 30), n = diffDays(today(), parse(lim)), late = n < 0;
+      var p = { title: late ? "Le délai de déclaration est passé" : "Déclarer la naissance", ask: "Comment déclarer la naissance de mon enfant ?" };
+      p.verdict = late
+        ? { tone: "urgent", t: "Le délai de 30 jours est dépassé.", d: "L'officier d'état civil ne peut plus dresser l'acte sur simple déclaration. Il faut demander au tribunal un jugement supplétif, qui tient lieu d'acte de naissance. La démarche est simple et peut se faire sans avocat.", go: ["vie.sans-acte", "Obtenir un jugement supplétif"] }
+        : { tone: n <= 7 ? "warn" : "ok", t: "Vous avez jusqu'au " + fmt(lim) + " pour déclarer la naissance.", d: "La déclaration est obligatoire. L'acte de naissance et sa première copie sont gratuits." };
+      p.deadlines = late ? [] : [{ title: "Déclarer la naissance", date: lim, why: "30 jours à compter de la naissance.", cite: "Loi 2018-027, art. 45", remind: 7 }];
+      var who = a.lieu === "fs"
+        ? { t: "Vérifiez que l'établissement a bien déclaré la naissance", d: "L'hôpital ou le centre de santé doit déclarer les naissances qui ont lieu chez lui, dans les 30 jours, au centre d'état civil de sa commune. Demandez-lui la confirmation, puis allez retirer la copie de l'acte.", cite: "Art. 48" }
+        : a.lieu === "pro"
+          ? { t: "Le médecin ou la sage-femme déclare la naissance", d: "Il doit déclarer la naissance dans les 30 jours et vous remettre une attestation indiquant le jour et le lieu de la naissance. Gardez-la : elle vous servira si vous faites la déclaration vous-même.", cite: "Art. 49" }
+          : { t: "Faites la déclaration vous-même", d: "La déclaration peut être faite par le père ou la mère, un grand-parent ou un proche parent, une personne qui a assisté à la naissance, ou la personne chez qui la mère a accouché.", cite: "Art. 47" };
+      p.steps = [who];
+      if (a.maries === "non" && a.pere !== "non") p.steps.push({ t: "Le père fait lui-même la reconnaissance", d: "Si les parents ne sont pas mariés, indiquer le nom du père ne suffit pas : la reconnaissance doit venir du père lui-même (ou de quelqu'un muni d'une procuration spéciale authentifiée), devant l'officier d'état civil, devant un officier public, ou par testament. Le plus simple : que le père vienne à la déclaration.", cite: "Art. 71" });
+      p.steps.push({ t: "Préparez les informations demandées", d: "L'acte indique le jour, l'heure et le lieu de la naissance, le sexe et les nom et prénoms de l'enfant, ainsi que les nom, prénoms, date et lieu de naissance, profession et résidence des parents.", cite: "Art. 46" });
+      p.steps.push({ t: "Relisez l'acte avant de signer", d: "L'officier lit l'acte au déclarant, qui le signe. Vérifiez chaque nom et chaque date : une erreur se corrige ensuite par un jugement rectificatif.", cite: "Art. 43 et 50" });
+      p.steps.push({ t: "Gardez la première copie, gratuite", d: "Rangez-la dans votre coffre ZOU (photo ou scan) : elle vous sera demandée pour l'école, la carte d'identité, le mariage.", cite: "Art. 36", go: ["vault", "Ouvrir mon coffre"] });
+      p.docs = [
+        { t: "Les pièces d'identité des parents" },
+        { t: "L'attestation de naissance du médecin, de la sage-femme ou de l'établissement, si vous en avez une", cite: "Art. 49" },
+        { t: "Le livret de famille, si les parents sont mariés", d: "La naissance y est inscrite.", cite: "Art. 102 et 106" }
+      ];
+      p.where = [a.zone === "recule"
+        ? { t: "Le Chef de Fokontany", d: "Dans les zones rurales ou reculées, il recueille les déclarations de naissance dans les 30 jours et les transmet à l'officier d'état civil.", cite: "Art. 30 et 44" }
+        : { t: "Le bureau d'état civil de la commune du lieu de naissance", d: "C'est l'officier d'état civil du lieu de la naissance qui reçoit la déclaration.", cite: "Art. 44" }];
+      p.points = [];
+      if (a.nat !== "aucun") p.points.push({ t: "Votre enfant est malagasy.", d: "Depuis 2016, est malagasy l'enfant né d'un père et/ou d'une mère malagasy : la nationalité se transmet aussi par la mère.", cite: "Loi 2016-038, art. 9 nouveau" });
+      else p.points.push({ t: "Nationalité.", d: "Aucun parent n'étant malagasy, l'enfant n'a pas la nationalité malagasy par sa filiation. La naissance doit quand même être déclarée.", cite: "Loi 2016-038, art. 9 nouveau" });
+      p.points.push({ t: "Fausse déclaration.", d: "Déclarer des informations inexactes est puni.", cite: "Art. 41" });
+      return p;
+    },
+    sources: [EC + " : art. 30, 36, 41, 43 à 50, 71, 102 et 106.", NAT + " : art. 9 nouveau."]
+  });
+
+  /* 2. Pas d'acte de naissance */
+  defVie({
+    id: "sans-acte", short: "Jugement supplétif", title: "Obtenir un acte quand il n'existe pas (jugement supplétif)",
+    situation: "Je n'ai pas d'acte de naissance", desc: "Naissance jamais déclarée, décès non enregistré : la requête au tribunal", time: "4 min",
+    keys: /jugement suppl[ée]tif|pas d.acte de naissance|sans acte|acte de naissance perdu|jamais (été )?d[ée]clar/i,
+    intro: "Si une naissance ou un décès n'a jamais été enregistré, le tribunal peut rendre un jugement qui tient lieu d'acte.",
+    questions: [
+      { id: "quoi", type: "choice", q: "Quel acte manque ?", options: [
+        { v: "naiss", t: "Un acte de naissance" }, { v: "deces", t: "Un acte de décès" }, { v: "erreur", t: "L'acte existe, mais il contient une erreur" }
+      ] },
+      { id: "qui", type: "choice", when: function (a) { return a.quoi === "naiss"; }, q: "Pour qui ?", options: [
+        { v: "moi", t: "Pour moi" }, { v: "enfant", t: "Pour mon enfant" }, { v: "autre", t: "Pour un autre proche" }
+      ] },
+      { id: "but", type: "choice", when: function (a) { return a.quoi === "naiss"; }, q: "À quoi doit-il servir d'abord ?", help: "Pour un mariage, une solution plus rapide existe.", options: [
+        { v: "mariage", t: "À me marier" }, { v: "autre", t: "À autre chose (carte d'identité, école, succession…)" }
+      ] },
+      { id: "temoins", type: "choice", when: function (a) { return a.quoi !== "erreur"; }, q: "Connaissez-vous des personnes qui peuvent témoigner ?", help: "Par exemple des parents, des voisins ou des proches qui connaissent la date et le lieu de l'événement.", options: [
+        { v: "oui", t: "Oui" }, { v: "non", t: "Pas encore" }
+      ] }
+    ],
+    plan: function (a) {
+      var fact = a.quoi === "deces" ? "décès" : "naissance";
+      if (a.quoi === "erreur") return {
+        title: "Faire corriger un acte d'état civil", ask: "Comment faire rectifier une erreur dans un acte d'état civil ?",
+        verdict: { tone: "ok", t: "Une erreur se corrige par un jugement rectificatif.", d: "Le jugement est ensuite mentionné en marge de l'acte corrigé." },
+        steps: [
+          { t: "Demandez une copie de l'acte et repérez précisément l'erreur", d: "Nom, prénom, date ou lieu : notez ce qui est écrit et ce qui devrait l'être." },
+          { t: "Rassemblez les preuves de la bonne information", d: "Autres actes d'état civil (actes des parents, livret de famille), pièces d'identité, documents anciens." },
+          { t: "Saisissez le tribunal de première instance", d: "Le tribunal rend un jugement rectificatif ; une fois définitif, il est mentionné en marge de l'acte.", cite: "Loi 2018-027, art. 79" }
+        ],
+        points: [{ t: "Ce point est moins détaillé dans les textes chargés.", d: "Faites-vous confirmer la procédure exacte au greffe du tribunal ou par un professionnel." }]
+      };
+      var p = { title: "Demander un jugement supplétif d'acte de " + fact, ask: "Comment obtenir un jugement supplétif d'acte de " + fact + " ?" };
+      p.verdict = { tone: "ok", t: "La démarche se fait au tribunal, par une simple requête écrite ou même orale.", d: "Le tribunal entend des témoins et peut statuer le jour même. Son jugement est ensuite transcrit sur le registre d'état civil et vaut acte." };
+      p.steps = [
+        { t: "Rédigez la requête (ou présentez-la oralement au greffe)", d: "Indiquez qui vous êtes, le fait à constater (date et lieu de la " + fact + ", identité des personnes) et les témoins que vous présenterez. La lettre ci-dessous est pré-remplie.", cite: "Loi 2018-027, art. 111" },
+        { t: "Déposez-la au tribunal de première instance", d: "Celui du lieu de la " + fact + " ou celui de votre résidence.", cite: "Art. 111" },
+        { t: "Venez à l'audience avec vos témoins", d: "Les témoignages doivent être précis et concordants. Les parents et alliés en ligne directe peuvent témoigner. Vous pouvez vous présenter spontanément avec vos témoins : ils sont entendus immédiatement et le président peut statuer sur le champ.", cite: "Art. 111" },
+        { t: "Faites transcrire le jugement", d: "Le jugement est transcrit sur le registre d'état civil du lieu de l'événement. Demandez ensuite une copie de l'acte ainsi établi.", cite: "Art. 112" }
+      ];
+      p.docs = [
+        { t: "Votre pièce d'identité, si vous en avez une" },
+        { t: "Tout document ancien qui mentionne la date ou le lieu", d: "Carnet de santé, certificat de baptême, documents scolaires, attestation du Fokontany." },
+        { t: "Les noms et adresses de vos témoins" + (a.temoins === "non" ? " (à trouver avant l'audience)" : "") }
+      ];
+      p.where = [{ t: "Le greffe du tribunal de première instance", d: "Du lieu de l'événement ou de votre résidence.", cite: "Art. 111" }];
+      p.points = [{ t: "Le ministère public peut aussi agir.", d: "Le procureur peut demander lui-même le jugement.", cite: "Art. 111" },
+        { t: "Audiences foraines.", d: "Des audiences spéciales ont déjà été organisées dans les communes pour délivrer des jugements supplétifs (par exemple lors des opérations « carte d'identité »). Renseignez-vous à la mairie.", cite: "Loi 97-013, art. 4" }];
+      if (a.but === "mariage") p.points.unshift({ t: "Pour vous marier, il y a plus rapide : l'acte de notoriété.", d: "L'officier d'état civil du lieu de naissance ou de résidence peut établir un acte de notoriété, sur la déclaration de trois personnes dignes de foi âgées d'au moins 21 ans. Il ne sert qu'au mariage et doit être homologué par le tribunal.", cite: "Loi 2018-027, art. 107 à 109 ; loi 2007-022, art. 12" });
+      p.letter = {
+        title: "Requête en jugement supplétif",
+        lede: "Complétez les champs : la requête se met à jour. Imprimez-la ou recopiez-la, signez-la et déposez-la au greffe.",
+        fields: [
+          { id: "nom", label: "Vos nom et prénoms", wide: true },
+          { id: "adr", label: "Votre adresse", wide: true },
+          { id: "personne", label: a.quoi === "deces" ? "Nom et prénoms de la personne décédée" : "Nom et prénoms de la personne concernée", wide: true, init: function () { return ""; } },
+          { id: "date", label: "Date de la " + fact + " (même approximative)", ph: "Ex. 12 mars 1998" },
+          { id: "lieu", label: "Lieu de la " + fact, ph: "Fokontany, commune, district" },
+          { id: "parents", label: a.quoi === "deces" ? "Ses parents ou son conjoint" : "Ses père et mère", wide: true },
+          { id: "temoins", label: "Témoins que vous présenterez (noms)", type: "textarea", wide: true },
+          { id: "tribunal", label: "Tribunal de première instance de", ph: "Ex. Antananarivo" }
+        ],
+        text: function (f) {
+          var or = function (x, d) { return (x || "").trim() || d; };
+          return or(f.nom, "[Vos nom et prénoms]") + "\n" + or(f.adr, "[Votre adresse]") +
+            "\n\nÀ Monsieur le Président du Tribunal de première instance de " + or(f.tribunal, "[ville]") +
+            "\n\nObjet : requête en jugement supplétif d'acte de " + fact +
+            "\n\nMonsieur le Président,\n\nJ'ai l'honneur de solliciter, en application de l'article 111 de la loi n° 2018-027 relative à l'état civil, un jugement supplétif d'acte de " + fact + " concernant " + or(f.personne, "[nom et prénoms]") + ", " +
+            (a.quoi === "deces" ? "décédé(e)" : "né(e)") + " le " + or(f.date, "[date]") + " à " + or(f.lieu, "[lieu]") + (f.parents ? ", " + (a.quoi === "deces" ? "proche de " : "enfant de ") + f.parents : "") + "." +
+            "\n\nCe fait n'a jamais été inscrit sur les registres de l'état civil, ce qui empêche d'en produire l'acte." +
+            "\n\nJe me présenterai à l'audience avec les témoins suivants, qui pourront attester de ce fait : " + or(f.temoins, "[noms des témoins]") + "." +
+            "\n\nJe vous prie de bien vouloir ordonner la transcription du jugement à intervenir sur les registres de l'état civil du lieu de la " + fact + ", conformément à l'article 112 de la même loi." +
+            "\n\nVeuillez agréer, Monsieur le Président, l'expression de ma haute considération.\n\nFait à " + or(f.tribunal, "[ville]") + ", le " + fmtLong(today()) + "\n\n[Signature]";
+        }
+      };
+      return p;
+    },
+    sources: [EC + " : art. 79, 107 à 112.", MAR + " : art. 12.", "Loi n° 97-013 relative à la délivrance des jugements supplétifs d'actes de naissance : art. 4."]
+  });
+
+  /* 3. Mariage */
+  defVie({
+    id: "mariage", short: "Mariage", title: "Se marier : conditions, papiers et régime des biens",
+    situation: "Nous voulons nous marier", desc: "Âge, papiers, célébration à la mairie ou traditionnelle, choix du régime", time: "4 min",
+    keys: /mariage|marier|épouser|fiançailles|régime matrimonial|zara-mira|séparation de biens|certificat de célibat/i,
+    intro: "Quelques questions pour vérifier les conditions et préparer votre dossier.",
+    questions: [
+      { id: "age", type: "choice", q: "Les deux futurs époux ont-ils au moins 18 ans ?", options: [
+        { v: "oui", t: "Oui, tous les deux" }, { v: "non", t: "Non, l'un des deux a moins de 18 ans" }
+      ] },
+      { id: "avant", type: "choice", when: function (a) { return a.age === "oui"; }, q: "L'un de vous a-t-il déjà été marié ?", options: [
+        { v: "non", t: "Non" }, { v: "divorce", t: "Oui, divorcé" }, { v: "veuf", t: "Oui, veuf ou veuve" }, { v: "encours", t: "Oui, et ce mariage n'est pas encore dissous" }
+      ] },
+      { id: "fin", type: "date", when: function (a) { return a.avant === "divorce" || a.avant === "veuf"; }, q: "À quelle date le mariage précédent a-t-il pris fin ?", help: "Date du décès, ou date à laquelle le divorce est devenu définitif.", unknown: "Je ne sais pas" },
+      { id: "forme", type: "choice", when: function (a) { return a.age === "oui" && a.avant !== "encours"; }, q: "Comment voulez-vous vous marier ?", options: [
+        { v: "mairie", t: "À la mairie", d: "Devant l'officier d'état civil" }, { v: "trad", t: "Selon les traditions", d: "Cérémonies constatées par le Chef de Fokontany" }, { v: "nsp", t: "Nous ne savons pas encore" }
+      ] },
+      { id: "biens", type: "choice", when: function (a) { return a.age === "oui" && a.avant !== "encours"; }, q: "Pour vos biens, que préférez-vous ?", help: "C'est le « régime matrimonial ». Vous le déclarez le jour du mariage.", options: [
+        { v: "commun", t: "Mettre en commun ce que nous gagnerons", d: "Régime de droit commun « zara-mira », appliqué si vous ne dites rien" },
+        { v: "separe", t: "Que chacun garde ses biens séparés", d: "Séparation de biens" },
+        { v: "contrat", t: "Fixer nos propres règles", d: "Contrat de mariage chez un notaire" },
+        { v: "nsp", t: "Je ne sais pas, expliquez-moi" }
+      ] },
+      { id: "etranger", type: "choice", when: function (a) { return a.age === "oui" && a.avant !== "encours"; }, q: "L'un de vous est-il de nationalité étrangère ?", options: [
+        { v: "non", t: "Non" }, { v: "femme", t: "Oui, la future épouse" }, { v: "homme", t: "Oui, le futur époux" }
+      ] }
+    ],
+    plan: function (a) {
+      if (a.age === "non") return {
+        title: "Le mariage avant 18 ans n'est pas la règle", ask: "À quel âge peut-on se marier à Madagascar ?",
+        verdict: { tone: "urgent", t: "L'âge du mariage est fixé à 18 ans, pour les filles comme pour les garçons.", d: "Une exception n'existe que pour des motifs graves, sur décision du Président du Tribunal de première instance, à la demande des parents et avec le consentement exprès de l'enfant, sans préjudice des poursuites pénales." },
+        points: [
+          { t: "Un enfant, c'est toute personne de moins de 18 ans.", cite: "Loi 2007-023, art. 2" },
+          { t: "Le mariage forcé ou précoce peut constituer une maltraitance.", d: "Si un enfant est en danger, tout le monde doit le signaler.", cite: "Loi 2007-023, art. 67 et 69" }
+        ],
+        next: [["vie.enfant-danger", "Signaler un enfant en danger"]],
+        steps: []
+      };
+      if (a.avant === "encours") return {
+        title: "Un nouveau mariage n'est pas possible pour l'instant", ask: "Peut-on se remarier avant la fin du divorce ?",
+        verdict: { tone: "urgent", t: "La bigamie est interdite.", d: "On ne peut pas se remarier avant la dissolution du premier mariage. Après un divorce, il faut attendre la transcription du jugement sur les registres." },
+        steps: [{ t: "Faites d'abord prononcer et transcrire le divorce", cite: "Loi 2007-022, art. 5 et 70", go: ["vie.separation", "Voir le parcours « Se séparer »"] }]
+      };
+      var p = { title: "Votre dossier de mariage", ask: "Quelles pièces faut-il pour se marier ?" };
+      p.verdict = { tone: "ok", t: "Les conditions de base sont réunies.", d: "Il reste à préparer les papiers, choisir la date et, si besoin, votre régime matrimonial." };
+      p.deadlines = [];
+      if (a.fin) {
+        var lim = plus(a.fin, 180);
+        if (lim > iso(today())) {
+          p.verdict = { tone: "warn", t: "Un délai d'attente de 180 jours s'applique avant le remariage.", d: "Il court depuis la fin du mariage précédent et prend fin plus tôt en cas d'accouchement." };
+          p.deadlines.push({ title: "Remariage possible à partir du", date: lim, why: "Délai de viduité de 180 jours.", cite: "Loi 2007-022, art. 6 à 8", remind: 0 });
+        }
+      } else if (a.avant === "divorce" || a.avant === "veuf") {
+        p.points = [{ t: "Délai d'attente de 180 jours.", d: "Après la fin d'un mariage (décès ou divorce définitif), il faut attendre 180 jours avant de se remarier, sauf accouchement.", cite: "Loi 2007-022, art. 6 à 8" }];
+      }
+      p.docs = [
+        { t: "Pour chacun : une copie de l'acte de naissance de moins de 6 mois", cite: "Loi 2007-022, art. 11", go: ["vie.sans-acte", "Pas d'acte de naissance ?"] },
+        { t: "Pour chacun : un certificat de célibat délivré par le Chef de Fokontany", cite: "Art. 11" },
+        { t: "Deux témoins âgés d'au moins 21 ans", d: "Parents ou non des futurs époux.", cite: "Art. 26" }
+      ];
+      if (a.avant === "divorce") p.docs.push({ t: "La preuve que le divorce a été transcrit", cite: "Art. 5" });
+      if (a.avant === "veuf") p.docs.push({ t: "L'acte de décès du conjoint précédent" });
+      if (a.biens === "contrat") p.docs.push({ t: "Le contrat de mariage signé chez le notaire, avant le mariage", cite: "Art. 101 et 102" });
+      p.steps = a.forme === "trad"
+        ? [
+          { t: "Convenez de la date avec le Chef de Fokontany", d: "Il se déplace sur les lieux, au jour et à l'heure fixés avec les familles, et constate les cérémonies par un procès-verbal en deux exemplaires.", cite: "Art. 29 à 31" },
+          { t: "Le jour des cérémonies, indiquez votre régime matrimonial", d: "Le procès-verbal mentionne la nationalité des époux et le régime choisi.", cite: "Art. 31 et 98" },
+          { t: "Vérifiez que l'acte de mariage est bien dressé", d: "Le Chef de Fokontany doit remettre un exemplaire du procès-verbal à l'officier d'état civil dans les 12 jours ; celui-ci dresse alors l'acte. Sans acte, le mariage n'a pas d'effets civils.", cite: "Art. 33 et 35" },
+          { t: "Retirez votre livret de famille", d: "Il est remis gratuitement aux époux.", cite: "Loi 2018-027, art. 102" }
+        ]
+        : [
+          { t: "Déposez vos pièces auprès de l'officier d'état civil", d: "À la mairie du lieu où le mariage sera célébré.", cite: "Loi 2018-027, art. 44 ; loi 2007-022, art. 11" },
+          { t: "Le jour J, venez avec vos deux témoins", d: "L'officier lit le projet d'acte, vous demande vos nationalités, votre régime matrimonial et, s'il existe, les références de votre contrat de mariage.", cite: "Art. 26 et 27" },
+          { t: "Relisez et signez l'acte de mariage", d: "Sans acte, on ne peut pas réclamer les effets du mariage.", cite: "Art. 35" },
+          { t: "Retirez votre livret de famille", d: "Il est remis gratuitement aux époux.", cite: "Loi 2018-027, art. 102" }
+        ];
+      p.result = a.biens === "separe"
+        ? { title: "Votre régime : la séparation de biens", items: [
+          { t: "Chacun garde et gère ses biens.", d: "Chaque époux a l'administration et la libre disposition de ses biens, et répond seul de ses dettes (art. 151 et 152)." },
+          { t: "Les biens achetés pendant le mariage sont présumés appartenir aux deux, moitié chacun", d: "sauf preuve contraire : gardez les factures et les titres à votre nom (art. 153)." },
+          { t: "À déclarer le jour du mariage", d: "Il suffit de le dire à l'officier d'état civil ou au Chef de Fokontany (art. 98)." }] }
+        : a.biens === "contrat"
+          ? { title: "Votre régime : un contrat de mariage", items: [
+            { t: "Chez un notaire, avant le mariage", d: "Il est signé en présence et avec le consentement des deux époux, et prend effet le jour du mariage (art. 101 et 102)." },
+            { t: "Des limites", d: "Il ne peut pas déroger à l'ordre public, à l'autorité parentale ni à l'ordre légal des successions (art. 99)." }] }
+          : { title: a.biens === "commun" ? "Votre régime : le droit commun « zara-mira »" : "Les régimes possibles", items: [
+            { t: "Sans choix de votre part : le régime « zara-mira »", d: "Les biens d'avant le mariage et ceux reçus par héritage ou donation restent personnels (art. 112). Les salaires et ce qui est acheté avec sont communs (art. 116). À la fin du mariage, les biens communs se partagent en deux parts égales (art. 135)." },
+            { t: "Les décisions importantes se prennent à deux", d: "Vendre ou hypothéquer un immeuble commun, donner un bien commun : il faut l'accord de l'autre époux (art. 118)." },
+            { t: "Autres possibilités", d: "La séparation de biens (déclarée le jour du mariage, art. 98) ou un contrat chez le notaire (art. 101). Après 3 ans de mariage, vous pourrez changer de régime d'un commun accord, avec homologation du tribunal (art. 108)." }] };
+      p.points = (p.points || []).concat([
+        { t: "Opposition au mariage.", d: "Les personnes dont le consentement est requis, un conjoint encore engagé ou le ministère public peuvent s'opposer au mariage jusqu'à la célébration. L'opposant doit saisir le tribunal dans les 8 jours ; celui-ci statue dans les 15 jours.", cite: "Loi 2007-022, art. 13 à 17" },
+        { t: "Mariages interdits.", d: "Entre parents en ligne directe, et entre frère et sœur, oncle et nièce, tante et neveu.", cite: "Art. 9" }
+      ]);
+      if (a.etranger === "femme") p.points.push({ t: "Nationalité de l'épouse étrangère.", d: "Elle peut demander la nationalité malagasy au plus tard au moment de la célébration ; l'officier d'état civil doit lui poser la question.", cite: "Loi 2016-038, art. 23 nouveau" });
+      return p;
+    },
+    sources: [MAR + " : art. 3 à 17, 26 à 35, 98 à 108, 112 à 153.", EC + " : art. 44 et 102.", NAT + " : art. 23 nouveau.", ENF + " : art. 2, 67 et 69."]
+  });
+
+  /* 4. Séparation et divorce */
+  defVie({
+    id: "separation", short: "Séparation", title: "Se séparer ou divorcer",
+    situation: "Nous nous séparons", desc: "Conciliation, demande en divorce, enfants, pension et partage des biens", time: "5 min",
+    keys: /divorc|séparer|séparation|quitter (mon|ma) (mari|femme|époux|épouse)|garde des enfants|pension alimentaire|misintaka/i,
+    intro: "Quelques questions pour vous indiquer les étapes adaptées à votre situation. Vos réponses restent sur cet appareil.",
+    questions: [
+      { id: "danger", type: "choice", q: "Êtes-vous, vous ou vos enfants, en danger en ce moment ?", options: [
+        { v: "oui", t: "Oui, il y a des violences ou des menaces", tone: "danger" }, { v: "non", t: "Non" }
+      ] },
+      { id: "acte", type: "choice", q: "Votre mariage a-t-il été enregistré ?", help: "Mariage à la mairie, ou cérémonies traditionnelles constatées par le Chef de Fokontany avec un acte de mariage.", options: [
+        { v: "oui", t: "Oui, nous avons un acte de mariage" }, { v: "non", t: "Non, nous vivons ensemble sans acte" }, { v: "nsp", t: "Je ne sais pas" }
+      ] },
+      { id: "enfants", type: "choice", q: "Avez-vous des enfants mineurs ensemble ?", options: [ { v: "oui", t: "Oui" }, { v: "non", t: "Non" } ] },
+      { id: "etape", type: "choice", when: function (a) { return a.acte !== "non"; }, q: "Où en êtes-vous ?", options: [
+        { v: "debut", t: "Nous n'avons encore rien fait" },
+        { v: "demande", t: "Une demande en divorce a été déposée" },
+        { v: "ordonnance", t: "Le juge a rendu une ordonnance de non-conciliation" },
+        { v: "jugement", t: "Le divorce a été prononcé" }
+      ] },
+      { id: "dord", type: "date", when: function (a) { return a.etape === "ordonnance"; }, q: "À quelle date l'ordonnance a-t-elle été rendue ?", unknown: "Je ne sais pas" },
+      { id: "djug", type: "date", when: function (a) { return a.etape === "jugement"; }, q: "À quelle date la décision est-elle devenue définitive ?", unknown: "Je ne sais pas" }
+    ],
+    plan: function (a) {
+      var p = { title: "Vos prochaines étapes", ask: "Comment se passe une procédure de divorce ?", deadlines: [], steps: [], points: [] };
+      if (a.danger === "oui") p.verdict = { tone: "urgent", t: "Votre sécurité d'abord.", d: "Allez à la police, à la gendarmerie ou au Fokontany. Une femme mariée peut quitter le domicile pour motifs graves (droit de « misintaka ») et résider chez ses parents, des proches ou dans un centre d'accueil pour victimes de violences, pour 2 mois au plus. Si un enfant est maltraité, signalez-le.", go: ["vie.enfant-danger", "Signaler un enfant en danger"] };
+      if (a.acte === "non") {
+        p.title = "Se séparer sans être marié";
+        p.verdict = p.verdict || { tone: "warn", t: "Sans acte de mariage, il n'y a pas de divorce à prononcer.", d: "On ne peut réclamer les effets du mariage sans acte. Mais les droits des enfants restent entiers." };
+        p.steps.push({ t: "Organisez la garde et l'entretien des enfants", d: "Parents et enfants se doivent des aliments selon les besoins de l'un et les moyens de l'autre. En cas de désaccord, le tribunal peut être saisi ; il décide dans l'intérêt de l'enfant.", cite: "Loi 2007-022, art. 63 et 65 ; loi 2007-023" });
+        p.points.push({ t: "Le père doit avoir reconnu l'enfant", d: "pour que sa filiation soit établie s'il n'était pas marié avec la mère.", cite: "Loi 2018-027, art. 71" });
+        return p;
+      }
+      p.verdict = p.verdict || { tone: "ok", t: "Le divorce est prononcé par le tribunal, après une tentative de conciliation.", d: "Il peut être demandé quand l'autre époux a gravement manqué à ses obligations et que la vie commune est devenue intolérable." };
+      if (a.etape === "debut" || !a.etape) {
+        p.steps = [
+          { t: "Si vous le souhaitez, tentez une conciliation", d: "Avant toute procédure, vous pouvez soumettre votre différend au Chef de Fokontany ou au Maire. Le procès-verbal de conciliation vous engage.", cite: "Loi 2007-022, art. 79" },
+          { t: "Déposez la demande en divorce au tribunal", d: "Au tribunal du lieu de résidence de l'un ou l'autre époux, ou de votre dernier domicile. La demande expose les faits en détail et indique les mesures provisoires demandées (garde des enfants, pension pendant la procédure). Elle est signée par vous.", cite: "Art. 66, 80 et 82" },
+          { t: "Préparez-vous à l'audience de conciliation", d: "Dans les 15 jours, le Président vous convoque tous les deux. Vous venez en personne, sans avocat ni parent. Le juge vous entend séparément, puis ensemble.", cite: "Art. 83 à 85" },
+          { t: "Si la conciliation échoue : l'ordonnance de non-conciliation", d: "Elle peut autoriser des résidences séparées, confier la garde des enfants, fixer une pension et ordonner la remise de vos effets personnels. L'affaire passe ensuite au tribunal.", cite: "Art. 87 et 88" }
+        ];
+        p.letter = {
+          title: "Trame de demande en divorce", lede: "Une base à compléter et à faire relire, idéalement par un professionnel. Elle reprend les mentions exigées par la loi.",
+          fields: [
+            { id: "nom", label: "Vos nom et prénoms", wide: true }, { id: "adr", label: "Votre adresse", wide: true },
+            { id: "conj", label: "Nom et prénoms de votre conjoint", wide: true }, { id: "dmar", label: "Date et lieu du mariage" },
+            { id: "faits", label: "Les faits que vous reprochez (dates, exemples précis)", type: "textarea", wide: true },
+            { id: "mesures", label: "Mesures provisoires demandées", type: "textarea", wide: true, init: function (ans) { return ans.enfants === "oui" ? "Garde des enfants, pension alimentaire pour leur entretien pendant la procédure, résidence séparée." : "Résidence séparée, remise de mes effets personnels."; } },
+            { id: "trib", label: "Tribunal de première instance de", ph: "Ex. Toamasina" }
+          ],
+          text: function (f) {
+            var or = function (x, d) { return (x || "").trim() || d; };
+            return or(f.nom, "[Vos nom et prénoms]") + "\n" + or(f.adr, "[Votre adresse]") + "\n\nÀ Monsieur le Président du Tribunal de première instance de " + or(f.trib, "[ville]") +
+              "\n\nObjet : demande en divorce\n\nMonsieur le Président,\n\nJ'ai l'honneur de former une demande en divorce contre " + or(f.conj, "[nom du conjoint]") + ", avec qui je suis marié(e) depuis le " + or(f.dmar, "[date et lieu du mariage]") + ", sur le fondement de l'article 66 de la loi n° 2007-022 relative au mariage et aux régimes matrimoniaux." +
+              "\n\nExposé des faits :\n" + or(f.faits, "[exposé détaillé des faits]") +
+              "\n\nCes manquements graves aux devoirs du mariage ont rendu intolérable le maintien de la vie commune." +
+              "\n\nConformément à l'article 82 de la même loi, je sollicite pour la durée de l'instance les mesures provisoires suivantes : " + or(f.mesures, "[mesures demandées]") +
+              "\n\nJe vous prie de bien vouloir nous convoquer aux fins de conciliation.\n\nVeuillez agréer, Monsieur le Président, l'expression de ma haute considération.\n\nFait à " + or(f.trib, "[ville]") + ", le " + fmtLong(today()) + "\n\n[Signature]";
+          }
+        };
+      } else if (a.etape === "demande") {
+        p.steps = [
+          { t: "Attendez la convocation à l'audience de conciliation", d: "Elle intervient dans les 15 jours du dépôt de la demande. Venez en personne.", cite: "Art. 83 et 84" },
+          { t: "Préparez vos demandes pour la suite", d: "Garde des enfants, pension, résidence, effets personnels : le juge peut les fixer dans l'ordonnance de non-conciliation.", cite: "Art. 88" }
+        ];
+      } else if (a.etape === "ordonnance") {
+        if (a.dord) {
+          var lim = iso(addMonths(parse(a.dord), 1));
+          p.deadlines.push({ title: "Faire appel de l'ordonnance (si vous êtes en désaccord)", date: lim, why: "Un mois à compter de l'ordonnance si vous étiez tous deux présents ; sinon, à compter de sa notification à l'époux absent.", cite: "Art. 89 et 90", remind: 7 });
+        }
+        p.steps = [
+          { t: "Appliquez les mesures provisoires", d: "L'ordonnance est exécutoire tout de suite, même en cas d'appel.", cite: "Art. 89" },
+          { t: "Le tribunal juge ensuite la demande en divorce", d: "Le juge peut vous ajourner jusqu'à 6 mois pour réfléchir, tout en prenant des mesures provisoires.", cite: "Art. 94" }
+        ];
+      } else if (a.etape === "jugement") {
+        if (a.djug) p.deadlines.push({ title: "Faire transcrire le divorce", date: iso(addMonths(parse(a.djug), 1)), why: "La transcription sur les registres de l'état civil doit avoir lieu dans le mois de la décision.", cite: "Art. 70", remind: 7 });
+        p.steps = [
+          { t: "Faites transcrire le jugement à l'état civil", d: "Sur les registres du lieu où le mariage a été célébré ou enregistré. Le divorce n'est opposable aux autres qu'à partir de la transcription.", cite: "Art. 70 et 71" },
+          { t: "Partagez les biens communs", d: "En régime « zara-mira », chacun reprend ses biens personnels, puis les biens communs se partagent en deux parts égales, à l'amiable ou en justice.", cite: "Art. 128, 135, 136 et 142" },
+          { t: "Demandez une copie du livret de famille si besoin", cite: "Loi 2018-027, art. 104" }
+        ];
+      }
+      if (a.enfants === "oui") p.points.push({ t: "Les enfants.", d: "La garde est décidée selon l'intérêt supérieur de l'enfant, en tenant compte de l'avis des enfants capables de discernement, après une enquête sociale obligatoire. Chaque parent contribue à leur entretien selon ses revenus.", cite: "Loi 2007-022, art. 75 à 77" });
+      p.points.push({ t: "Les effets du divorce.", d: "Il dissout le mariage le jour où il devient définitif ; pour les biens, ses effets remontent au jour de la demande. L'époux divorcé cesse d'utiliser le nom du conjoint.", cite: "Art. 71 et 72" });
+      p.points.push({ t: "Réconciliation.", d: "Une réconciliation après les faits reprochés entraîne le rejet de la demande.", cite: "Art. 68" });
+      return p;
+    },
+    sources: [MAR + " : art. 35, 51, 52, 55, 66 à 94, 128 à 142.", EC + " : art. 71 et 104."]
+  });
+
+  /* 5. Décès et héritage */
+  defVie({
+    id: "deces", short: "Décès et héritage", title: "Après un décès : déclarer, puis savoir qui hérite",
+    situation: "Un proche est décédé", desc: "Déclaration du décès, testament, qui hérite, dettes, terrain", time: "5 min",
+    keys: /décès|décédé|mort|héritage|hériter|héritier|succession|testament|qui hérite/i,
+    intro: "Toutes nos condoléances. Quelques questions pour vous guider dans les démarches, à votre rythme.",
+    questions: [
+      { id: "date", type: "date", q: "Quand le décès a-t-il eu lieu ?", unknown: "Je ne sais pas exactement" },
+      { id: "declare", type: "choice", q: "Le décès a-t-il déjà été déclaré à l'état civil ?", options: [
+        { v: "oui", t: "Oui" }, { v: "non", t: "Non" }, { v: "nsp", t: "Je ne sais pas" }
+      ] },
+      { id: "testament", type: "choice", q: "La personne a-t-elle laissé un testament ?", options: [
+        { v: "oui", t: "Oui" }, { v: "non", t: "Non" }, { v: "nsp", t: "Je ne sais pas" }
+      ] },
+      { id: "marie", type: "choice", q: "Était-elle mariée au moment du décès ?", options: [ { v: "oui", t: "Oui" }, { v: "non", t: "Non" } ] },
+      { id: "enfants", type: "choice", q: "Avait-elle des enfants ?", help: "Enfants dont la filiation est établie, y compris adoptés en justice.", options: [
+        { v: "vivants", t: "Oui, au moins un est vivant" }, { v: "decedes", t: "Oui, mais tous sont décédés" }, { v: "non", t: "Non" }
+      ] },
+      { id: "pt", type: "choice", when: function (a) { return a.enfants === "decedes"; }, q: "Ces enfants ont-ils eux-mêmes des enfants vivants ?", options: [ { v: "oui", t: "Oui" }, { v: "non", t: "Non" } ] },
+      { id: "parents", type: "choice", when: function (a) { return a.enfants === "non" || a.pt === "non"; }, q: "Son père ou sa mère est-il encore vivant ?", options: [ { v: "oui", t: "Oui" }, { v: "non", t: "Non" } ] },
+      { id: "freres", type: "choice", when: function (a) { return a.parents === "non"; }, q: "Avait-elle des frères ou sœurs (ou des neveux et nièces) ?", options: [ { v: "oui", t: "Oui" }, { v: "non", t: "Non" } ] },
+      { id: "oncles", type: "choice", when: function (a) { return a.freres === "non"; }, q: "Avait-elle des oncles, tantes ou cousins germains vivants ?", options: [ { v: "oncles", t: "Oui, des oncles ou tantes" }, { v: "cousins", t: "Seulement des cousins germains" }, { v: "non", t: "Non" } ] },
+      { id: "terrain", type: "choice", q: "Laisse-t-elle un terrain ou une maison ?", options: [
+        { v: "titre", t: "Oui, avec un titre foncier" }, { v: "certif", t: "Oui, sans titre (certificat foncier ou rien)" }, { v: "non", t: "Non" }
+      ] },
+      { id: "dettes", type: "choice", q: "Laisse-t-elle des dettes importantes ?", options: [ { v: "oui", t: "Oui ou peut-être" }, { v: "non", t: "Non" } ] }
+    ],
+    plan: function (a) {
+      var p = { title: "Vos démarches, étape par étape", ask: "Qui hérite quand il n'y a pas de testament ?", deadlines: [], steps: [], points: [] };
+      if (a.declare !== "oui") {
+        if (a.date) {
+          var lim = plus(a.date, 30);
+          if (lim >= iso(today())) p.deadlines.push({ title: "Déclarer le décès", date: lim, why: "30 jours à compter du décès.", cite: "Loi 2018-027, art. 52", remind: 3 });
+          else p.steps.push({ t: "Le délai de déclaration est passé : demandez un jugement supplétif d'acte de décès", d: "L'acte de décès sera nécessaire pour la succession.", cite: "Loi 2018-027, art. 111", go: ["vie.sans-acte", "Voir le parcours"] });
+        }
+        p.steps.unshift({ t: "Déclarez le décès à l'officier d'état civil du lieu du décès", d: "Par le conjoint, un ascendant ou descendant, un proche parent, ou une personne qui a assisté au décès.", cite: "Loi 2018-027, art. 44, 52 et 54" });
+      }
+      p.steps.push({ t: "Gardez plusieurs copies de l'acte de décès", d: "Il prouve la date du décès, qui ouvre la succession.", cite: "Loi 68-012, art. 4" });
+      // Qui hérite ? (art. 16 : 9 classes ; la plus proche exclut les suivantes, sauf représentation)
+      var heirs;
+      if (a.enfants === "vivants") heirs = [{ t: "Les enfants", d: "À parts égales, sans distinction de sexe ni d'âge. Les enfants d'un enfant décédé prennent sa place (représentation, partage par souche)." }];
+      else if (a.enfants === "decedes" && a.pt === "oui") heirs = [{ t: "Les petits-enfants", d: "Ils viennent à la place de leur parent décédé." }];
+      else if (a.parents === "oui") heirs = [{ t: "Le père et la mère" }];
+      else if (a.freres === "oui") heirs = [{ t: "Les frères et sœurs", d: "Les enfants d'un frère ou d'une sœur décédé prennent sa place ; s'il ne reste que des neveux et nièces, ce sont eux qui héritent." }];
+      else if (a.oncles === "oncles") heirs = [{ t: "Les oncles et tantes", d: "Les enfants d'un oncle ou d'une tante décédé peuvent venir à sa place." }];
+      else if (a.oncles === "cousins") heirs = [{ t: "Les cousins germains" }];
+      else if (a.marie === "oui") heirs = [{ t: "Le conjoint survivant", d: "Il n'hérite qu'en 8ᵉ position, en l'absence de toute la famille de sang listée avant lui." }];
+      else heirs = [{ t: "L'État", d: "En l'absence de tout héritier." }];
+      p.result = { title: a.testament === "oui" ? "Sans testament, la loi désignerait…" : "Qui hérite, selon la loi", items: heirs,
+        d: "La loi appelle les héritiers par classes : enfants, petits-enfants, père et mère, frères et sœurs, neveux et nièces, oncles et tantes, cousins germains, conjoint survivant, puis l'État. La présence d'un héritier dans une classe exclut les classes suivantes.", cite: "Loi 68-012, art. 16 à 23" };
+      if (a.marie === "oui") {
+        p.points.push({ t: "Avant l'héritage, le conjoint récupère sa part des biens communs.", d: "En régime « zara-mira », la communauté est dissoute par le décès : chacun reprend ses biens personnels, puis les biens communs se partagent en deux. Seule la moitié du défunt entre dans la succession. Le survivant a aussi droit, pendant un an, à l'entretien et au logement à la charge de la communauté, selon ses besoins.", cite: "Loi 2007-022, art. 126, 128, 133 et 135" });
+        if (heirs[0].t !== "Le conjoint survivant") p.points.push({ t: "Le conjoint n'est pas héritier ici.", d: "Il ne vient qu'en 8ᵉ classe. Un testament peut lui laisser des biens.", cite: "Loi 68-012, art. 16 et 46" });
+      }
+      if (a.testament === "oui") {
+        p.steps.push({ t: "Retrouvez et faites ouvrir le testament", d: "Il peut être olographe (écrit, daté et signé de la main du défunt), secret ou par acte public chez un notaire ou un officier public. Les formes sont obligatoires, à peine de nullité.", cite: "Loi 68-012, art. 30 à 39" });
+        p.points.push({ t: "La liberté de tester (« masi-mandidy »).", d: "Chacun peut disposer librement de ses biens par testament, même au profit d'une personne hors de la famille. Mais les enfants (ou petits-enfants) mineurs ou incapables exclus peuvent obtenir une part à titre d'aliments, après une conciliation obligatoire.", cite: "Loi 68-012, art. 46, 54 à 57" });
+      } else if (a.testament === "nsp") {
+        p.steps.push({ t: "Vérifiez s'il existe un testament", d: "Chez un notaire ou un officier public, ou parmi les papiers du défunt : un testament olographe peut avoir été confié à un tiers.", cite: "Loi 68-012, art. 32" });
+      }
+      p.steps.push({ t: "Chaque héritier décide d'accepter ou de renoncer", d: "Personne n'est obligé d'accepter une succession. L'acceptation ou la renonciation se fait par déclaration authentique ou authentifiée, ou par un comportement sans équivoque.", cite: "Loi 68-012, art. 58 à 60" });
+      if (a.dettes === "oui") p.points.push({ t: "Attention aux dettes.", d: "Si les dettes dépassent les biens, les héritiers qui acceptent peuvent devoir payer le surplus sur leurs propres biens, sauf s'ils renoncent ou abandonnent le reste des biens aux créanciers.", cite: "Loi 68-012, art. 63 et 64" });
+      if (a.terrain === "titre") p.steps.push({ t: "Faites inscrire le terrain au nom des héritiers", d: "La mutation par décès doit être inscrite sur le titre foncier, dans un délai précis.", go: ["guide.heritage-terrain", "Guide : terrain reçu en héritage"] });
+      if (a.terrain === "certif") p.points.push({ t: "Terrain sans titre.", d: "Les droits se prouvent autrement (certificat foncier, possession). Renseignez-vous au guichet foncier de la commune.", go: ["guide.certificat-foncier", "Guide certificat foncier"] });
+      p.points.push({ t: "Où se règle la succession ?", d: "Au lieu du domicile du défunt : c'est le tribunal de ce lieu qui tranche les litiges.", cite: "Loi 68-012, art. 3" });
+      p.next = [["vault", "Ranger l'acte de décès dans mon coffre"], ["pros", "Trouver un notaire"]];
+      return p;
+    },
+    sources: [EC + " : art. 44, 52, 54 et 111.", SUC + " : art. 3, 4, 16 à 23, 30 à 39, 46, 54 à 64.", MAR + " : art. 126 à 135."]
+  });
+
+  /* 6. Enfant en danger */
+  defVie({
+    id: "enfant-danger", short: "Enfant en danger", title: "Signaler un enfant en danger",
+    situation: "Un enfant est en danger", desc: "Maltraitance, violences, abandon : à qui le dire, comment, anonymat", time: "2 min",
+    keys: /maltrait|enfant (en danger|battu|maltraité|abusé)|violence.*enfant|abus sexuel|signaler/i,
+    intro: "Si l'enfant est en danger immédiat, n'attendez pas : allez au poste de police ou de gendarmerie le plus proche.",
+    questions: [
+      { id: "urgence", type: "choice", q: "L'enfant est-il en danger immédiat ?", options: [
+        { v: "oui", t: "Oui, maintenant", tone: "danger" }, { v: "non", t: "Non, mais je suis inquiet" }
+      ] },
+      { id: "qui", type: "choice", q: "Qui êtes-vous ?", options: [
+        { v: "enfant", t: "Je suis l'enfant" }, { v: "parent", t: "Un parent ou un membre de la famille" },
+        { v: "pro", t: "Enseignant, soignant, travailleur social" }, { v: "autre", t: "Un voisin, un ami, une autre personne" }
+      ] }
+    ],
+    plan: function (a) {
+      var p = { title: a.qui === "enfant" ? "Tu as le droit d'être protégé" : "Comment signaler", ask: "Comment signaler la maltraitance d'un enfant ?", steps: [], points: [] };
+      p.verdict = a.urgence === "oui"
+        ? { tone: "urgent", t: "Allez tout de suite à la police ou à la gendarmerie.", d: "En urgence, l'officier de police judiciaire peut placer l'enfant en sécurité, le faire soigner à l'hôpital et demander un examen médical, avant même la saisine du juge (loi 2007-023, art. 73)." }
+        : { tone: "ok", t: a.qui === "enfant" ? "Tu peux le dire toi-même, à l'oral." : "Signaler est une obligation pour tous.", d: a.qui === "enfant" ? "La loi permet à l'enfant de signaler lui-même la maltraitance qu'il subit." : "Toute personne qui a connaissance d'une maltraitance, même tentée, doit la signaler, sous peine de sanctions." };
+      p.steps = [
+        { t: a.qui === "enfant" ? "Va voir une personne de confiance ou une autorité" : "Faites le signalement", d: "À l'oral ou par écrit, auprès du Fokontany, du Bureau d'assistance sociale de la commune, de la police, de la gendarmerie ou du tribunal le plus proche.", cite: "Loi 2007-023, art. 71" },
+        { t: "L'autorité doit agir", d: "Elle doit consigner le signalement dans un procès-verbal et saisir le tribunal, sous peine de poursuites.", cite: "Art. 71" },
+        { t: "Le juge des enfants protège l'enfant", d: "Après enquête sociale, il peut ordonner des mesures d'assistance éducative, faire soigner l'enfant, ou le placer chez une personne de confiance si ses parents sont les auteurs.", cite: "Art. 72 et 74" }
+      ];
+      p.points = [
+        { t: "Vous pouvez rester anonyme.", d: "L'autorité qui reçoit le signalement doit respecter l'anonymat demandé.", cite: "Art. 70" },
+        { t: "Ce qui compte comme maltraitance.", d: "Violences physiques ou morales, abandon, négligence, exploitation, violences sexuelles, et les punitions qui portent atteinte à l'intégrité de l'enfant, y compris à l'école.", cite: "Art. 67" }
+      ];
+      if (a.qui === "pro") p.points.unshift({ t: "Soignants : un rapport médico-légal.", d: "Le personnel médical qui découvre des signes de maltraitance doit dresser un rapport médico-légal.", cite: "Art. 69" });
+      if (a.qui !== "enfant") p.letter = {
+        title: "Signalement écrit", lede: "Si vous préférez écrire. Vous pouvez laisser votre nom vide pour rester anonyme.",
+        fields: [
+          { id: "dest", label: "Adressé à", init: "Monsieur le Chef du Fokontany", wide: true },
+          { id: "enfant", label: "L'enfant (nom, âge approximatif)", wide: true }, { id: "lieu", label: "Où il vit ou se trouve", wide: true },
+          { id: "faits", label: "Ce que vous avez vu ou entendu (dates, faits précis)", type: "textarea", wide: true },
+          { id: "nom", label: "Votre nom et un contact (facultatif)", wide: true }
+        ],
+        text: function (f) {
+          var or = function (x, d) { return (x || "").trim() || d; };
+          return or(f.dest, "[Destinataire]") + "\n\nObjet : signalement d'un enfant en danger (article 69 de la loi n° 2007-023)\n\nJe vous signale la situation de " + or(f.enfant, "[l'enfant]") + ", qui se trouve " + or(f.lieu, "[lieu]") + "." +
+            "\n\nFaits constatés :\n" + or(f.faits, "[description précise des faits]") +
+            "\n\nJe vous demande de consigner ce signalement sur procès-verbal et de saisir le tribunal compétent, conformément à l'article 71 de la même loi." +
+            (f.nom && f.nom.trim() ? "\n\n" + f.nom.trim() : "\n\nJe souhaite rester anonyme, comme le permet l'article 70.") + "\n\nLe " + fmtLong(today());
+        }
+      };
+      if (a.qui === "enfant") p.title = "Tu as le droit d'être protégé";
+      return p;
+    },
+    sources: [ENF + " : art. 2, 67 à 74."]
+  });
+
+  /* 7. Nationalité */
+  defVie({
+    id: "nationalite", short: "Nationalité", title: "Savoir si un enfant est malagasy",
+    situation: "Mon enfant est-il malagasy ?", desc: "Par le père ou par la mère, enfant trouvé, parent naturalisé", time: "2 min",
+    keys: /nationalit|malagasy|malgache|binational|double nationalit/i,
+    questions: [
+      { id: "parent", type: "choice", q: "Le père ou la mère de l'enfant est-il malagasy ?", options: [
+        { v: "pere", t: "Le père" }, { v: "mere", t: "La mère" }, { v: "deux", t: "Les deux" }, { v: "aucun", t: "Aucun des deux" }, { v: "inconnus", t: "Les parents sont inconnus" }
+      ] },
+      { id: "devenu", type: "choice", when: function (a) { return a.parent === "aucun"; }, q: "L'un des parents est-il en train de devenir malagasy ?", options: [ { v: "oui", t: "Oui" }, { v: "non", t: "Non" } ] }
+    ],
+    plan: function (a) {
+      var p = { title: "Nationalité de l'enfant", ask: "Comment se transmet la nationalité malagasy ?", points: [] };
+      if (a.parent === "pere" || a.parent === "mere" || a.parent === "deux") {
+        p.verdict = { tone: "ok", t: "L'enfant est malagasy.", d: "Est malagasy l'enfant né d'un père et/ou d'une mère malagasy. Cette règle s'applique aussi aux personnes nées avant la réforme de 2016." };
+        p.points.push({ t: "Par la mère aussi.", d: "Avant la réforme de 2016, la transmission par la mère n'était possible que dans certains cas. Désormais, elle se fait comme par le père.", cite: "Loi 2016-038, art. 3 et 9 nouveaux" });
+      } else if (a.parent === "inconnus") {
+        p.verdict = { tone: "ok", t: "L'enfant né à Madagascar de parents inconnus est malagasy, si l'on peut présumer qu'un parent au moins est malagasy.", d: "On tient compte notamment de son nom, de ceux qui l'élèvent, de son éducation et de son milieu. L'enfant trouvé à Madagascar est présumé y être né. Il perdrait cette nationalité si, pendant sa minorité, sa filiation était établie à l'égard d'un étranger." };
+        p.points.push({ t: "Fondement", cite: "Loi 2016-038, art. 11 nouveau" });
+      } else {
+        p.verdict = a.devenu === "oui"
+          ? { tone: "ok", t: "L'enfant mineur deviendra malagasy en même temps que son parent.", d: "Devient de plein droit malagasy l'enfant mineur dont le parent (à l'égard duquel la filiation est établie) acquiert la nationalité malagasy." }
+          : { tone: "warn", t: "Par sa filiation, l'enfant n'est pas malagasy.", d: "D'autres voies d'acquisition existent ; elles ne sont pas détaillées ici. Un professionnel peut vous orienter." };
+        if (a.devenu === "oui") p.points.push({ t: "Fondement", cite: "Loi 2016-038, art. 40 nouveau" });
+      }
+      p.points.push({ t: "Pour le prouver.", d: "On présente en général l'acte de naissance de l'enfant et celui du parent malagasy. La délivrance d'un certificat de nationalité n'est pas détaillée dans les textes chargés : renseignez-vous au tribunal de première instance." });
+      p.next = [["vie.naissance", "Déclarer une naissance"]];
+      return p;
+    },
+    sources: [NAT + " : art. 3, 9, 11 et 40 nouveaux."]
+  });
+
+
+  VIE_ORDER.forEach(function (id) {
+    var v = VIES[id];
+    addItem({ key: "flow:vie-" + id, kind: "flow", id: "vie-" + id, dom: "famille", title: v.situation, desc: v.desc, time: v.time, go: "vie." + id });
+  });
+  var LIFE = [
+    { go: "vie.deces", t: "Un proche est décédé", d: "Déclarer le décès, savoir qui hérite" },
+    { go: "vie.naissance", t: "Un enfant vient de naître", d: "Le déclarer à l'état civil, avant le bon jour" },
+    { go: "vie.mariage", t: "Nous voulons nous marier", d: "Papiers, délais, régime des biens" },
+    { go: "vie.separation", t: "Nous nous séparons", d: "Conciliation, divorce, enfants, biens" },
+    { go: "vie.sans-acte", t: "Je n'ai pas d'acte de naissance", d: "Le jugement supplétif, pas à pas" },
+    { go: "vie.enfant-danger", t: "Un enfant est en danger", d: "À qui le dire, comment, anonymat", tone: "urgent" },
+    { go: "flow", t: "Je veux démissionner", d: "Préavis, lettre, preuve de remise" },
+    { go: "urgent", t: "J'ai un problème maintenant", d: "Garde à vue, licenciement immédiat…", tone: "urgent" },
+    { go: "vie.nationalite", t: "Mon enfant est-il malagasy ?", d: "Nationalité par le père ou la mère" }
+  ];
+  function renderLife() {
+    var g = $("#lifeGrid");
+    if (!g || g.children.length) return;
+    LIFE.forEach(function (x) {
+      var b = el("button", "life-b" + (x.tone ? " " + x.tone : "")); b.type = "button"; b.setAttribute("data-go", x.go);
+      b.appendChild(el("span", "t", x.t)); b.appendChild(el("span", "d", x.d));
+      g.appendChild(b);
+    });
+  }
+  /** Parcours dont les mots-clés correspondent à la question posée à l'assistant (au plus un). */
+  function vieFor(q) {
+    for (var i = 0; i < VIE_ORDER.length; i++) { var v = VIES[VIE_ORDER[i]]; if (v.keys && v.keys.test(q)) return v; }
+    return null;
+  }
+
   /* ================= Serveur : API, compte, synchronisation ================= */
   // L'application reste entièrement utilisable sans serveur (mode invité, données sur l'appareil).
   // Quand l'API répond, on branche : assistant (/api/ask), connexion par e-mail, sauvegarde des dossiers,
@@ -3998,6 +4897,11 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       var done = gs.steps.filter(Boolean).length === (g.steps || []).length;
       cases.push({ cid: "guide-" + id, body: { title: g.title.slice(0, 200), kind: "guide", status: done ? "closed" : "open", data: { guide: id, steps: gs.steps, docs: gs.docs } } });
     });
+    Object.keys(state.vies || {}).forEach(function (id) {
+      var vs = state.vies[id];
+      if (!VIES[id] || !vs.started) return;
+      cases.push({ cid: "vie-" + id, body: { title: VIES[id].short, kind: "vie", status: vs.step >= vieQuestions(VIES[id], vs.a).length ? "closed" : "open", data: { vie: id, a: vs.a, step: vs.step, checks: vs.checks, letter: vs.letter } } });
+    });
     state.dates.forEach(function (d) {
       if (d.example) return;
       events.push({ cid: d.id, kase: d.dossier ? d.dossier : "", body: { title: String(d.title).slice(0, 200), due_on: d.date, remind_days: remindDays(d), source: d.dossier ? "dossier" : "manual", done: false } });
@@ -4100,11 +5004,14 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         if (!untouched(k)) return;
         var d = c.data || {};
         // Seuls les dossiers créés par l'application sont repris ; les autres restent intacts sur le serveur.
-        if (!c.client_id || !((c.kind === "demission" && d.flow) || (c.kind === "guide" && d.guide && GUIDE_BY_ID[d.guide]))) { delete seen[k]; return; }
+        if (!c.client_id || !((c.kind === "demission" && d.flow) || (c.kind === "guide" && d.guide && GUIDE_BY_ID[d.guide]) || (c.kind === "vie" && d.vie && VIES[d.vie]))) { delete seen[k]; return; }
         if (c.kind === "demission" && d.flow) {
           var nf = newFlow(); for (var x in d.flow) nf[x] = d.flow[x];
           nf.end = nf.end || newFlow().end;
           state.flow = nf;
+        } else if (c.kind === "vie" && d.vie && VIES[d.vie]) {
+          state.vies = state.vies || {};
+          state.vies[d.vie] = { a: d.a || {}, step: d.step || 0, started: true, checks: d.checks || {}, letter: d.letter || {} };
         } else if (c.kind === "guide" && d.guide && GUIDE_BY_ID[d.guide]) {
           state.guides = state.guides || {};
           state.guides[d.guide] = { steps: d.steps || [], docs: d.docs || [] };
@@ -4146,6 +5053,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         if (coll === "documents") state.docs = state.docs.filter(function (d) { return d.id !== cid; });
         if (coll === "cases" && cid === "demission") state.flow = newFlow();
         if (coll === "cases" && cid.indexOf("guide-") === 0 && state.guides) delete state.guides[cid.slice(6)];
+        if (coll === "cases" && cid.indexOf("vie-") === 0 && state.vies) delete state.vies[cid.slice(4)];
         delete sync.map[k];
       });
       // Empreintes recalculées sur l'état fusionné : rien ne repart au serveur sans modification locale.
@@ -4344,6 +5252,14 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     body.textContent = "";
     body.appendChild(el("p", "hint", "Recherche dans les textes de loi…"));
     $("#askSources").textContent = ""; $("#askSrcLabel").textContent = "Sources";
+    var vf = vieFor(q), box2 = $("#askVie");
+    box2.textContent = "";
+    box2.hidden = !vf;
+    if (vf) {
+      var tx = el("span"); tx.appendChild(el("strong", "", vf.situation + " ?")); tx.appendChild(document.createTextNode("Un parcours guidé vous donne vos dates limites et vos démarches."));
+      var gb = el("button", "btn btn-sm", "Commencer le parcours"); gb.type = "button"; gb.setAttribute("data-go", "vie." + vf.id);
+      box2.appendChild(tx); box2.appendChild(gb);
+    }
     brief.setAttribute("aria-busy", "true");
     go("ask");
     request("POST", "/api/ask", { question: q }).then(function (r) {

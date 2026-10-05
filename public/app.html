@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
-<link rel="stylesheet" href="/assets/app.a3bbdddfb8.css">
+<link rel="stylesheet" href="/assets/app.fd295a24aa.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -84,6 +84,12 @@
               <button class="send" type="submit" aria-label="Lancer la recherche"><svg class="ico"><use href="#i-arrow"/></svg></button>
             </form>
             <div class="suggest" id="suggest"></div>
+          </div>
+
+          <div class="section life">
+            <div class="section-head"><h2>Qu'est-ce qui vous arrive ?</h2></div>
+            <p class="sub" style="margin-top:4px">Choisissez votre situation : ZOU pose quelques questions, puis vous donne vos dates limites, vos démarches et vos papiers.</p>
+            <div class="life-grid" id="lifeGrid"></div>
           </div>
 
           <div class="section">
@@ -225,7 +231,7 @@
           </div>
           <div id="textsTable"></div>
           <h2 class="next-title" style="margin-top:48px">À venir</h2>
-          <p class="sub" style="margin-top:6px">Code civil, Code de la famille et des successions, Code pénal, Code de commerce, droit des sociétés, droit fiscal, état civil et nationalité. Ces textes élargiront les services à de nouveaux domaines.</p>
+          <p class="sub" style="margin-top:6px">Code pénal, Code de commerce, droit des sociétés et des baux commerciaux, droit fiscal. Ces textes élargiront les services à de nouveaux domaines.</p>
         </section>
 
         <!-- PAGE -->
@@ -377,6 +383,7 @@
                 <span class="label">Réponse</span>
                 <div id="askBody"></div>
               </div>
+              <div class="ask-vie" id="askVie" hidden></div>
               <form class="ask mt" id="askAgain" role="search">
                 <label for="askAgainInput" class="sr">Une autre question</label>
                 <textarea id="askAgainInput" rows="2" placeholder="Posez une autre question"></textarea>
@@ -396,6 +403,16 @@
               <div id="askSources"></div>
             </aside>
           </div>
+        </section>
+
+        <section data-view="vie" aria-labelledby="h-vie" hidden>
+          <div class="vie-top">
+            <button class="link-btn back" id="vieBack" data-go="services.famille"><svg class="ico ico-s"><use href="#i-back"/></svg>Famille</button>
+            <h1 class="sr" id="h-vie" tabindex="-1">Parcours</h1>
+            <div class="vie-meta"><span class="label" id="vieDom">Famille</span><span id="vieStep"></span></div>
+            <div class="vie-bar" id="vieBar" role="progressbar" aria-label="Avancement des questions" aria-valuemin="1"><span></span></div>
+          </div>
+          <div id="vieBody" aria-live="polite"></div>
         </section>
 
         <section data-view="answer" aria-labelledby="h-answer" hidden>
@@ -1081,7 +1098,7 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.ae51454825.js"></script>
+<script src="/assets/app.84d60d8104.js"></script>
 <script src="/register-sw.js"></script>
 </body>
 </html>
