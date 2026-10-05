@@ -16,10 +16,13 @@ body = body.trim();
 const hash = (s) => createHash("sha256").update(s).digest("hex").slice(0, 10);
 const cssName = `app.${hash(style[1])}.css`;
 const jsName = `app.${hash(script[1])}.js`;
+const themeSrc = readFileSync(new URL("./theme-init.js", import.meta.url), "utf8");
+const themeName = `theme.${hash(themeSrc)}.js`;
 mkdirSync(new URL("../public/assets/", import.meta.url), { recursive: true });
-for (const f of readdirSync(new URL("../public/assets/", import.meta.url))) if (/^app\..*\.(css|js)$/.test(f)) rmSync(new URL(`../public/assets/${f}`, import.meta.url));
+for (const f of readdirSync(new URL("../public/assets/", import.meta.url))) if (/^(app|theme)\..*\.(css|js)$/.test(f)) rmSync(new URL(`../public/assets/${f}`, import.meta.url));
 writeFileSync(new URL(`../public/assets/${cssName}`, import.meta.url), style[1].trim() + "\n");
 writeFileSync(new URL(`../public/assets/${jsName}`, import.meta.url), script[1].trim() + "\n");
+writeFileSync(new URL(`../public/assets/${themeName}`, import.meta.url), themeSrc.trim() + "\n");
 
 const title = (src.match(/<title>([^<]*)<\/title>/) || [, "ZOU"])[1];
 const desc = (src.match(/<meta name="description" content="([^"]*)"/) || [, ""])[1];
@@ -32,7 +35,8 @@ const html = `<!doctype html>
 <title>${title}</title>
 <meta name="description" content="${desc}">
 <meta name="theme-color" content="#FFFFFF">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
+<script src="/assets/${themeName}"></script>
 <meta name="robots" content="noindex, nofollow">
 <meta property="og:site_name" content="ZOU">
 <meta property="og:title" content="ZOU. Des réponses maintenant.">

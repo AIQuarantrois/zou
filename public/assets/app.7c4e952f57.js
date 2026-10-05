@@ -1187,10 +1187,10 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   var toastEl = $("#toast");
   var toastTimer;
   var SPACE = [["cases", "Dossiers"], ["vault", "Coffre"], ["agenda", "Agenda"]];
-  var VALID = { home: 1, services: 1, guide: 1, tool: 1, model: 1, answer: 1, ask: 1, vie: 1, flow: 1, cases: 1, vault: 1, agenda: 1, pros: 1, prospace: 1, account: 1, urgent: 1, where: 1, texts: 1, page: 1 };
+  var VALID = { home: 1, services: 1, guide: 1, tool: 1, model: 1, answer: 1, ask: 1, vie: 1, flow: 1, cases: 1, vault: 1, agenda: 1, pros: 1, prospace: 1, account: 1, display: 1, urgent: 1, where: 1, texts: 1, page: 1 };
   var TITLES = {
     home: "Accueil", services: "Services", answer: "Combien de préavis pour démissionner", ask: "Réponse", flow: "Démissionner", cases: "Mes dossiers", vault: "Mon coffre",
-    agenda: "Mon agenda", pros: "Professionnels", prospace: "Espace professionnel", account: "Mon compte", urgent: "Urgence", where: "Où aller", texts: "Textes juridiques"
+    agenda: "Mon agenda", pros: "Professionnels", prospace: "Espace professionnel", account: "Mon compte", display: "Affichage et lisibilité", urgent: "Urgence", where: "Où aller", texts: "Textes juridiques"
   };
   var cur = { name: "home", arg: "" };
   var hashSet = null;
@@ -1253,7 +1253,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     var inServices = name === "services" || name === "guide" || name === "tool" || name === "model";
     if (inServices) $("#megaBtn").setAttribute("aria-current", "page"); else $("#megaBtn").removeAttribute("aria-current");
     var tkey = key;
-    if (name === "urgent" || name === "where" || name === "texts" || name === "account" || name === "page") tkey = "more";
+    if (name === "urgent" || name === "where" || name === "texts" || name === "account" || name === "page" || name === "display") tkey = "more";
     if (inServices) tkey = "services";
     if (name === "answer" || name === "ask" || name === "vie") tkey = "home";
     $$("[data-tab]").forEach(function (b) {
@@ -1294,6 +1294,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (name === "where") initWhere();
     if (name === "prospace") { renderPreview(); loadPro(); }
     if (name === "account") renderAccount();
+    if (name === "display") renderDisplay();
     renderAll();
     var title = TITLES[name] || "";
     if (name === "guide") title = GUIDE_BY_ID[arg].title;
@@ -4363,6 +4364,79 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     box.appendChild(el("p", "vie-disclaimer", "Information juridique générale tirée des textes cités, pas un avis personnalisé. En cas de doute, faites-vous conseiller par un professionnel."));
     var rv = VIE_REVIEW[v.id];
     box.appendChild(el("p", "vie-verif", "Plan rédigé en " + PLANS_DATE + " d'après les textes cités. " + (rv ? "Relu par " + rv.by + " (" + rv.date + ")." : "Relecture par un juriste : à venir.")));
+  }
+
+  /* ================= Affichage et lisibilité : thème, taille du texte, contraste ================= */
+  // Les réglages restent sur l'appareil. Le script d'amorçage (scripts/theme-init.js, chargé dans <head>) les applique avant
+  // le premier affichage, pour éviter un éclair de thème clair ; applyPrefs() prend ensuite le relais.
+  var PREFS_KEY = "zou_prefs_v1";
+  var PREF_DEFAULT = { theme: "auto", size: "normal", contrast: false };
+  var prefs = (function () {
+    try { var o = JSON.parse(localStorage.getItem(PREFS_KEY) || "null"); if (o && typeof o === "object") return Object.assign({}, PREF_DEFAULT, o); } catch (e) { /* réglages par défaut */ }
+    return Object.assign({}, PREF_DEFAULT);
+  })();
+  var THEME_OPTS = [["auto", "Automatique", "Suit le réglage de votre appareil"], ["light", "Clair", "Fond blanc"], ["dark", "Sombre", "Fond foncé, plus reposant le soir"]];
+  var SIZE_OPTS = [["normal", "Normal", 1], ["large", "Grand", 1.15], ["xlarge", "Très grand", 1.3]];
+  function darkNow() { return prefs.theme === "dark" || (prefs.theme === "auto" && !!window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches); }
+  function applyPrefs() {
+    var r = document.documentElement;
+    if (prefs.theme === "light" || prefs.theme === "dark") r.setAttribute("data-theme", prefs.theme); else r.removeAttribute("data-theme");
+    if (prefs.size === "large" || prefs.size === "xlarge") r.setAttribute("data-size", prefs.size); else r.removeAttribute("data-size");
+    if (prefs.contrast) r.setAttribute("data-contrast", "high"); else r.removeAttribute("data-contrast");
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute("content", darkNow() ? "#0C1420" : "#FFFFFF");
+  }
+  function setPref(k, v) {
+    prefs[k] = v;
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) { /* ignore */ }
+    applyPrefs(); renderDisplay();
+  }
+  if (window.matchMedia) {
+    var mqDark = window.matchMedia("(prefers-color-scheme: dark)");
+    var onDark = function () { if (prefs.theme === "auto") applyPrefs(); };
+    if (mqDark.addEventListener) mqDark.addEventListener("change", onDark); else if (mqDark.addListener) mqDark.addListener(onDark);
+  }
+  function renderDisplay() {
+    var box = $("#prefsBox");
+    if (!box) return;
+    var had = document.activeElement && box.contains(document.activeElement) ? document.activeElement.getAttribute("data-pref") + ":" + document.activeElement.getAttribute("data-val") : "";
+    box.textContent = "";
+    function group(title, hint, key, opts) {
+      var fs = el("fieldset"), lg = el("legend", "", title);
+      fs.appendChild(lg);
+      if (hint) fs.appendChild(el("p", "pref-hint", hint));
+      var row = el("div", "pref-opts"); row.setAttribute("role", "radiogroup"); row.setAttribute("aria-label", title);
+      opts.forEach(function (o) {
+        var b = el("button", "pref-opt"); b.type = "button";
+        b.setAttribute("role", "radio"); b.setAttribute("aria-checked", prefs[key] === o[0] ? "true" : "false");
+        b.setAttribute("data-pref", key); b.setAttribute("data-val", o[0]);
+        var t = el("span", "pref-t", o[1]);
+        if (key === "size") t.style.fontSize = Math.round(17 * o[2]) + "px";
+        b.appendChild(t);
+        if (o[3] && key !== "size") b.appendChild(el("span", "pref-d", o[3]));
+        b.addEventListener("click", function () { setPref(key, o[0]); });
+        row.appendChild(b);
+      });
+      fs.appendChild(row);
+      box.appendChild(fs);
+    }
+    group("Thème", "Le thème sombre repose les yeux le soir et économise la batterie sur certains écrans.", "theme", THEME_OPTS.map(function (o) { return [o[0], o[1], 0, o[2]]; }));
+    group("Taille du texte", "S'applique à toute l'application.", "size", SIZE_OPTS);
+    var cf = el("fieldset"); cf.appendChild(el("legend", "", "Contraste"));
+    var sw = el("button", "pref-opt"); sw.type = "button";
+    sw.setAttribute("role", "switch"); sw.setAttribute("aria-checked", prefs.contrast ? "true" : "false"); sw.setAttribute("data-pref", "contrast"); sw.setAttribute("data-val", "toggle");
+    sw.appendChild(el("span", "pref-t", "Contraste renforcé"));
+    sw.appendChild(el("span", "pref-d", "Textes secondaires plus foncés (ou plus clairs en mode sombre) et contours plus marqués."));
+    sw.addEventListener("click", function () { setPref("contrast", !prefs.contrast); });
+    cf.appendChild(sw); box.appendChild(cf);
+    var sm = el("div", "pref-sample");
+    sm.appendChild(el("strong", "", "Exemple de plan"));
+    sm.appendChild(el("p", "", "Demandez le renouvellement avant le 23 janvier 2027. Trois mois avant l'expiration de votre visa."));
+    box.appendChild(sm);
+    var rs = el("button", "link-btn", "Rétablir les réglages d'origine"); rs.type = "button";
+    rs.addEventListener("click", function () { prefs = Object.assign({}, PREF_DEFAULT); setPref("theme", "auto"); });
+    box.appendChild(rs);
+    if (had) { var f = box.querySelector('[data-pref="' + had.split(":")[0] + '"][data-val="' + had.split(":")[1] + '"]'); if (f) f.focus(); }
   }
 
   /* ================= Impression, PDF et partage ================= */
