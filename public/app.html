@@ -44,7 +44,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
-<link rel="stylesheet" href="/assets/app.bf18238dfe.css">
+<link rel="stylesheet" href="/assets/app.1f59c2615e.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -95,6 +95,37 @@
   </div>
   <div class="mega" id="mega" hidden><div class="mega-in" id="megaIn"></div></div>
 </header>
+
+<nav class="side" id="sideNav" aria-label="Navigation">
+  <ul class="side-main">
+    <li><a class="side-i" href="#home" data-go="home" data-side="home"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg><span>Accueil</span></a></li>
+    <li><a class="side-i" href="#services" data-go="services" data-side="services"><svg class="ico" aria-hidden="true"><use href="#i-grid"/></svg><span>Services</span></a>
+      <ul class="side-sub" id="sideGroups" aria-label="Thèmes"></ul></li>
+    <li><a class="side-i" href="#cases" data-go="cases" data-side="space"><svg class="ico" aria-hidden="true"><use href="#i-case"/></svg><span>Mon espace</span></a>
+      <ul class="side-sub" aria-label="Mon espace">
+        <li><a href="#cases" data-go="cases" data-sub="cases">Dossiers</a></li>
+        <li><a href="#vault" data-go="vault" data-sub="vault">Coffre</a></li>
+        <li><a href="#agenda" data-go="agenda" data-sub="agenda">Agenda</a></li>
+      </ul></li>
+    <li><a class="side-i" href="#pros" data-go="pros" data-side="pros"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg><span>Professionnels</span></a></li>
+    <li class="rail-only"><button class="side-i" type="button" id="sideMore" data-act="more-toggle" data-side="more" aria-expanded="false" aria-controls="moreSheet"><svg class="ico" aria-hidden="true"><use href="#i-more"/></svg><span>Plus</span></button></li>
+  </ul>
+  <div class="side-more">
+    <p class="side-h">Aide</p>
+    <ul>
+      <li><a href="#urgent" data-go="urgent" data-sub="urgent">Urgence</a></li>
+      <li><a href="#where" data-go="where" data-sub="where">Où aller</a></li>
+      <li><a href="#texts" data-go="texts" data-sub="texts">Textes juridiques</a></li>
+      <li><a href="#page.help" data-go="page.help" data-sub="page.help">Centre d'aide</a></li>
+    </ul>
+    <p class="side-h">Réglages</p>
+    <ul>
+      <li><a href="#display" data-go="display" data-sub="display">Affichage et lisibilité</a></li>
+      <li><a href="#account" data-go="account" data-sub="account">Mon compte</a></li>
+      <li><a href="#prospace" data-go="prospace" data-sub="prospace">Espace professionnel</a></li>
+    </ul>
+  </div>
+</nav>
 
 <main class="main" id="main" tabindex="-1">
   <div class="wrap">
@@ -1163,7 +1194,7 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.c36bb87dd3.js"></script>
+<script src="/assets/app.d0d8d1318a.js"></script>
 <script src="/register-sw.js"></script>
 </body>
 </html>

@@ -44,7 +44,7 @@
     gt1y: [[10, "10 jours"], [30, "1 mois"], [45, "1 mois et demi"], [75, "2 mois et demi"], [120, "4 mois"]],
     gt5y: [[30, "1 mois"], [45, "1 mois et demi"], [60, "2 mois"], [90, "3 mois"], [180, "6 mois"]]
   };
-  var GROUPS = [
+  var CAT_GROUPS = [
     "Manœuvres et employés aux tâches simples (M1, M2, 1A, 1B).",
     "Ouvriers et employés qualifiés, sans responsabilité particulière (OS1 à OS3, OP1, 2A à 3B).",
     "Ouvriers très qualifiés, employés qualifiés avec initiative, cadres débutants (OP2, OP3, 4A à 5B).",
@@ -1211,7 +1211,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     });
   }
   function backEl() {
-    var v = $("[data-view]:not([hidden])");
+    var v = $('[data-view="' + cur.name + '"]');
     if (!v) return null;
     var b = v.querySelector(".back:not(.vie-backstep)");
     if (b) return b;
@@ -1222,8 +1222,8 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (titleObs) { titleObs.disconnect(); titleObs = null; }
     var ht = $("#headTitle");
     ht.classList.remove("on");
-    if (!$("#siteHead").classList.contains("sub")) return;
-    var v = $("[data-view]:not([hidden])");
+    if (!$("#siteHead").classList.contains("is-stack")) return;
+    var v = $('[data-view="' + cur.name + '"]');
     var h = v && v.querySelector("h1:not(.sr), h2.vie-title");
     // Question d'un parcours : le grand titre est la question, le titre d'écran reste affiché.
     if (!h || h.tagName === "H2" || !("IntersectionObserver" in window)) { ht.classList.add("on"); return; }
@@ -1233,7 +1233,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   }
   function updateHead(name, title) {
     var sub = depthOf(name) === 1;
-    $("#siteHead").classList.toggle("sub", sub);
+    $("#siteHead").classList.toggle("is-stack", sub);
     document.body.classList.toggle("is-sub", sub);
     var b = sub ? backEl() : null;
     var label = b ? b.textContent.trim() : "Retour";
@@ -1248,6 +1248,32 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (b) b.click();
     else if (navCount > 0) history.back();
     else go("home");
+  }
+  /* Deux panneaux sur grand écran : la liste (Services, Dossiers) reste à gauche, le détail s'ouvre à droite */
+  var SPLIT_BASE = { services: 1, cases: 1 }, SPLIT_DETAIL = { guide: 1, tool: 1, model: 1, vie: 1, flow: 1 };
+  var splitBase = "", mqWide = window.matchMedia ? window.matchMedia("(min-width: 1200px)") : null;
+  function isWide() { return !!(mqWide && mqWide.matches); }
+  function applySplit(prev) {
+    var wrap = $("#main > .wrap");
+    if (SPLIT_BASE[cur.name]) splitBase = cur.name;
+    else if (!SPLIT_DETAIL[cur.name] || !(SPLIT_BASE[prev] || (SPLIT_DETAIL[prev] && splitBase))) splitBase = "";
+    var on = isWide() && !!splitBase && !!SPLIT_DETAIL[cur.name];
+    wrap.classList.toggle("split", on);
+    views.forEach(function (v) {
+      var n = v.getAttribute("data-view");
+      v.classList.toggle("pane-list", on && n === splitBase);
+      v.classList.toggle("pane-detail", on && n === cur.name);
+      if (n !== cur.name && n === splitBase) v.hidden = !on;
+    });
+    if (!on) return;
+    var token = curToken();
+    $$('[data-view="' + splitBase + '"] [data-go]').forEach(function (b) {
+      if (b.getAttribute("data-go") === token) b.setAttribute("aria-current", "true"); else if (b.getAttribute("aria-current") === "true") b.removeAttribute("aria-current");
+    });
+  }
+  if (mqWide) {
+    var onWide = function () { applySplit(splitBase); };
+    if (mqWide.addEventListener) mqWide.addEventListener("change", onWide); else if (mqWide.addListener) mqWide.addListener(onWide);
   }
   /* Onglets : chacun garde son dernier écran et sa position ; toucher l'onglet actif remonte, puis revient à sa racine */
   var tabMem = {};
@@ -1278,7 +1304,8 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     var mb = $("#megaBtn"), ob = $("#moreBtn");
     var wasMega = !$("#mega").hidden, wasMore = !$("#moreSheet").hidden;
     $("#mega").hidden = true; mb.setAttribute("aria-expanded", "false");
-    $("#moreSheet").hidden = true; ob.setAttribute("aria-expanded", "false");
+    $("#moreSheet").hidden = true; ob.setAttribute("aria-expanded", "false"); $("#sideMore").setAttribute("aria-expanded", "false");
+    if (!ob.offsetParent) ob = $("#sideMore");
     $("#scrim").hidden = true;
     if (returnFocus) { if (wasMega) mb.focus(); else if (wasMore) ob.focus(); }
   }
@@ -1324,6 +1351,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (open) return;
     panel.hidden = false;
     btn.setAttribute("aria-expanded", "true");
+    if (!isMega) $("#sideMore").setAttribute("aria-expanded", "true");
     if (!isMega) $("#scrim").hidden = false;
   }
 
@@ -1366,6 +1394,17 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       if (b.getAttribute("data-tab") === tkey) b.setAttribute("aria-current", "page");
       else b.removeAttribute("aria-current");
     });
+    $$("[data-side]").forEach(function (b) {
+      if (b.getAttribute("data-side") === tkey && b.tagName === "A") b.setAttribute("aria-current", "page");
+      else b.removeAttribute("aria-current");
+    });
+    var token = arg ? name + "." + arg : name, subTok = token;
+    if (name === "flow") subTok = "cases";
+    if (name === "services" && arg) subTok = "services.g-" + (arg.indexOf("g-") === 0 ? arg.slice(2) : GROUP_OF[arg] || "");
+    $$("[data-sub]").forEach(function (b) {
+      if (b.getAttribute("data-go") === subTok) b.setAttribute("aria-current", "page");
+      else b.removeAttribute("aria-current");
+    });
     var sub = name === "flow" ? "cases" : name;
     $$("[data-subnav] button").forEach(function (b) {
       if (b.getAttribute("data-go") === sub) b.setAttribute("aria-current", "page");
@@ -1403,6 +1442,8 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (name === "account") renderAccount();
     if (name === "display") renderDisplay();
     renderAll();
+    applySplit(prev);
+    setNav(name, arg); // la liste des thèmes de la barre latérale vient d'être reconstruite
     var title = TITLES[name] || "";
     if (name === "guide") title = GUIDE_BY_ID[arg].title;
     if (name === "tool") title = TOOLREG[arg].title;
@@ -1418,9 +1459,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       var d0 = depthOf(prev), d1 = depthOf(name);
       dir = d1 > d0 ? "push" : d1 < d0 ? "pop" : opts.fromHash ? "pop" : d1 === 1 && (prev !== name || name === "vie") ? "push" : "none";
     }
-    if (booted && dir !== "none") slideIn($("[data-view]:not([hidden])"), dir);
+    if (booted && dir !== "none") slideIn($('[data-view="' + name + '"]'), dir);
     if (booted && !opts.noFocus) {
-      var h = $("[data-view]:not([hidden]) h1");
+      var h = $('[data-view="' + name + '"] h1');
       if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
     }
     if (name === "services" && arg === "search" && booted) { var q = $("#svcTable input[type=search]"); if (q) q.focus(); }
@@ -1452,7 +1493,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       var s = dayText(n.days);
       if (dt.value) s += " · fin indicative le " + fmtLong(addDays(parse(dt.value), n.days));
       sub.textContent = s;
-      grpHint.textContent = GROUPS[parseInt(grp.value, 10)];
+      grpHint.textContent = CAT_GROUPS[parseInt(grp.value, 10)];
       senHint.textContent = sen.value === "gt1y" ? SEN_HINT : "";
     }
     [sen, grp, dt].forEach(function (e) { e.addEventListener("input", run); e.addEventListener("change", run); });
@@ -1813,7 +1854,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     var n = noticeOf(s.sen, s.grp);
     $("#f-resValue").textContent = n.label;
     $("#f-resSub").textContent = dayText(n.days) + " · fin indicative le " + fmtLong(addDays(parse(s.recv), n.days));
-    $("#f-grpHint").textContent = GROUPS[parseInt(s.grp, 10)];
+    $("#f-grpHint").textContent = CAT_GROUPS[parseInt(s.grp, 10)];
     $("#f-senHint").textContent = s.sen === "gt1y" ? SEN_HINT : "";
     /* step 3 */
     renderSheet();
@@ -1954,7 +1995,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         if (v.date) { end = addDays(parse(v.date), n.days); sub += " · fin indicative le " + fmtLong(end); }
         return {
           value: n.label, sub: sub,
-          hints: { sen: v.sen === "gt1y" ? SEN_HINT : "", grp: GROUPS[parseInt(v.grp, 10)] },
+          hints: { sen: v.sen === "gt1y" ? SEN_HINT : "", grp: CAT_GROUPS[parseInt(v.grp, 10)] },
           note: "Le décret n° 2007-009 a été pris sous l'ancien Code du travail. L'article 38 du Code de 2024 prévoit un décret de même objet : confirmez au Journal officiel que celui-ci reste en vigueur.",
           share: "Mon préavis : " + n.label + " (" + dayText(n.days) + ").",
           agenda: end ? { title: "Fin du préavis", date: iso(end), remind: 3 } : null
@@ -2875,6 +2916,16 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       li.appendChild(a);
       fd.appendChild(li);
     });
+    var sg = $("#sideGroups");
+    sg.textContent = "";
+    GROUPS.forEach(function (g) {
+      var li = el("li"), a = el("a", "", g.t);
+      a.href = "#services.g-" + g.key;
+      a.setAttribute("data-go", "services.g-" + g.key);
+      a.setAttribute("data-sub", "");
+      li.appendChild(a);
+      sg.appendChild(li);
+    });
   }
 
   /* ================= Services hub ================= */
@@ -3299,7 +3350,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         li.appendChild(b); ul.appendChild(li);
       });
     }
-    setBadge($$(".tab[data-tab='space']"), n);
+    setBadge($$(".tab[data-tab='space'], .side-i[data-side='space']"), n);
     setBadge($$(".subnav button[data-go='agenda']"), n);
     setBadge($$(".head-link[data-nav='space']"), n);
   }
