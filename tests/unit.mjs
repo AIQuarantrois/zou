@@ -66,3 +66,7 @@ assert.match(rec.chunks[4].text, /dès sa publication\.\nen application de la lo
 const single = parseText("loi.txt", "# Code\n\nLOI n° 2024-014\nportant Code du travail\n\nArticle premier. Champ.\nArticle 2. Suite.");
 assert.deepEqual(single.chunks.map((c) => c.heading), [null, null, null]);
 console.log("  ok recueil : chaque article rattaché à son texte ; texte unique sans répétition");
+
+const spaced = parseText("commercant.txt", "# Statut\n\nARTICLE PREMIER : Objet du texte de loi modifié.\nArticle 1-1: Définition du commerçant.\nArticle 1- 3 : Actes de commerce par la forme.\nArticle2-3 : Incompatibilités prévues par un texte.");
+assert.deepEqual(spaced.chunks.map((c) => [c.article, c.heading]), [["Art. PREMIER", null], ["Art. 1-1", null], ["Art. 1-3", null], ["Art. 2-3", null]]);
+console.log("  ok numéros d'articles avec espace (« Article 1- 3 ») : reconnus, sans basculer en recueil");

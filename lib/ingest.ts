@@ -57,12 +57,12 @@ export function validateText(v: any): LegalText {
 // ---------- Découpage automatique d'un texte brut (.txt / .md) ----------
 
 // « Article 12 », « Art. 12 bis », « ARTICLE PREMIER », « Article 12-1 . - Texte… » (le texte peut suivre sur la même ligne).
-const ARTICLE = /^\s*(?:#{1,6}\s*)?(?:\*\*)?((?:Art(?:icle)?|ART(?:ICLE)?)\.?\s*(?:premier|Premier|PREMIER|1er|1ER|\d+(?:[-.]\d+)*(?:\s*(?:bis|ter|quater|quinquies|sexies))?))(?:\*\*)?\s*(?:$|[.:\-–—°]+\s*(.*)$)/;
+const ARTICLE = /^\s*(?:#{1,6}\s*)?(?:\*\*)?((?:Art(?:icle)?|ART(?:ICLE)?)\.?\s*(?:premier|Premier|PREMIER|1er|1ER|\d+(?:\s?[-.]\s?\d+)*(?:\s*(?:bis|ter|quater|quinquies|sexies))?))(?:\*\*)?\s*(?:$|[.:\-–—°]+\s*(.*)$)/;
 // « TITRE I », « Chapitre premier », « SECTION 2 »… : intitulé des articles qui suivent.
 const HEADING = /^\s*(?:#{1,6}\s*)?(?:\*\*)?(?:LIVRE|TITRE|CHAPITRE|SECTION|SOUS-SECTION|Livre|Titre|Chapitre|Section|Sous-section)\s+(?:[IVXLC]+(?:er|ER)?|\d+|premier|Premier|PREMIER|unique|UNIQUE)\b/;
 // « Loi n° 2008-013 du 23 juillet 2008… », « Décret n° 2010-233… » : début d'un nouveau texte dans un recueil.
 const ACT = /^\s*[-–—_]*\s*(?:[IVX]+\.\d+\.?\s*)?((?:LOI|Loi|DÉCRET|DECRET|Décret|ORDONNANCE|Ordonnance|ARRÊTÉ|ARRETE|Arrêté)\b(?:\s+[\wéèê-]+)?\s*(?:[Nn]\s*[°º]\s*\d|\d{2,4}\s*[.\-–]\s*[\dO]{2,4}\b).*)$/;
-const FIRST_ARTICLE = /^\s*(?:Art(?:icle)?|ART(?:ICLE)?)\.?\s*(?:premier|Premier|PREMIER|1er|1ER|1)\b(?![-.]\d)/;
+const FIRST_ARTICLE = /^\s*(?:Art(?:icle)?|ART(?:ICLE)?)\.?\s*(?:premier|Premier|PREMIER|1er|1ER|1)\b(?!\s?[-.]\s?\d)/;
 
 /** Nom de fichier → identifiant de source : « Code du travail.txt » → « code-du-travail ». */
 export function slug(filename: string): string {
@@ -121,7 +121,8 @@ export function parseText(filename: string, raw: string): LegalText {
     const art = line.match(ARTICLE);
     const actLine = recueil && !art && t.length <= 180 && !/\.{4,}|…{2,}/.test(t) && (!prev || /[.;:)»]$/.test(prev) || !/[a-zà-ÿ]/.test(prev) || extend !== null) ? line.match(ACT) : null;
     if (art) {
-      cur = { article: art[1].replace(/\s+/g, " ").replace(/^art(?:icle)?\.?\s*/i, "Art. "), heading: label(), body: art[2] ? [art[2]] : [] };
+      const num = art[1].replace(/\s+/g, " ").replace(/^art(?:icle)?\.?\s*/i, "").replace(/\s?([-.])\s?(?=\d)/g, "$1");
+      cur = { article: "Art. " + num, heading: label(), body: art[2] ? [art[2]] : [] };
       found.push(cur);
       extend = null;
     } else if (actLine) {
