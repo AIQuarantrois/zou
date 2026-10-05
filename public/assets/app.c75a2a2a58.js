@@ -3954,6 +3954,8 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         }
         break;
       case "model-copy": copyText(modelText(), "Lettre copiée."); break;
+      case "model-print": printDoc(letterNode(modelText()), "letter", MODELREG[cur.arg] ? MODELREG[cur.arg].title : "Lettre"); break;
+      case "print-letter": printDoc(letterNode(letterText()), "letter", "Lettre de démission"); break;
       case "model-save": modelSave(); break;
       case "guide-dl-add":
         var g = GUIDE_BY_ID[cur.arg], i = parseInt(act.getAttribute("data-i"), 10), dd = act.getAttribute("data-date");
@@ -4230,6 +4232,14 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     var h1 = el("h1", "h-display", p.title);
     head.appendChild(h1);
     if (p.lede) head.appendChild(el("p", "lede", p.lede));
+    var tools = el("div", "vie-tools"), shareRow = el("div", "vie-share");
+    shareRow.hidden = true;
+    var prB = el("button", "link-btn small", "Imprimer ou enregistrer en PDF"); prB.type = "button";
+    prB.addEventListener("click", function () { printDoc(planNode(v, s, p), "plan", "Plan - " + p.title); });
+    var shB = el("button", "link-btn small", "Partager"); shB.type = "button";
+    shB.addEventListener("click", function () { sharePlan(v, p, shareRow); });
+    tools.appendChild(prB); tools.appendChild(shB);
+    head.appendChild(tools); head.appendChild(shareRow);
     box.appendChild(head);
 
     if (p.verdict) {
@@ -4355,6 +4365,189 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     box.appendChild(el("p", "vie-verif", "Plan rédigé en " + PLANS_DATE + " d'après les textes cités. " + (rv ? "Relu par " + rv.by + " (" + rv.date + ")." : "Relecture par un juriste : à venir.")));
   }
 
+  /* ================= Impression, PDF et partage ================= */
+  // « Enregistrer en PDF » passe par la boîte d'impression du navigateur : on construit une mise en page A4 dédiée (#printDoc)
+  // et le reste de l'écran est masqué à l'impression (voir @page et @media print). Le nom du PDF vient du titre de la page.
+  function svgUse(id, cls) {
+    var sv = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    sv.setAttribute("class", cls);
+    sv.setAttribute("role", "img"); sv.setAttribute("aria-label", "ZOU");
+    var u = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    u.setAttribute("href", "#" + id);
+    sv.appendChild(u);
+    return sv;
+  }
+  function printDoc(node, kind, title) {
+    var old = $("#printDoc"); if (old) old.remove();
+    var wrap = el("div", "pd-kind-" + kind); wrap.id = "printDoc";
+    wrap.appendChild(node);
+    document.body.appendChild(wrap);
+    var prevTitle = document.title;
+    document.title = "ZOU - " + title;
+    document.body.classList.add("printing");
+    function done() {
+      var w = $("#printDoc"); if (w) w.remove();
+      document.body.classList.remove("printing");
+      document.title = prevTitle;
+      window.removeEventListener("afterprint", done);
+    }
+    window.addEventListener("afterprint", done);
+    setTimeout(function () { window.print(); }, 60);
+  }
+  /** Les « [champs à compléter] » d'une lettre deviennent des blancs à remplir à la main. */
+  function withBlanks(parent, text) {
+    text.split(/(\[[^\]]+\])/).forEach(function (part) {
+      if (/^\[[^\]]+\]$/.test(part)) parent.appendChild(el("span", "pd-blank", part.slice(1, -1)));
+      else if (part) parent.appendChild(document.createTextNode(part));
+    });
+  }
+  function letterNode(text) {
+    var box = el("div", "pd-letter");
+    text.split("\n\n").forEach(function (para) {
+      var t = para.trim();
+      if (!t) return;
+      if (t === "[Signature]") { var sg = el("div", "pd-sign"); sg.appendChild(el("span", "", "Signature")); box.appendChild(sg); return; }
+      var pe = el("p", /^À /.test(t) ? "pd-to" : /^Objet/.test(t) ? "pd-obj" : /^Fait à/.test(t) ? "pd-date" : "");
+      withBlanks(pe, t);
+      box.appendChild(pe);
+    });
+    if (!box.querySelector(".pd-sign")) { var sg2 = el("div", "pd-sign"); sg2.appendChild(el("span", "", "Signature")); box.appendChild(sg2); }
+    return box;
+  }
+  function planNode(v, s, p) {
+    var doc = el("div", "pd-doc");
+    var head = el("div", "pd-head");
+    head.appendChild(svgUse("zou-wordmark", "pd-logo"));
+    var meta = el("div", "pd-meta");
+    meta.appendChild(el("strong", "", "Plan personnalisé"));
+    meta.appendChild(el("span", "", "Établi le " + fmtLong(today())));
+    head.appendChild(meta);
+    doc.appendChild(head);
+    doc.appendChild(el("h1", "", p.title));
+    doc.appendChild(el("p", "pd-sub", "Situation : " + v.situation));
+    if (p.verdict) {
+      var vd = el("div", "pd-verdict");
+      vd.appendChild(el("span", "pd-l", { ok: "À savoir", warn: "Attention", urgent: "Urgent" }[p.verdict.tone || "ok"]));
+      vd.appendChild(el("strong", "", p.verdict.t));
+      if (p.verdict.d) vd.appendChild(el("p", "", p.verdict.d));
+      doc.appendChild(vd);
+    }
+    function sec(title) { doc.appendChild(el("h2", "", title)); }
+    function cited(parent, d, cite) {
+      parent.appendChild(document.createTextNode(d || ""));
+      if (cite) { if (d) parent.appendChild(document.createTextNode(" ")); parent.appendChild(el("span", "pd-cite", cite)); }
+    }
+    if (p.deadlines && p.deadlines.length) {
+      sec(p.deadlines.length > 1 ? "Vos dates limites" : "Votre date limite");
+      var tb = el("table", "pd-table"), th = el("thead"), hr = el("tr");
+      ["Date limite", "À faire", "Pourquoi, et base légale"].forEach(function (h) { hr.appendChild(el("th", "", h)); });
+      th.appendChild(hr); tb.appendChild(th);
+      var tbody = el("tbody");
+      p.deadlines.forEach(function (d) {
+        var tr = el("tr");
+        tr.appendChild(el("td", "", fmtLong(parse(d.date))));
+        tr.appendChild(el("td", "", d.title));
+        var tdw = el("td"); cited(tdw, d.why, d.cite); tr.appendChild(tdw);
+        tbody.appendChild(tr);
+      });
+      tb.appendChild(tbody); doc.appendChild(tb);
+    }
+    function checklist(title, items, key) {
+      if (!items || !items.length) return;
+      sec(title);
+      var ul = el(key === "steps" ? "ol" : "ul", "pd-list");
+      items.forEach(function (it, i) {
+        var li = el("li");
+        li.appendChild(el("span", "pd-box" + (s.checks[key + ":" + (it.k || it.t)] ? " on" : "")));
+        var d = el("div");
+        d.appendChild(el("strong", "", (key === "steps" ? "Étape " + (i + 1) + " : " : "") + it.t));
+        if (it.d || it.cite) { var pp = el("p"); cited(pp, it.d, it.cite); d.appendChild(pp); }
+        li.appendChild(d); ul.appendChild(li);
+      });
+      doc.appendChild(ul);
+    }
+    if (p.result) {
+      sec(p.result.title);
+      if (p.result.items) {
+        var ur = el("ul", "pd-plain");
+        p.result.items.forEach(function (x) { var li = el("li"); li.appendChild(el("strong", "", x.t)); if (x.d) li.appendChild(el("span", "", x.d)); ur.appendChild(li); });
+        doc.appendChild(ur);
+      }
+      if (p.result.d) { var rp = el("p"); cited(rp, p.result.d, p.result.cite); doc.appendChild(rp); }
+    }
+    checklist("Ce qu'il faut faire", p.steps, "steps");
+    checklist("À préparer", p.docs, "docs");
+    if (p.where && p.where.length) {
+      sec("Où aller");
+      var uw = el("ul", "pd-plain");
+      p.where.forEach(function (w) { var li = el("li"); li.appendChild(el("strong", "", w.t)); if (w.d) { var sp = el("span"); cited(sp, w.d, w.cite); li.appendChild(sp); } uw.appendChild(li); });
+      doc.appendChild(uw);
+    }
+    if (p.points && p.points.length) {
+      sec("Bon à savoir");
+      var up = el("ul", "pd-plain");
+      p.points.forEach(function (x) { var li = el("li"); li.appendChild(el("strong", "", x.t)); var sp = el("span"); cited(sp, x.d, x.cite); li.appendChild(sp); up.appendChild(li); });
+      doc.appendChild(up);
+    }
+    var rows = [];
+    vieQuestions(v, s.a).forEach(function (q) {
+      var val = s.a[q.id];
+      if (val === undefined) return;
+      var txt = "";
+      if (q.type === "choice") (q.options || []).forEach(function (o) { if (o.v === val) txt = o.t; });
+      else txt = val ? fmtLong(parse(val)) : "Non renseignée";
+      rows.push([q.q, txt]);
+    });
+    if (rows.length) {
+      sec("Vos réponses");
+      var tq = el("table", "pd-table pd-qa"), tqb = el("tbody");
+      rows.forEach(function (r) { var tr = el("tr"); tr.appendChild(el("td", "", r[0])); tr.appendChild(el("td", "", r[1])); tqb.appendChild(tr); });
+      tq.appendChild(tqb); doc.appendChild(tq);
+    }
+    if (v.sources && v.sources.length) {
+      sec("Les textes sur lesquels repose ce plan");
+      var us = el("ul", "pd-plain");
+      v.sources.forEach(function (x) { us.appendChild(el("li", "", x)); });
+      doc.appendChild(us);
+    }
+    var foot = el("div", "pd-foot");
+    foot.appendChild(el("p", "", "Information juridique générale tirée des textes cités, pas un avis personnalisé. En cas de doute, faites-vous conseiller par un professionnel."));
+    var rv = VIE_REVIEW[v.id];
+    foot.appendChild(el("p", "", "Plan rédigé en " + PLANS_DATE + " d'après les textes cités. " + (rv ? "Relu par " + rv.by + " (" + rv.date + ")." : "Relecture par un juriste : à venir.")));
+    foot.appendChild(el("p", "", "ZOU · " + location.host));
+    doc.appendChild(foot);
+    if (p.letter) {
+      var lp = el("div", "pd-letter-page");
+      lp.appendChild(el("p", "pd-caption", "Lettre type à compléter, signer et envoyer : " + p.letter.title));
+      lp.appendChild(letterNode(p.letter.text(s.letter, s.a)));
+      doc.appendChild(lp);
+    }
+    return doc;
+  }
+  function shareText(v, p) {
+    var lines = ["ZOU : " + p.title];
+    if (p.verdict) lines.push(p.verdict.t);
+    if (p.deadlines && p.deadlines.length) {
+      lines.push("", "Dates limites :");
+      p.deadlines.forEach(function (d) { lines.push("• " + d.title + " : " + fmtLong(parse(d.date))); });
+    }
+    lines.push("", "Information juridique générale, pas un avis personnalisé.");
+    return lines.join("\n");
+  }
+  function sharePlan(v, p, row) {
+    var text = shareText(v, p), url = location.origin + "/#vie." + v.id;
+    if (navigator.share) { navigator.share({ title: "ZOU : " + p.title, text: text, url: url }).catch(function () { /* annulé */ }); return; }
+    if (!row.firstChild) {
+      var full = text + "\n\n" + url;
+      var wa = el("a", "link-btn small", "WhatsApp"); wa.href = "https://wa.me/?text=" + encodeURIComponent(full); wa.target = "_blank"; wa.rel = "noopener";
+      var ml = el("a", "link-btn small", "E-mail"); ml.href = "mailto:?subject=" + encodeURIComponent("ZOU : " + p.title) + "&body=" + encodeURIComponent(full);
+      var cp = el("button", "link-btn small", "Copier le résumé"); cp.type = "button";
+      cp.addEventListener("click", function () { copyText(full, "Résumé copié."); });
+      row.appendChild(wa); row.appendChild(ml); row.appendChild(cp);
+    }
+    row.hidden = !row.hidden;
+  }
+
   /* Retour sur un plan : « Ce plan vous a-t-il aidé ? » et signalement d'une erreur (sans compte, voir /api/feedback). */
   function fbSeen(id, mark) {
     try {
@@ -4463,7 +4656,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       else { state.docs.unshift({ id: uid(), name: L.title, type: "Lettre", added: iso(today()), size: "", dossier: "vie-" + v.id, content: txt, vieLetter: v.id }); toast("Lettre enregistrée dans le coffre."); }
       save(); renderAll();
     });
-    acts.appendChild(cp); acts.appendChild(sv);
+    var pr = el("button", "btn btn-ghost", "Imprimer la lettre"); pr.type = "button";
+    pr.addEventListener("click", function () { printDoc(letterNode(L.text(vals, s.a)), "letter", L.title); });
+    acts.appendChild(cp); acts.appendChild(pr); acts.appendChild(sv);
     sec.appendChild(acts);
     function paint() {
       sheet.textContent = "";
