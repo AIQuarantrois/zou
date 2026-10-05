@@ -2690,7 +2690,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   var GROUP_BY_KEY = {}, GROUP_OF = {};
   GROUPS.forEach(function (g) { GROUP_BY_KEY[g.key] = g; g.doms.forEach(function (d) { GROUP_OF[d] = g.key; }); });
   function countGroup(g) { var n = 0; g.doms.forEach(function (d) { n += countIn(d); }); return n; }
-  var SUGGEST = ["préavis démission", "titre foncier", "porter plainte", "congé maternité", "salaire impayé"];
+  var SUGGEST = ["préavis démission", "titre foncier", "porter plainte", "congé maternité"];
   function renderHome() {
     renderLife();
     var tp = $("#homeTopics");
@@ -4384,7 +4384,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (prefs.size === "large" || prefs.size === "xlarge") r.setAttribute("data-size", prefs.size); else r.removeAttribute("data-size");
     if (prefs.contrast) r.setAttribute("data-contrast", "high"); else r.removeAttribute("data-contrast");
     var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.setAttribute("content", darkNow() ? "#0C1420" : "#FFFFFF");
+    if (m) m.setAttribute("content", darkNow() ? "#161616" : "#FFFFFF");
   }
   function setPref(k, v) {
     prefs[k] = v;

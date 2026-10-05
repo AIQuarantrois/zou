@@ -9,6 +9,6 @@
     if (p.contrast) r.setAttribute("data-contrast", "high");
     var dark = p.theme === "dark" || (p.theme !== "light" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
     var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.setAttribute("content", dark ? "#0C1420" : "#FFFFFF");
+    if (m) m.setAttribute("content", dark ? "#161616" : "#FFFFFF");
   } catch (e) { /* réglages ignorés */ }
 })();
