@@ -1142,7 +1142,7 @@ h1.h-display { font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem); font-weight: 700; l
           </div>
           <div id="textsTable"></div>
           <h2 class="next-title" style="margin-top:48px">À venir</h2>
-          <p class="sub" style="margin-top:6px">Code pénal, droit fiscal, copropriété et sûretés, séjour des étrangers. Ces textes élargiront les services à de nouveaux domaines.</p>
+          <p class="sub" style="margin-top:6px">Code pénal, droit fiscal, séjour des étrangers. Ces textes élargiront les services à de nouveaux domaines.</p>
         </section>
 
         <!-- PAGE -->
@@ -4474,7 +4474,8 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     { key: "social", cat: "Protection sociale", d: "Accident du travail, maternité, pension, cotisations" },
     { key: "sante", cat: "Santé et sécurité", d: "Lieu de travail, médecine du travail, contrôle" },
     { key: "famille", cat: "Famille", d: "Naissance, mariage, séparation, décès et héritage, enfants" },
-    { key: "entreprise", cat: "Entreprise et commerce", d: "Bail commercial, création, sociétés, difficultés, créances" }
+    { key: "entreprise", cat: "Entreprise et commerce", d: "Bail commercial, création, sociétés, difficultés, créances" },
+    { key: "copro", cat: "Copropriété et sûretés", d: "Copropriété, caution, hypothèque, gage et autres garanties" }
   ];
   var DOM_BY_KEY = {};
   DOMS.forEach(function (d) { DOM_BY_KEY[d.key] = d; });
@@ -5171,7 +5172,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     { kind: "Loi", name: "Régime juridique des baux commerciaux", ref: "Loi n° 2015-037", dom: "entreprise" },
     { kind: "Loi", name: "Statut du commerçant", ref: "Loi n° 99-018", dom: "entreprise" },
     { kind: "Loi", name: "Sociétés commerciales", ref: "Loi n° 2003-036", dom: "entreprise" },
-    { kind: "Loi", name: "Procédures collectives d'apurement du passif", ref: "Loi n° 2003-042", dom: "entreprise" }
+    { kind: "Loi", name: "Procédures collectives d'apurement du passif", ref: "Loi n° 2003-042", dom: "entreprise" },
+    { kind: "Décret", name: "Statut de la copropriété des immeubles divisés par appartements", ref: "Décret n° 50-1631 du 27 décembre 1950", dom: "copro" },
+    { kind: "Loi", name: "Sûretés : cautionnement, garanties, gage, nantissement, hypothèque, fehivava", ref: "Loi n° 2003-041", dom: "copro" }
   ];
   var textsDT = null;
   function initTexts() {
@@ -7132,7 +7135,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   defVie(mk(ECO, {
     id: "creancier", short: "Créance en faillite", title: "Une entreprise qui me doit de l'argent est en faillite",
     situation: "Une entreprise qui me doit de l'argent est en faillite", desc: "Déclarer sa créance au syndic avant la forclusion, créances de salaires", time: "4 min",
-    keys: /d[ée]clarer (ma |une )?cr[ée]ance|syndic|forclusion|cr[ée]ances? (de )?salari/i,
+    keys: /d[ée]clarer (ma |une )?cr[ée]ance|syndic(?! de copropri)|forclusion|cr[ée]ances? (de )?salari/i,
     intro: "Quand un tribunal ouvre une procédure collective contre votre débiteur, vos poursuites sont suspendues et un délai court pour déclarer votre créance.",
     questions: [
       { id: "qui", type: "choice", q: "Vous êtes…", options: [{ v: "cred", t: "Un fournisseur, un client, une banque… (créancier)" }, { v: "sal", t: "Un salarié de l'entreprise" }] },
@@ -7200,6 +7203,426 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     sources: [PCO + " : art. 22, 24, 70 à 92."]
   }));
 
+  /* ---------- Parcours Copropriété et sûretés ---------- */
+  var COP = "Décret n° 50-1631 du 27 décembre 1950 sur la copropriété des immeubles divisés par appartements";
+  var SUR = "Loi n° 2003-041 sur les sûretés";
+  var GAR = { dom: "copro", back: "services.copro", backLabel: "Copropriété et sûretés" };
+  var COPD = "Décret 50-1631";
+  var SURL = "Loi 2003-041";
+
+  /* 1. Copropriété */
+  defVie(mk(GAR, {
+    id: "copro", short: "Copropriété", title: "Copropriété : charges, décisions, syndic, titre",
+    situation: "Je suis copropriétaire d'un immeuble en appartements", desc: "Charges impayées, majorités de vote, syndic, reconstruction, titre et règlement", time: "4 min",
+    keys: /copropri[ée]t|charges de l.immeuble|parties communes|syndicat des copropri/i,
+    intro: "Quelques questions pour savoir quelle règle s'applique à votre immeuble, et ce que chacun peut décider ou exiger.",
+    questions: [
+      { id: "role", type: "choice", q: "Vous êtes…", options: [
+        { v: "copro", t: "Copropriétaire", d: "Vous possédez un appartement ou un étage dans l'immeuble" },
+        { v: "syndic", t: "Syndic (ou membre du syndicat qui gère l'immeuble)" },
+        { v: "achete", t: "Acheteur d'un appartement", d: "Vous voulez acheter ou vous venez d'acheter" }] },
+      { id: "sit", when: function (a) { return a.role === "copro" || a.role === "syndic"; }, type: "choice", q: "Que voulez-vous faire, ou que vous arrive-t-il ?", options: [
+        { v: "charges", t: "Des charges de copropriété sont impayées" },
+        { v: "vote", t: "Le syndicat doit prendre une décision (vote)" },
+        { v: "syndic", t: "Nommer, changer ou révoquer le syndic" },
+        { v: "sinistre", t: "L'immeuble a été détruit ou gravement endommagé" },
+        { v: "titre", t: "Mon titre, le règlement de copropriété, la vente d'un appartement" }] },
+      { id: "notif", when: function (a) { return a.sit === "charges"; }, type: "date", chips: [], q: "À quelle date l'état des charges a-t-il été notifié au copropriétaire par lettre recommandée ?", help: "Le syndic établit un état du montant dû et le notifie. Un délai de 10 jours court ensuite.", unknown: "Pas encore notifié" },
+      { id: "decision", when: function (a) { return a.sit === "vote"; }, type: "choice", q: "De quelle décision s'agit-il ?", options: [
+        { v: "courante", t: "L'administration courante des parties communes", d: "Entretien, gestion, jouissance" },
+        { v: "reglement", t: "Adopter ou modifier le règlement de copropriété" },
+        { v: "travaux", t: "Des travaux ou installations qui augmentent la valeur de l'immeuble" },
+        { v: "emprunt", t: "Un emprunt pour des dépenses exceptionnelles" },
+        { v: "assurance", t: "Imposer une assurance collective ou individuelle" },
+        { v: "fraction", t: "Diviser un appartement en plusieurs" },
+        { v: "reconstruction", t: "Reconstruire l'immeuble détruit" }] }
+    ],
+    plan: function (a) {
+      var p = { title: "Votre plan", ask: "Comment fonctionne une copropriété ?", deadlines: [], steps: [], docs: [], points: [] };
+      var syn = a.role === "syndic";
+      var sit = a.role === "achete" ? "titre" : a.sit;
+      var DM = "Une double majorité : plus de la moitié des copropriétaires ET au moins les trois quarts des voix. Chacun dispose d'un nombre de voix proportionnel à l'importance de ses droits dans l'immeuble.";
+      if (sit === "charges") {
+        p.title = syn ? "Récupérer des charges impayées" : "Des charges de copropriété vous sont réclamées";
+        p.verdict = { tone: syn ? "ok" : "warn", t: syn ? "Le syndicat dispose d'une hypothèque forcée et d'un privilège pour être payé." : "Un copropriétaire qui ne paie pas ses charges risque une hypothèque sur son appartement.", d: "L'hypothèque forcée garantit la part de chacun aux frais annuels (gérance, concierge, éclairage, entretien, assurances, impôts) et aux dépenses exceptionnelles votées. Elle porte sur sa part divise et sur sa part indivise des parties communes." };
+        if (a.notif) p.deadlines.push({ title: syn ? "Demander l'homologation au président du tribunal" : "Payer ou contester avant l'homologation", date: plus(a.notif, 10), why: syn ? "Dix jours après la notification de l'état des charges par lettre recommandée, vous pouvez saisir le président du tribunal par requête, en référé." : "Dix jours après la notification de l'état des charges, le syndic peut demander au président du tribunal d'homologuer l'état et d'ordonner l'inscription d'une hypothèque sur votre titre foncier.", cite: COPD + ", art. 27", remind: 3 });
+        p.steps = syn ? [
+          { t: "Faites fixer les charges par le syndicat", d: "Le montant présumé des frais annuels est arrêté par la majorité des membres ; les dépenses exceptionnelles, à la double majorité.", cite: "Art. 26" },
+          { t: "Établissez l'état de la part contributive due", d: "Joignez-y une copie certifiée conforme de la décision du syndicat qui répartit les dépenses entre ses membres.", cite: "Art. 27" },
+          { t: "Notifiez-le par lettre recommandée", d: "À l'adresse que le copropriétaire a élue pour cet effet. Le courrier ci-dessous est pré-rempli.", cite: "Art. 27" },
+          { t: "Après 10 jours, saisissez le président du tribunal", d: "Par requête, en la forme du référé, devant le président du tribunal ou le juge de paix à compétence étendue : il homologue les documents et ordonne sans délai l'inscription de l'hypothèque sur le titre foncier du copropriétaire. En cas d'urgence, il peut ordonner une inscription conservatoire.", cite: "Art. 27" },
+          { t: "Pensez au privilège sur les meubles", d: "Les meubles qui garnissent les lieux répondent aussi des charges. Si l'appartement est loué non meublé, le privilège se reporte sur les loyers dus par le locataire.", cite: "Art. 29" }
+        ] : [
+          { t: "Demandez l'état des charges et la décision du syndicat", d: "Le syndic doit vous notifier un état du montant dû, avec la copie certifiée conforme de la décision qui répartit les dépenses.", cite: "Art. 27" },
+          { t: "Vérifiez le calcul", d: "À défaut de règlement ou de titres, les droits et charges se répartissent proportionnellement à la valeur des fractions, selon leur étendue et leur situation.", cite: "Art. 9" },
+          { t: "Payez ou contestez avant la fin des 10 jours", d: "Passé ce délai, le président du tribunal peut homologuer l'état et ordonner l'inscription d'une hypothèque sur votre titre foncier.", cite: "Art. 27" },
+          { t: "Sachez ce qui est saisissable", d: "Le syndicat a un privilège sur les meubles qui garnissent l'appartement. Si vous le louez non meublé, il porte sur les loyers dus par le locataire.", cite: "Art. 29" }
+        ];
+        p.points.push({ t: "Le syndicat peut céder son rang ou subroger un tiers.", d: "À la double majorité, il peut subroger dans le bénéfice de l'hypothèque celui qui avance les fonds, ou céder l'antériorité du rang à un organisme de crédit immobilier.", cite: "Art. 28" });
+        if (syn) p.letter = {
+          title: "Notification de l'état des charges au copropriétaire (lettre recommandée)", lede: "À envoyer en recommandé avec accusé de réception, au domicile élu par le copropriétaire.",
+          fields: [{ id: "syndic", label: "Vos nom et adresse (syndic)", wide: true }, { id: "copro", label: "Nom et domicile élu du copropriétaire", wide: true }, { id: "lot", label: "Immeuble et appartement concernés", wide: true },
+            { id: "montant", label: "Montant dû" }, { id: "periode", label: "Période ou nature des dépenses" }, { id: "dsyn", label: "Date de la décision du syndicat fixant la répartition" }, { id: "ville", label: "Fait à" }],
+          text: function (f) {
+            return orv(f.syndic, "[Vos nom et adresse]") + "\n\nÀ " + orv(f.copro, "[nom et domicile élu du copropriétaire]") + "\n\nObjet : notification de l'état des charges de copropriété (lettre recommandée avec accusé de réception)\n\nMadame, Monsieur,\n\nEn ma qualité de syndic, et conformément à l'article 27 du décret n° 50-1631 du 27 décembre 1950, je vous notifie l'état de la part contributive qui vous incombe pour " + orv(f.lot, "[immeuble et appartement]") + " : " + orv(f.montant, "[montant]") + " (" + orv(f.periode, "[période ou nature des dépenses]") + ")." +
+              "\n\nCet état est établi selon la décision du syndicat des copropriétaires du " + orv(f.dsyn, "[date]") + ", dont une copie certifiée conforme est jointe.\n\nÀ l'expiration d'un délai de dix jours à compter de la présente notification, je saisirai le président du tribunal afin qu'il homologue ces documents et ordonne l'inscription d'une hypothèque sur votre titre foncier, conformément à l'article 26.\n\nVeuillez agréer, Madame, Monsieur, l'expression de mes salutations distinguées.\n\nFait à " + orv(f.ville, "[ville]") + ", le " + fmtLong(today()) + "\n\n[Signature]";
+          }
+        };
+      } else if (sit === "vote") {
+        var D = {
+          courante: ["La majorité des voix suffit.", "Les décisions de l'administration des parties communes sont obligatoires si elles sont prises à la majorité des voix de tous les intéressés dûment convoqués, présents ou représentés par un mandataire régulier. Chacun dispose d'un nombre de voix proportionnel à l'importance de ses droits dans l'immeuble.", "Art. 12"],
+          reglement: ["Il faut une double majorité.", DM + " Le règlement et ses modifications ne sont opposables aux acheteurs ultérieurs qu'après dépôt à la conservation de la propriété foncière.", "Art. 11 et 12"],
+          travaux: ["Il faut une double majorité, aux frais de ceux qui les demandent.", DM + " Cela vaut pour les travaux et installations dont il ne résulterait qu'un accroissement de valeur pour l'ensemble ou pour certaines parties de l'immeuble, aux conditions et indemnités fixées par le syndicat dans l'intérêt des copropriétaires.", "Art. 12"],
+          emprunt: ["Il faut une double majorité.", DM + " Tout emprunt, avec ou sans garantie hypothécaire, doit avoir pour objet de faire face à des dépenses et frais exceptionnels.", "Art. 12"],
+          assurance: ["La majorité des voix suffit.", "À la majorité des voix, le syndicat peut imposer toutes assurances, collectives ou individuelles, contre les risques qui menacent l'immeuble ou l'ensemble des copropriétaires.", "Art. 12"],
+          fraction: ["Il faut l'accord du syndicat, à la double majorité.", DM + " Sauf disposition contraire du règlement de copropriété, aucun appartement ne peut être fractionné par partage ou autrement sans cet accord.", "Art. 30"],
+          reconstruction: ["Il faut une double majorité.", DM + " Si la reconstruction est décidée, les indemnités qui représentent l'immeuble détruit y sont affectées par privilège, sous réserve des droits des créanciers inscrits.", "Art. 14"]
+        }[a.decision];
+        p.title = "Quelle majorité pour cette décision ?";
+        p.verdict = { tone: "ok", t: D[0], d: D[1] };
+        p.points.push({ t: "Fondement", cite: COPD + ", " + D[2].toLowerCase() });
+        p.steps = [
+          { t: "Convoquez tous les copropriétaires", d: "Une décision n'oblige que si tous les intéressés ont été dûment convoqués. Chacun peut être présent ou représenté par un mandataire régulier.", cite: "Art. 12" },
+          { t: "Comptez les voix en fonction des droits de chacun", d: "Le nombre de voix est proportionnel à l'importance des droits dans l'immeuble. L'usufruitier est membre de droit, comme le nu-propriétaire ; en cas de désaccord entre eux, seul compte le vote de celui qui verse effectivement la part contributive. Les indivisaires désignent l'un d'eux comme mandataire.", cite: "Art. 12" },
+          { t: "Consignez la décision", d: "Rangez le procès-verbal dans votre coffre ZOU.", go: ["vault", "Ouvrir mon coffre"] }
+        ];
+        p.points.push({ t: "Les pouvoirs du syndicat sont limités.", d: "Quelle que soit la majorité, ils portent uniquement sur la jouissance et l'administration des parties communes (mesures d'application collective).", cite: "Art. 12" });
+        p.points.push({ t: "Les litiges.", d: "Les contestations sur l'administration et la jouissance des parties communes sont jugées selon le droit commun, à défaut de compromis. Le règlement peut prévoir une clause compromissoire.", cite: "Art. 11 et 15" });
+      } else if (sit === "syndic") {
+        p.title = "Le syndic de l'immeuble";
+        p.verdict = { tone: "ok", t: "Le syndic représente le syndicat des copropriétaires.", d: "Tous les copropriétaires forment de plein droit un syndicat, sauf règlement prévoyant une autre organisation. Le syndic est son agent officiel et le représente en justice, en demandant comme en défendant, même contre certains copropriétaires." };
+        p.steps = [
+          { t: "Nommez le syndic à la majorité des voix", d: "À défaut, un copropriétaire peut demander sa nomination par requête à l'ordonnance du président du tribunal de première instance (ou du juge de paix à compétence étendue), les autres propriétaires entendus ou dûment appelés.", cite: "Art. 13" },
+          { t: "Révoquez-le de la même manière", d: "Ses pouvoirs sont révoqués selon la manière dont il a été nommé : par le syndicat, ou par ordonnance du président du tribunal. Les propriétaires, avertis au préalable, peuvent faire connaître leur avis.", cite: "Art. 13" },
+          { t: "Fixez sa rémunération", d: "Pour un syndic judiciaire, elle est fixée par l'ordonnance de nomination.", cite: "Art. 13" }
+        ];
+        p.points.push({ t: "Ses missions.", d: "Exécuter les décisions de l'assemblée, pourvoir au besoin de sa propre initiative à la conservation, à la garde et à l'entretien des parties communes, et contraindre chacun à exécuter ses obligations.", cite: "Art. 13" });
+        p.points.push({ t: "Il détient le titre des parties communes.", d: "Le titre original, quand il ne s'applique plus qu'aux parties communes, est porté d'office au nom du syndicat et son duplicatum est remis au syndic.", cite: "Art. 22" });
+      } else if (sit === "sinistre") {
+        p.title = "Immeuble détruit ou endommagé";
+        p.verdict = { tone: "warn", t: "Les copropriétaires se conforment à la décision du syndicat sur la reconstruction.", d: "Sauf convention contraire, la décision se prend à la double majorité : plus de la moitié des copropriétaires et au moins les trois quarts des voix." };
+        p.steps = [
+          { t: "Déclarez le sinistre à l'assurance", d: "Le syndicat peut imposer, à la majorité des voix, des assurances collectives ou individuelles contre les risques qui menacent l'immeuble.", cite: "Art. 12" },
+          { t: "Faites voter la reconstruction", d: "Double majorité, convocation de tous les copropriétaires.", cite: "Art. 14" },
+          { t: "Si la reconstruction est décidée", d: "Les indemnités qui représentent l'immeuble détruit sont affectées par privilège à la reconstruction, sous réserve des droits des créanciers inscrits.", cite: "Art. 14" }
+        ];
+      } else {
+        p.title = a.role === "achete" ? "Acheter un appartement en copropriété" : "Titre foncier, règlement et vente d'un appartement";
+        p.verdict = { tone: a.role === "achete" ? "warn" : "ok", t: a.role === "achete" ? "Avant d'acheter, demandez l'état des charges et le règlement déposé." : "Chaque appartement a son propre titre foncier, et le règlement de copropriété doit être déposé à la conservation foncière.", d: a.role === "achete" ? "Les charges impayées du vendeur sont garanties par une hypothèque forcée du syndicat sur l'appartement : elle peut vous suivre. Le règlement de copropriété n'est obligatoire pour l'acheteur que s'il a été déposé à la conservation de la propriété foncière." : "Sans dépôt du règlement, il n'est pas opposable aux acheteurs ultérieurs." };
+        p.steps = [
+          { t: "Vérifiez que l'appartement a un titre foncier distinct", d: "Quand un immeuble est divisé par étages ou appartements, le titre original est morcelé en titres distincts pour chaque fraction. Chacun décrit la fraction (surface, hauteur) et rappelle les clauses principales du règlement.", cite: "Art. 16 et 23" },
+          { t: "Demandez le règlement de copropriété déposé", d: "Il doit être déposé à la conservation de la propriété foncière, avec les plans architecturaux, pour produire ses effets et être opposable aux tiers.", cite: "Art. 11 et 18" },
+          { t: "Demandez au syndic un état des charges", d: "Le paiement de la part de chacun est garanti par une hypothèque forcée sur son appartement et par un privilège sur ses meubles.", cite: "Art. 26 et 29" },
+          { t: "Sachez ce que vous achetez", d: "Le transfert des droits sur l'appartement porte aussi sur la quote-part des parties communes. Mention de référence en est portée au titre original.", cite: "Art. 31" }
+        ];
+        p.docs = [{ t: "Le titre foncier distinct de l'appartement" }, { t: "Le règlement de copropriété, avec la preuve de son dépôt à la conservation foncière" }, { t: "L'état des charges délivré par le syndic" }, { t: "Le procès-verbal de la dernière décision du syndicat" }];
+        p.points.push({ t: "Parties communes.", d: "Sauf titre contraire, les copropriétaires le sont du sol et de toutes les parties du bâtiment qui ne servent pas à l'usage exclusif de l'un d'eux : cours, murs, toitures, gros œuvre, planchers, escaliers, ascenseurs, loge du concierge, passages, canalisations hors de chaque local. Les cloisons entre deux appartements sont mitoyennes.", cite: "Art. 8" });
+        p.points.push({ t: "Fusion des titres.", d: "Si plusieurs fractions appartiennent à la même personne, la fusion de leurs titres peut être demandée.", cite: "Art. 25" });
+      }
+      p.points.push({ t: "À quels immeubles ce texte s'applique-t-il ?", d: "Le décret de 1950 ne vise que les immeubles situés dans les régions, agglomérations et sites énumérés par l'arrêté du 8 août 1946 (ou désignés ensuite), immatriculés ou en cours d'immatriculation. Les textes chargés dans ZOU ne dressent pas cette liste : vérifiez auprès de la conservation foncière.", cite: "Art. 1" });
+      p.next = [["vie.garantie", "Hypothèque, gage : garantir ou libérer un bien"], ["pros", "Trouver un notaire ou un avocat"]];
+      return p;
+    },
+    sources: [COP + " : art. 1, 8 à 31."]
+  }));
+
+  /* 2. Caution */
+  defVie(mk(GAR, {
+    id: "caution", short: "Caution", title: "Se porter caution, ou être poursuivi comme caution",
+    situation: "On me demande de me porter caution (ou on me réclame de payer)", desc: "Formes exigées, caution simple ou solidaire, recours contre le débiteur", time: "4 min",
+    keys: /\bcaution|se porter garant|lettre de garantie|premi[èe]re demande|lettre d.intention/i,
+    intro: "Une caution peut devoir payer toute la dette d'un autre. Voyons où vous en êtes et ce que la loi vous donne.",
+    questions: [
+      { id: "etape", type: "choice", q: "Où en êtes-vous ?", options: [
+        { v: "avant", t: "On me demande de me porter caution", d: "Je n'ai encore rien signé" },
+        { v: "recla", t: "Le créancier me réclame de payer", tone: "danger" },
+        { v: "paye", t: "J'ai payé à la place du débiteur", d: "Je veux me faire rembourser" }] },
+      { id: "type", when: function (a) { return a.etape === "avant"; }, type: "choice", q: "Quelle garantie vous demande-t-on ?", options: [
+        { v: "dette", t: "Garantir une dette précise", d: "Un prêt, un loyer, un crédit déterminé" },
+        { v: "general", t: "Garantir tous les engagements du débiteur", d: "Ou le solde d'un compte courant" },
+        { v: "premiere", t: "Une garantie « à première demande » ou lettre de garantie" },
+        { v: "intention", t: "Une lettre d'intention (lettre de confort, de patronage)" }] },
+      { id: "ecrire", when: function (a) { return a.etape === "avant" && (a.type === "dette" || a.type === "general"); }, type: "choice", q: "Pouvez-vous écrire de votre main la mention exigée ?", options: [{ v: "oui", t: "Oui" }, { v: "non", t: "Non, je ne sais pas ou ne peux pas écrire" }] },
+      { id: "forme", when: function (a) { return a.etape === "recla"; }, type: "choice", q: "Avez-vous signé un acte avec la somme maximale écrite de votre main, en chiffres et en lettres ?", options: [{ v: "oui", t: "Oui" }, { v: "non", t: "Non, ou je ne m'en souviens pas" }] },
+      { id: "solid", when: function (a) { return a.etape === "recla"; }, type: "choice", q: "Votre contrat dit-il expressément que vous êtes « caution simple » ?", options: [{ v: "simple", t: "Oui, caution simple" }, { v: "solidaire", t: "Non, il ne le dit pas" }] },
+      { id: "general", when: function (a) { return a.etape === "recla"; }, type: "choice", q: "Avez-vous cautionné tous les engagements du débiteur (et pas une dette précise) ?", options: [{ v: "oui", t: "Oui, un cautionnement général" }, { v: "non", t: "Non, une dette précise" }] },
+      { id: "avise", when: function (a) { return a.etape === "paye"; }, type: "choice", q: "Aviez-vous prévenu le débiteur avant de payer ?", options: [{ v: "oui", t: "Oui, ou je l'avais mis en cause" }, { v: "non", t: "Non" }] }
+    ],
+    plan: function (a) {
+      var p = { title: "Votre plan", ask: "Quelles sont les règles du cautionnement ?", deadlines: [], steps: [], docs: [], points: [] };
+      if (a.etape === "avant") {
+        if (a.type === "premiere") {
+          p.title = "Une garantie à première demande";
+          p.verdict = { tone: "urgent", t: "C'est plus dangereux qu'une caution : vous paierez sur simple demande.", d: "La garantie indépendante est un engagement autonome. Vous ne pouvez pas opposer au bénéficiaire les exceptions tirées du contrat de base." };
+          p.steps = [
+            { t: "Exigez un écrit complet", d: "À peine de nullité, il mentionne la dénomination « lettre de garantie (ou de contregarantie) à première demande », les noms du donneur d'ordre, du bénéficiaire et du garant, la convention de base, le montant maximum garanti, la date ou le fait d'expiration, les conditions de la demande de paiement, et l'impossibilité d'invoquer les exceptions de la caution.", cite: SURL + ", art. 48" },
+            { t: "Plafonnez la somme et la durée", d: "Vous n'êtes tenu que jusqu'à la somme stipulée, et la demande de paiement doit arriver au plus tard à la date d'expiration, avec les documents prévus.", cite: "Art. 51 et 52" },
+            { t: "Sachez quand refuser", d: "Si la demande est manifestement abusive ou frauduleuse, le donneur d'ordre peut interdire de payer et le garant peut refuser. Le juge des référés statue s'il n'y a pas de contestation sérieuse du bénéficiaire.", cite: "Art. 53" },
+            { t: "Prévoyez votre recours", d: "Le garant qui a payé utilement dispose des mêmes recours que la caution contre le donneur d'ordre.", cite: "Art. 54" }
+          ];
+          p.points.push({ t: "Fin de la garantie.", d: "À la date spécifiée, à la présentation des documents libératoires, ou sur déclaration écrite du bénéficiaire.", cite: "Art. 55" });
+        } else if (a.type === "intention") {
+          p.title = "Une lettre d'intention";
+          p.verdict = { tone: "warn", t: "Un juge peut y voir un vrai cautionnement.", d: "Selon ses termes et les éléments du dossier, le juge décide si elle n'est qu'un engagement moral sans effet juridique, un véritable cautionnement, ou une obligation de faire (de moyen ou de résultat)." };
+          p.steps = [
+            { t: "Pesez chaque mot", d: "Une lettre qui exprime votre intention de soutenir le débiteur, en termes volontairement imprécis, peut pourtant vous engager.", cite: SURL + ", art. 56 et 57" },
+            { t: "Écrivez ce que vous ne promettez pas", d: "Précisez que la lettre n'est pas un cautionnement et ne garantit aucun paiement, si c'est bien votre intention." },
+            { t: "Faites relire par un professionnel", go: ["pros", "Trouver un professionnel"] }
+          ];
+        } else {
+          var gen = a.type === "general";
+          p.title = gen ? "Cautionner tous les engagements d'un débiteur" : "Cautionner une dette précise";
+          p.verdict = { tone: "warn", t: "Par défaut, vous seriez solidaire : le créancier peut vous réclamer toute la dette.", d: "Le cautionnement est réputé solidaire, sans bénéfice de discussion. Il n'est simple que si l'acte, les usages ou la loi le prévoient expressément. Le créancier doit toutefois d'abord mettre le débiteur en demeure de payer." };
+          p.steps = [
+            { t: "Exigez un acte écrit signé des deux parties", d: "Le cautionnement ne se présume pas. À peine de nullité, il doit être convenu de façon expresse entre la caution et le créancier.", cite: SURL + ", art. 9 et 10" },
+            a.ecrire === "non"
+              ? { t: "Faites passer l'acte devant notaire", d: "Si la caution ne sait ou ne peut écrire, l'acte est passé sous la forme authentique ou authentifiée.", cite: "Art. 10" }
+              : { t: "Écrivez vous-même la somme maximale, en chiffres et en toutes lettres", d: "En cas de différence, le cautionnement vaut pour la somme exprimée en lettres. Sans somme, vous devez exprimer explicitement dans la mention manuscrite que vous connaissez la nature et l'étendue de votre engagement.", cite: "Art. 10" },
+            { t: "Limitez-vous si vous le pouvez", d: "Vous pouvez cautionner une partie de la dette seulement, à des conditions moins onéreuses. Si l'engagement dépasse la dette, il est réduit à la mesure de l'obligation principale.", cite: "Art. 6" },
+            { t: "Sachez ce que couvre l'engagement", d: "Le principal, tous les accessoires de la dette et les frais de recouvrement. Si vous n'êtes tenu que pour une somme déterminée en principal, il ne s'étend pas aux intérêts et accessoires.", cite: "Art. 11" },
+            { t: "Demandez la caution simple si vous la voulez", d: "Elle permet d'exiger que le créancier poursuive d'abord le débiteur (bénéfice de discussion), mais doit être décidée expressément.", cite: "Art. 17 et 23" }
+          ];
+          if (gen) {
+            p.points.push({ t: "Cautionnement général : somme maximale obligatoire.", d: "Sous peine de nullité, il est conclu pour une somme maximale incluant principal et accessoires. Sauf clause contraire, il ne garantit pas les dettes nées avant le cautionnement.", cite: "Art. 12" });
+            p.points.push({ t: "Vous pouvez le révoquer.", d: "À tout moment, avant que la somme maximale soit atteinte. Les engagements nés avant la révocation restent garantis, même exigibles plus tard.", cite: "Art. 12" });
+            p.points.push({ t: "Le créancier doit vous informer.", d: "Dans le mois qui suit la fin de chaque trimestre civil, il doit vous communiquer l'état des dettes du débiteur et vous rappeler la faculté de révocation. À défaut, il perd les intérêts de la période.", cite: "Art. 19" });
+          }
+          p.points.push({ t: "Vos héritiers sont engagés.", d: "L'engagement passe aux héritiers et légataires si la caution y aurait été obligée de son vivant.", cite: "Art. 13" });
+          p.points.push({ t: "Preuve.", d: "À l'égard des commerçants, le cautionnement peut être prouvé par tous moyens.", cite: "Art. 10" });
+        }
+      } else if (a.etape === "recla") {
+        p.title = "Le créancier vous réclame de payer";
+        var nul = a.forme === "non";
+        p.verdict = nul
+          ? { tone: "warn", t: "Les conditions de forme ne semblent pas remplies : votre cautionnement peut être contesté.", d: "Il doit être constaté dans un acte signé des deux parties avec la mention de la somme maximale écrite de la caution, en chiffres et en lettres. Faites examiner l'acte avant de payer." }
+          : { tone: "warn", t: "Vous avez des droits avant de payer : exigez les informations, discutez et prévenez le débiteur.", d: "La caution n'est tenue de payer qu'en cas de non-paiement du débiteur principal, qui doit avoir été mis en demeure." };
+        p.steps = [
+          { t: "Demandez par écrit l'état de la dette", d: "Le créancier doit vous aviser de toute défaillance du débiteur, déchéance ou prorogation du terme, avec le montant restant dû en principal, intérêts et frais.", cite: SURL + ", art. 19" },
+          { t: "Vérifiez que le débiteur a été mis en demeure", d: "Le créancier ne peut vous poursuivre qu'après une mise en demeure de payer, restée sans effet, adressée au débiteur, et en appelant le débiteur en cause. La déchéance du terme du débiteur ne s'étend pas automatiquement à vous.", cite: "Art. 18 et 20" },
+          a.solid === "simple"
+            ? { t: "Exigez la discussion du débiteur", d: "Dès les premières poursuites, indiquez au créancier les biens du débiteur, consignez les deniers suffisants et avancez les frais de discussion. Le créancier est responsable, à concurrence des biens indiqués, de l'insolvabilité qui résulterait de son défaut de poursuites.", cite: "Art. 23 et 24" }
+            : { t: "Sachez que vous n'avez pas de bénéfice de discussion", d: "La caution solidaire est tenue comme un débiteur solidaire : le créancier peut s'adresser à vous directement.", cite: "Art. 21 et 22" },
+          { t: "S'il y a plusieurs cautions, demandez la division", d: "Chacune peut exiger que le créancier divise son action, sauf solidarité entre elles ou renonciation.", cite: "Art. 25" },
+          { t: "Opposez les moyens du débiteur", d: "Tout ce qui réduit, éteint ou diffère la dette : paiement, prescription, nullité… Mais pas les exceptions purement personnelles au débiteur.", cite: "Art. 27 et 38" },
+          { t: "Vérifiez les garanties conservées", d: "Vous êtes déchargé si le créancier a fait perdre, par sa faute, la subrogation à ses droits, hypothèques et privilèges, à concurrence de l'insuffisance de la garantie conservée.", cite: "Art. 27 et 39" },
+          { t: "Prévenez le débiteur avant de payer", d: "Avisez-le ou mettez-le en cause, sinon vous risquez de perdre votre recours contre lui. Le courrier ci-dessous est pré-rempli.", cite: "Art. 28 et 32" }
+        ];
+        if (a.general === "oui") p.points.push({ t: "Cautionnement général.", d: "À défaut d'information trimestrielle, le créancier est déchu des intérêts échus entre deux informations. Le cautionnement général ne garantit pas les dettes antérieures, sauf clause contraire.", cite: "Art. 12 et 19" });
+        p.points.push({ t: "Un cautionnement excessif est réduit.", d: "Il ne peut excéder ce qui est dû par le débiteur ni être contracté à des conditions plus onéreuses : il est alors réductible, et non nul.", cite: "Art. 6" });
+        p.points.push({ t: "Prorogation du terme.", d: "Le créancier doit vous notifier la prorogation accordée au débiteur. Vous pouvez la refuser et poursuivre le débiteur pour le forcer à payer ou obtenir une garantie.", cite: "Art. 18" });
+        p.letter = {
+          title: "Avis au débiteur principal avant paiement", lede: "À envoyer en recommandé : il vous évite de perdre votre recours contre lui.",
+          fields: [{ id: "caution", label: "Vos nom et adresse (caution)", wide: true }, { id: "deb", label: "Nom et adresse du débiteur principal", wide: true }, { id: "cred", label: "Nom du créancier" }, { id: "montant", label: "Montant réclamé" }, { id: "dette", label: "Dette concernée (prêt, loyers…)", wide: true }, { id: "ville", label: "Fait à" }],
+          text: function (f) {
+            return orv(f.caution, "[Vos nom et adresse]") + "\n\nÀ " + orv(f.deb, "[nom et adresse du débiteur]") + "\n\nObjet : poursuites dirigées contre moi en ma qualité de caution\n\nMadame, Monsieur,\n\nJe me suis porté(e) caution de votre dette envers " + orv(f.cred, "[créancier]") + " (" + orv(f.dette, "[dette concernée]") + "). Ce créancier me réclame aujourd'hui " + orv(f.montant, "[montant]") + "." +
+              "\n\nConformément à l'article 28 de la loi n° 2003-041 sur les sûretés, je vous avise de ces poursuites et vous invite à régler cette dette ou à me faire connaître, sans délai, tout moyen de la contester. À défaut, je paierai le créancier et exercerai mon recours contre vous pour le principal, les intérêts, les frais et tous dommages-intérêts.\n\nVeuillez agréer, Madame, Monsieur, mes salutations distinguées.\n\nFait à " + orv(f.ville, "[ville]") + ", le " + fmtLong(today()) + "\n\n[Signature]";
+          }
+        };
+      } else {
+        p.title = "Vous avez payé à la place du débiteur";
+        p.verdict = a.avise === "oui"
+          ? { tone: "ok", t: "Vous avez un recours contre le débiteur principal.", d: "Il couvre le principal, les intérêts et les frais, même si le cautionnement a été donné à son insu. Vous êtes aussi subrogé dans tous les droits du créancier." }
+          : { tone: "warn", t: "Vous risquez d'avoir perdu votre recours, mais pas votre action contre le créancier.", d: "Si vous avez payé sans avertir le débiteur et qu'il pouvait faire déclarer la dette éteinte, ou qu'il a payé lui aussi sans le savoir, vous perdez votre recours contre lui. Vous gardez l'action en répétition contre le créancier." };
+        p.steps = [
+          { t: "Réclamez le remboursement au débiteur", d: "Principal, intérêts et frais engagés depuis que vous lui avez dénoncé les poursuites, et dommages-intérêts pour le préjudice des poursuites.", cite: SURL + ", art. 29" },
+          { t: "Exercez les droits du créancier", d: "Vous êtes subrogé dans tous ses droits contre le débiteur : garanties, hypothèques, privilèges.", cite: "Art. 30" },
+          { t: "S'il y a d'autres cautions", d: "Vous avez recours contre chacune pour sa part et portion.", cite: "Art. 34" },
+          { t: "Si le débiteur ne rembourse pas", d: "Faites-vous aider pour saisir le tribunal.", go: ["pros", "Trouver un professionnel"] }
+        ];
+        p.points.push({ t: "Avant même de payer.", d: "La caution peut agir contre le débiteur lorsqu'elle est poursuivie en justice, quand il est en cessation des paiements ou en déconfiture, s'il ne l'a pas déchargée dans le délai convenu, ou quand la dette est devenue exigible.", cite: "Art. 33" });
+        p.letter = {
+          title: "Demande de remboursement au débiteur par la caution", lede: "À envoyer en recommandé.",
+          fields: [{ id: "caution", label: "Vos nom et adresse (caution)", wide: true }, { id: "deb", label: "Nom et adresse du débiteur", wide: true }, { id: "cred", label: "Nom du créancier payé" }, { id: "montant", label: "Montant payé" }, { id: "dpay", label: "Date du paiement" }, { id: "ville", label: "Fait à" }],
+          text: function (f) {
+            return orv(f.caution, "[Vos nom et adresse]") + "\n\nÀ " + orv(f.deb, "[nom et adresse du débiteur]") + "\n\nObjet : remboursement de la somme payée en ma qualité de caution\n\nMadame, Monsieur,\n\nJ'étais caution de votre dette envers " + orv(f.cred, "[créancier]") + ". Le " + orv(f.dpay, "[date]") + ", j'ai payé à votre place la somme de " + orv(f.montant, "[montant]") + "." +
+              "\n\nEn application des articles 29 et 30 de la loi n° 2003-041 sur les sûretés, je dispose d'un recours contre vous pour le principal, les intérêts et les frais, et je suis subrogé(e) dans tous les droits du créancier. Je vous demande de me rembourser cette somme sous huitaine, faute de quoi je saisirai la juridiction compétente.\n\nVeuillez agréer, Madame, Monsieur, mes salutations distinguées.\n\nFait à " + orv(f.ville, "[ville]") + ", le " + fmtLong(today()) + "\n\n[Signature]";
+          }
+        };
+      }
+      p.next = [["vie.garantie", "Hypothèque, gage : les autres garanties"], ["pros", "Trouver un avocat"]];
+      return p;
+    },
+    sources: [SUR + " : art. 4 à 57."]
+  }));
+
+  /* 3. Hypothèque, gage et autres garanties */
+  defVie(mk(GAR, {
+    id: "garantie", short: "Hypothèque et gage", title: "Hypothèque, gage, nantissement : garantir un prêt ou libérer un bien",
+    situation: "Je veux garantir un prêt (hypothèque, gage…) ou libérer un bien", desc: "Terrain titré ou non, matériel, stocks, parts : forme, inscription, renouvellement, réalisation", time: "5 min",
+    keys: /hypoth[èe]que|\bgage\b|nantissement|fehivava|r[ée]serve de propri[ée]t|mainlev[ée]e|garantir (un |mon )?pr[êe]t|inscription hypoth/i,
+    intro: "La loi n'impose pas la même garantie selon le bien. Dites-nous ce qu'elle porterait, et on vous donne la forme, l'inscription et les dates à suivre.",
+    questions: [
+      { id: "role", type: "choice", q: "Vous êtes…", options: [
+        { v: "prete", t: "Celui qui prête (créancier)", d: "Vous voulez une garantie, ou la faire valoir" },
+        { v: "emprunte", t: "Celui qui emprunte (débiteur) ou donne la garantie" },
+        { v: "libere", t: "Celui qui veut récupérer ou libérer son bien", d: "La dette est payée, ou le créancier refuse de lever la garantie" }] },
+      { id: "bien", type: "choice", q: "Sur quoi porte (ou porterait) la garantie ?", options: [
+        { v: "immeuble", t: "Un terrain ou un immeuble avec titre foncier" },
+        { v: "chantier", t: "Un chantier de construction ou de réparation", d: "Entrepreneur, architecte, ou celui qui avance les fonds" },
+        { v: "nontitre", t: "Un terrain sans titre foncier" },
+        { v: "materiel", t: "Du matériel professionnel ou un véhicule", d: "Que le débiteur garde" },
+        { v: "stocks", t: "Des stocks de marchandises ou de matières premières" },
+        { v: "parts", t: "Des parts sociales ou des actions" },
+        { v: "meuble", t: "Un objet ou un bien meuble remis au créancier (gage)" },
+        { v: "reserve", t: "Une marchandise vendue avec paiement différé", d: "Réserve de propriété" }] },
+      { id: "fin", when: function (a) { return a.bien === "chantier" && a.role !== "libere"; }, type: "date", chips: [], q: "À quelle date les travaux ont-ils été achevés (constatés par huissier) ?", unknown: "Pas encore achevés" },
+      { id: "insc", when: function (a) { return (a.bien === "materiel" || a.bien === "stocks" || a.bien === "parts") && a.role !== "libere"; }, type: "date", chips: [], q: "À quelle date la garantie a-t-elle été inscrite au registre du commerce et des sociétés ?", unknown: "Pas encore inscrite" },
+      { id: "somm", when: function (a) { return a.bien === "meuble" && a.role === "prete"; }, type: "date", q: "Le débiteur n'a pas payé : à quelle date lui avez-vous signifié ou sommé de payer ?", help: "Après cette date, un délai de 8 jours court avant la vente.", unknown: "Pas encore fait" }
+    ],
+    plan: function (a) {
+      var p = { title: "Votre plan", ask: "Comment constituer une hypothèque ?", deadlines: [], steps: [], docs: [], points: [] };
+      var pre = a.role === "prete", emp = a.role === "emprunte", lib = a.role === "libere";
+      if (a.bien === "immeuble") {
+        if (lib) {
+          p.title = "Faire lever une hypothèque";
+          p.verdict = { tone: "ok", t: "Une hypothèque se radie selon les règles de la publicité foncière, ou par décision du juge.", d: "Si le créancier refuse de consentir à la radiation, ou si le conservateur refuse d'y procéder, vous pouvez obtenir la mainlevée judiciaire. Une décision passée en force de chose jugée oblige le conservateur à radier." };
+          p.steps = [
+            { t: "Obtenez la mainlevée du créancier", d: "Tout acte relatif à une hypothèque (renonciation, extinction) est établi par acte authentique ou authentifié et publié comme l'acte constitutif.", cite: SURL + ", art. 190 et 191" },
+            { t: "Faites radier l'inscription au livre foncier", d: "Selon les règles de la publicité foncière, auprès de la conservation de la propriété foncière.", cite: "Art. 191" },
+            { t: "En cas de refus, saisissez le juge", d: "Le débiteur ou son ayant droit peut demander la mainlevée judiciaire. La décision définitive oblige le conservateur à radier.", cite: "Art. 191", go: ["pros", "Trouver un professionnel"] }
+          ];
+          p.points.push({ t: "Péremption.", d: "L'hypothèque s'éteint aussi par la péremption de l'inscription, attestée sous sa responsabilité par le conservateur, qui mentionne qu'aucune prorogation ni nouvelle inscription n'affecte la péremption.", cite: "Art. 189 et 190" });
+        } else {
+          p.title = pre ? "Prendre une hypothèque sur un terrain titré" : "Donner un terrain titré en hypothèque";
+          p.verdict = { tone: pre ? "ok" : "warn", t: pre ? "L'hypothèque se fait devant notaire et prend rang le jour de son inscription." : "Vous restez propriétaire, mais le créancier pourra faire saisir le terrain en cas de non-paiement.", d: pre ? "Tant que l'inscription n'est pas faite, l'acte d'hypothèque est inopposable aux tiers." : "Le droit de suite permet au créancier de poursuivre le terrain entre les mains de tout tiers détenteur dont le titre est publié après l'hypothèque." };
+          p.steps = [
+            { t: "Passez l'acte devant notaire", d: "L'hypothèque conventionnelle est consentie par acte authentique établi par le notaire, ou acte authentifié par l'autorité administrative habilitée. La procuration d'un tiers doit avoir la même forme.", cite: SURL + ", art. 193 et 195" },
+            { t: "Désignez chaque immeuble", d: "Nature, situation et commune de chacun, individuellement : aucune désignation générale, même limitée à une circonscription.", cite: "Art. 193" },
+            { t: "Fixez la créance et la somme", d: "L'hypothèque garantit des créances individualisées par leur cause et leur origine, pour une somme déterminée. Le débiteur peut demander ensuite la réduction de cette somme. Elle doit être consentie par le titulaire du droit réel inscrit, capable d'en disposer.", cite: "Art. 194" },
+            { t: "Faites inscrire l'hypothèque au livre foncier", d: "Le rang est celui du jour de l'inscription, conservé jusqu'à la publication de l'extinction. Pour une ouverture de crédit sur une somme déterminée, le rang court dès la publication, quelles que soient les dates d'exécution.", cite: "Art. 188, 197 et 198" },
+            { t: "Suivez la durée de l'inscription", d: "Elle conserve le droit jusqu'à la date fixée par la convention ou la décision de justice, puis cesse si elle n'est pas renouvelée pour une durée déterminée.", cite: "Art. 189" }
+          ];
+          p.points.push({ t: "Seuls les immeubles immatriculés peuvent être hypothéqués.", d: "Les biens à venir ne peuvent pas l'être, sauf si les biens présents sont insuffisants et que le débiteur le reconnaît.", cite: "Art. 184 et 185" });
+          p.points.push({ t: "Ce que l'hypothèque garantit.", d: "Le principal, les frais et trois ans d'intérêts au même rang. Elle est indivisible : elle subsiste en entier jusqu'au paiement complet.", cite: "Art. 182 et 186" });
+          p.points.push({ t: "Si l'immeuble perd de la valeur.", d: "Le créancier peut exiger le paiement avant terme, ou une autre hypothèque.", cite: "Art. 185 et 204" });
+          p.points.push({ t: "À défaut de paiement.", d: "Saisie immobilière, avec droit de suite contre tout tiers détenteur. Le tiers peut désintéresser le créancier du montant intégral et se subroger à lui.", cite: "Art. 205" });
+          p.points.push({ t: "Un jugement donne aussi une hypothèque.", d: "Tout jugement de condamnation, même provisoire, une sentence arbitrale revêtue de l'exequatur ou une contrainte administrative exécutoire.", cite: "Art. 203" });
+        }
+      } else if (a.bien === "chantier") {
+        p.title = "Garantie d'un chantier de construction ou de réparation";
+        if (a.fin) {
+          var lim = mo(a.fin, 1), n = diffDays(today(), parse(lim));
+          p.verdict = n >= 0 ? { tone: n <= 10 ? "urgent" : "warn", t: "Rendez l'inscription définitive avant le " + fmt(lim) + ".", d: "L'inscription provisoire ne vaut que jusqu'à un mois après l'achèvement des travaux constatés par huissier. Elle conserve sa date si, dans ce délai, un accord ou une décision de justice la rend définitive." } : { tone: "urgent", t: "Le délai d'un mois après l'achèvement des travaux est dépassé.", d: "L'inscription provisoire a probablement perdu son rang. Parlez-en sans attendre à un professionnel." };
+          p.deadlines.push({ title: "Rendre l'inscription définitive", date: lim, why: "Un mois après l'achèvement des travaux constatés par huissier.", cite: SURL + ", art. 202", remind: 7 });
+        } else p.verdict = { tone: "ok", t: "Les entrepreneurs peuvent se garantir avant même le début des travaux.", d: "Architectes, entrepreneurs et autres personnes employées peuvent se faire consentir une hypothèque conventionnelle ou obtenir une hypothèque forcée par décision judiciaire sur l'immeuble." };
+        p.steps = [
+          { t: "Faites consentir l'hypothèque avant le début des travaux", d: "Ou obtenez-la en justice (hypothèque forcée).", cite: SURL + ", art. 202" },
+          { t: "Inscrivez-la provisoirement pour la somme estimée due", d: "Elle prend rang à sa date.", cite: "Art. 202" },
+          { t: "Faites constater l'achèvement par huissier", d: "C'est le point de départ du délai d'un mois.", cite: "Art. 202" },
+          { t: "Convertissez l'inscription en inscription définitive", d: "Par accord des parties ou décision de justice, pour tout ou partie de la somme.", cite: "Art. 202" }
+        ];
+        p.points.push({ t: "Celui qui avance les fonds.", d: "Il peut obtenir la même hypothèque, s'il est constaté dans l'acte d'emprunt que la somme sert à payer ces entrepreneurs, et par leur quittance que le paiement a été fait avec les deniers empruntés.", cite: "Art. 202" });
+      } else if (a.bien === "nontitre") {
+        p.title = "Garantir un prêt sur un terrain sans titre : le fehivava";
+        p.verdict = { tone: "warn", t: "Un terrain sans titre ne peut pas être hypothéqué : on utilise le contrat de fehivava.", d: "Le créancier garde l'immeuble et en jouit jusqu'au remboursement, sans intérêts. C'est une garantie lourde : la clause « tsatoka » (appropriation d'office) est interdite." };
+        p.steps = lib ? [
+          { t: "Remboursez le capital prévu au contrat", d: "À l'échéance, sauf prorogation acceptée expressément par le créancier.", cite: SURL + ", art. 216" },
+          { t: "Reprenez l'immeuble dans les 24 heures", d: "Le créancier doit le restituer au plus tard 24 heures après le paiement. À défaut, il doit des astreintes de 15 % de la somme empruntée par jour de retard, et vous pouvez requérir la force publique.", cite: "Art. 212 et 216" },
+          { t: "Si vous ne remboursez pas", d: "Le bien n'est pas acquis d'office : le créancier le fait évaluer par expert et vous verse le surplus ; en cas de contestation, il le fait vendre en justice. Si la valeur est inférieure au prêt, vous ne devez plus rien.", cite: "Art. 213 et 216" }
+        ] : [
+          { t: "Passez un acte authentique ou authentifié", d: "À peine de nullité, avec enregistrement et, si l'immeuble est immatriculé, inscription au titre foncier. L'acte indique le délai de remboursement, à l'expiration duquel le créancier pourrait acquérir le bien.", cite: SURL + ", art. 206" },
+          { t: "N'écrivez ni intérêts ni indexation ni « tsatoka »", d: "Toute stipulation d'intérêt sur la somme prêtée, toute indexation du capital et toute clause « tsatoka » sont réputées non écrites.", cite: "Art. 207" },
+          { t: pre ? "Gérez l'immeuble en bon père de famille" : "Laissez le créancier entrer en possession", d: pre ? "Vous avez la pleine jouissance, comme un usufruitier, et percevez les fruits pour votre compte. Vous payez les impôts et charges, entretenez et faites les réparations utiles et indispensables. Vous ne pouvez pas vendre le bien, mais vous pouvez céder votre droit de gage." : "Vous gardez la pleine propriété et pouvez faire tous les actes juridiques que vous voulez sur l'immeuble, mais vous devez laisser le créancier en jouir paisiblement.", cite: "Art. 208, 210 et 215" },
+          { t: "Fixez le délai de remboursement", d: "Sans date, les parties peuvent y mettre fin à tout moment : le débiteur en remboursant, le créancier en signifiant sa volonté de rentrer dans son argent ; la date est alors fixée d'accord entre elles.", cite: "Art. 206" }
+        ];
+        p.points.push({ t: "En cas de non-remboursement.", d: "Évaluation par expert ; le créancier verse le surplus au débiteur. Si la valeur est inférieure au prêt, le débiteur ne doit plus rien.", cite: "Art. 213" });
+        p.points.push({ t: "Pas de prescription acquisitive.", d: "Le créancier ne peut jamais se prévaloir de la prescription acquisitive, quelle que soit la durée du contrat.", cite: "Art. 211" });
+        p.points.push({ t: "Conflit avec un acheteur.", d: "La préférence va au créancier fehivaviste, sauf pour le tiers acquéreur à le désintéresser. Un tiers titulaire d'un droit réel inscrit avant le contrat est préféré.", cite: "Art. 214" });
+      } else if (a.bien === "materiel" || a.bien === "stocks" || a.bien === "parts") {
+        var K = {
+          materiel: { t: "Nantissement du matériel professionnel ou d'un véhicule", an: 5, art: "Art. 115 à 125", ren: "L'inscription conserve les droits du créancier pendant cinq ans ; son effet cesse si elle n'est pas renouvelée.", ca: "Art. 121",
+            steps: [
+              { t: "Passez un acte authentique, authentifié ou sous seing privé enregistré", d: "À peine de nullité, il comporte l'identité des parties, la description du matériel (identification, emplacement, déplacement possible), le montant de la créance, les conditions d'exigibilité, et l'élection de domicile dans le ressort du registre du commerce.", cite: "Art. 120" },
+              { t: "Inscrivez le nantissement au registre du commerce et des sociétés", d: "Il ne produit effet que s'il est inscrit, quand le matériel fait partie de l'actif d'une entreprise soumise à immatriculation. Pour un véhicule, il est aussi mentionné sur la carte d'immatriculation.", cite: "Art. 114, 121 et 122" },
+              { t: "Interdisez la vente sans accord", d: "Le débiteur ne peut vendre le matériel sans l'accord du créancier ou une autorisation judiciaire, sinon la dette devient immédiatement exigible.", cite: "Art. 123" },
+              { t: "En cas d'impayé, réalisez", d: "Droit de suite et vente selon les règles du gage commercial (article 88).", cite: "Art. 124" }
+            ], pts: [{ t: "Intérêts.", d: "L'inscription garantit au même rang que le principal deux années d'intérêts.", cite: "Art. 125" }, { t: "Qui peut en bénéficier ?", d: "Le vendeur du matériel, celui qui a cautionné l'acheteur ou prêté les fonds de l'achat, et le créancier d'un matériel faisant partie d'un fonds de commerce.", cite: "Art. 116 et 117" }] },
+          stocks: { t: "Nantissement des stocks", an: 1, art: "Art. 127 à 133", ren: "L'inscription ne conserve les droits du créancier que pendant un an ; son effet cesse si elle n'est pas renouvelée.", ca: "Art. 129",
+            steps: [
+              { t: "Passez un acte authentique ou sous seing privé enregistré", d: "À peine de nullité : parties et numéro d'immatriculation, description précise du bien (nature, qualité, quantité, valeur, situation), assureur contre l'incendie et la destruction, montant de la créance, conditions d'exigibilité, banquier domiciliataire du bordereau.", cite: "Art. 128" },
+              { t: "Inscrivez-le au registre du commerce et des sociétés", d: "Sans inscription, il ne produit aucun effet. Le greffier remet au débiteur un bordereau de nantissement, qui se transmet par endossement et reste valable trois ans.", cite: "Art. 129 et 130" },
+              { t: "Assurez et conservez les stocks", d: "Le débiteur garde le stock, ne doit pas diminuer sa valeur, l'assure, et tient à disposition un état des stocks et la comptabilité. Si la valeur baisse, la dette devient exigible.", cite: "Art. 131" },
+              { t: "Encadrez la vente", d: "Le débiteur peut vendre mais ne livre qu'après consignation du prix chez le banquier domiciliataire, à défaut de quoi le créancier réalise le stock, sans préjudice des poursuites pénales pour détournement.", cite: "Art. 132 et 133" }
+            ], pts: [] },
+          parts: { t: "Nantissement de parts sociales ou d'actions", an: 5, art: "Art. 135 à 142", ren: "L'inscription conserve les droits du créancier pendant cinq ans ; son effet cesse si elle n'est pas renouvelée.", ca: "Art. 139",
+            steps: [
+              { t: "Passez un acte authentique ou sous seing privé enregistré", d: "À peine de nullité : identité du créancier, du débiteur et du constituant, siège et numéro d'immatriculation de la société, nombre (et numéros) des titres, montant de la créance, conditions d'exigibilité, élection de domicile du créancier dans le ressort du registre.", cite: "Art. 136" },
+              { t: "Inscrivez-le au registre du commerce et des sociétés", d: "Sous réserve des règles propres aux sociétés commerciales, le nantissement conventionnel ou judiciaire ne produit effet que s'il est inscrit.", cite: "Art. 138" },
+              { t: "Signifiez-le à la société", d: "Le nantissement doit aussi être signifié à la personne morale émettrice des titres.", cite: "Art. 140" },
+              { t: "En cas d'impayé", d: "Droit de suite et de réalisation, dans les conditions de l'article 89 (sommation, vente forcée ou attribution par ordonnance).", cite: "Art. 142" }
+            ], pts: [{ t: "Nantissement judiciaire.", d: "Dans les mêmes cas que l'hypothèque judiciaire, le juge peut autoriser le créancier à prendre une inscription sur les parts de son débiteur.", cite: "Art. 137 et 138" }] }
+        }[a.bien];
+        p.title = lib ? K.t + " : fin de la garantie" : K.t;
+        if (lib) {
+          p.verdict = { tone: "ok", t: "La garantie cesse quand la dette est éteinte, et son inscription n'est plus utile.", d: "Un bien non remis au créancier lui reste de toute façon acquis comme garantie tant que la dette n'est pas payée en entier. Demandez la mainlevée à votre créancier une fois soldé." };
+          p.steps = [{ t: "Soldez la dette", d: "Principal, intérêts et frais.", cite: "Art. 75" }, { t: "Faites radier l'inscription", d: "Demandez au créancier un accord de mainlevée et faites constater la radiation au registre du commerce et des sociétés.", cite: K.art }];
+        } else {
+          p.steps = K.steps;
+          p.points = p.points.concat(K.pts);
+          if (a.insc) {
+            var dd = mo(a.insc, 12 * K.an), nn = diffDays(today(), parse(dd));
+            p.deadlines.push({ title: "Renouveler l'inscription", date: dd, why: K.ren, cite: SURL + ", " + K.ca.toLowerCase(), remind: 60 });
+            p.verdict = nn >= 0 ? { tone: nn <= 60 ? "warn" : "ok", t: "Renouvelez l'inscription avant le " + fmt(dd) + ".", d: K.ren } : { tone: "urgent", t: "L'inscription semble périmée : la garantie a perdu son effet.", d: K.ren + " Faites une nouvelle inscription sans attendre, en vérifiant d'abord si un autre créancier a pris rang entre-temps." };
+          } else p.verdict = { tone: "ok", t: "La garantie ne produit effet que si elle est inscrite.", d: K.ren };
+        }
+        p.points.push({ t: "Textes particuliers.", d: "Ces règles s'appliquent sans préjudice de la législation sur la transparence des entreprises, qui n'est pas chargée dans ZOU. Le nantissement du fonds de commerce relève d'un texte particulier, lui non plus non chargé.", cite: "Art. 126, 134, 143 et 144" });
+      } else if (a.bien === "reserve") {
+        p.title = "Vendre avec une réserve de propriété";
+        p.verdict = { tone: "ok", t: pre ? "Vous restez propriétaire jusqu'au paiement complet, si la clause est écrite à temps." : "Vous ne deviendrez propriétaire qu'au paiement complet.", d: "La clause doit être stipulée dans un écrit au plus tard au moment de la livraison pour être opposable à l'acheteur et aux autres créanciers." };
+        p.steps = [
+          { t: "Écrivez la clause avant la livraison", d: "Dans le contrat ou un écrit : le vendeur se réserve la propriété des biens livrés jusqu'à leur complet paiement.", cite: SURL + ", art. 154 et 155" },
+          { t: "En cas d'impayé, revendiquez", d: "Tout bien ou marchandise vendu avec cette clause peut être revendiqué par le vendeur en cas de défaillance de l'acheteur, y compris en procédure collective.", cite: "Art. 155" },
+          { t: "Pensez au privilège du vendeur", d: "Sur le meuble vendu, tant qu'il est encore en la possession du débiteur, ou sur le prix encore dû par un sous-acquéreur.", cite: "Art. 166" }
+        ];
+        p.points.push({ t: "Droit de rétention.", d: "Celui qui détient légitimement un bien peut le retenir jusqu'à parfait paiement, si la créance est certaine, liquide et exigible, avant toute saisie, et si elle est liée à la chose (connexité).", cite: "Art. 64 à 66" });
+      } else {
+        p.title = lib ? "Récupérer un bien donné en gage" : "Le gage : un bien remis au créancier";
+        if (lib) {
+          p.verdict = { tone: "ok", t: "Dès que la dette est entièrement payée, le créancier doit vous rendre le bien.", d: "Principal, intérêts et frais. Il restitue la chose avec tous ses accessoires ; vous lui remboursez les dépenses utiles et nécessaires qu'il a faites pour la conserver." };
+          p.steps = [
+            { t: "Payez la dette en entier", d: "Vous ne pouvez demander la restitution qu'après paiement intégral, sauf abus du détenteur. Une autre dette exigible avant le paiement de la première lui permet de garder le gage.", cite: SURL + ", art. 75" },
+            { t: "Réclamez le bien", d: "Le gage prend fin quand l'obligation garantie est éteinte.", cite: "Art. 95 et 96" },
+            { t: "S'il ne vous le rend pas", d: "Saisissez le juge.", go: ["pros", "Trouver un professionnel"] }
+          ];
+        } else {
+          if (pre && a.somm) {
+            var vd = plus(a.somm, 8);
+            p.deadlines.push({ title: "Vendre le gage", date: vd, why: "Huit jours après la signification (gage commercial) ou la sommation restée infructueuse (créancier muni d'un titre exécutoire).", cite: SURL + ", art. 88 et 89", remind: 2 });
+            p.verdict = { tone: "ok", t: "Vous pouvez demander la vente à partir du " + fmt(vd) + ".", d: "Gage commercial : vente publique par huissier huit jours après la signification. Autre gage : huit jours après une sommation infructueuse, si vous avez un titre exécutoire." };
+          } else p.verdict = { tone: "warn", t: pre ? "Vous ne pouvez pas vous approprier le gage : il faut passer par le juge ou une vente." : "Le créancier ne peut pas s'approprier votre bien de lui-même.", d: "Toute clause qui l'autoriserait à s'approprier le gage ou à le vendre sans formalités (pacte commissoire, voie parée) est réputée non écrite." };
+          p.steps = [
+            { t: "Faites un écrit enregistré", d: "Acte public ou sous seing privé enregistré, avec la somme due et la nature des choses remises (ou un état annexé de leur qualité, poids et mesures). Pour une créance, il faut en plus le signifier au débiteur de la créance.", cite: SURL + ", art. 68 et 69" },
+            { t: "Remettez le bien au créancier, ou à un tiers convenu", d: "Le privilège ne subsiste qu'autant que le gage est resté en la possession du créancier ou d'un tiers convenu.", cite: "Art. 70" },
+            { t: "Conservez-le comme un dépositaire rémunéré", d: "Sans usage ni perception des fruits, sauf stipulation contraire. Si le bien menace de périr, le juge des référés peut autoriser sa vente, le gage se reportant sur le prix.", cite: "Art. 92 et 93" },
+            { t: "En cas d'impayé", d: "Pour disposer du bien, le créancier fait ordonner en justice qu'il lui reste en paiement après estimation par experts, ou le fait vendre aux enchères. Gage commercial : vente publique huit jours après une simple signification au débiteur. Avec un titre exécutoire : huit jours après sommation, vente forcée ou attribution par ordonnance sur requête.", cite: "Art. 72, 88 et 89" }
+          ];
+          p.points.push({ t: "Pas d'appropriation d'office.", d: "Toute clause qui autoriserait le créancier à s'approprier le gage (pacte commissoire) ou à le vendre sans formalités (voie parée) est réputée non écrite.", cite: "Art. 72" });
+          p.points.push({ t: "Rang des créanciers gagistes.", d: "Dans l'ordre de l'enregistrement des gages successifs, ou à défaut dans l'ordre de constitution.", cite: "Art. 91" });
+        }
+      }
+      var immo = a.bien === "immeuble" || a.bien === "chantier" || a.bien === "nontitre";
+      if (!lib) p.result = immo ? { title: "Qui est payé en premier sur le prix d'un immeuble ?", items: [
+        { t: "1. Les frais de justice", d: "Engagés pour réaliser le bien et distribuer le prix." },
+        { t: "2. Les salaires privilégiés" },
+        { t: "3. Les hypothèques", d: "Conventionnelles ou forcées, chacune selon le rang de son inscription au livre foncier." },
+        { t: "4. Les privilèges généraux soumis à publicité", d: "Selon le rang de leur inscription au registre du commerce et des sociétés." },
+        { t: "5. Les privilèges généraux non soumis à publicité", d: "Dans l'ordre de l'article 162." },
+        { t: "6. Les créanciers chirographaires", d: "Munis d'un titre exécutoire et intervenus par saisie ou opposition." }],
+        d: "En cas d'insuffisance, les créanciers de même rang se partagent au marc le franc.", cite: SURL + ", art. 218" }
+        : { title: "Qui est payé en premier sur le prix d'un meuble ?", items: [
+        { t: "1. Les frais de justice, puis les dépenses de conservation" },
+        { t: "2. Les salaires super privilégiés" },
+        { t: "3. Les créanciers gagistes", d: "Selon la date de constitution du gage." },
+        { t: "4. Nantissements et privilèges soumis à publicité", d: "Selon le rang de leur inscription au registre du commerce et des sociétés." },
+        { t: "5. Les privilèges spéciaux, puis les privilèges généraux non publiés" },
+        { t: "6. Les créanciers chirographaires", d: "Munis d'un titre exécutoire et intervenus dans la procédure." }],
+        d: "En cas d'insuffisance, les créanciers de même rang se partagent au marc le franc.", cite: SURL + ", art. 219" };
+      p.next = [["vie.caution", "Caution : se porter garant ou être poursuivi"], ["pros", "Trouver un notaire ou un avocat"]];
+      return p;
+    },
+    sources: [SUR + " : art. 58 à 219."]
+  }));
+
   VIE_ORDER.forEach(function (id) {
     var v = VIES[id];
     addItem({ key: "flow:vie-" + id, kind: "flow", id: "vie-" + id, dom: v.dom || "famille", title: v.situation, desc: v.desc, time: v.time, go: "vie." + id });
@@ -7217,7 +7640,10 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     { go: "vie.bail", t: "Je loue un local commercial", d: "Renouvellement, congé, loyer, cession" },
     { go: "vie.creer", t: "Je veux lancer mon activité", d: "Commerçant ou société, étapes, comptabilité" },
     { go: "vie.difficultes", t: "Mon entreprise ne peut plus payer", d: "Cessation des paiements, délais, pièces", tone: "urgent" },
-    { go: "vie.creancier", t: "Un débiteur est en faillite", d: "Déclarer ma créance avant la forclusion" }
+    { go: "vie.creancier", t: "Un débiteur est en faillite", d: "Déclarer ma créance avant la forclusion" },
+    { go: "vie.copro", t: "Je suis copropriétaire", d: "Charges, votes, syndic, titre de l'appartement" },
+    { go: "vie.caution", t: "On me demande de me porter caution", d: "Ce que vous risquez, la forme exigée, vos recours", tone: "urgent" },
+    { go: "vie.garantie", t: "Hypothèque, gage : garantir un prêt", d: "Terrain, matériel, stocks : forme et inscription" }
   ];
   function renderLife() {
     var g = $("#lifeGrid");
