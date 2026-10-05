@@ -2460,7 +2460,8 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     { key: "civil", cat: "Procédure civile", d: "Appel, délais de procédure, arbitrage" },
     { key: "social", cat: "Protection sociale", d: "Accident du travail, maternité, pension, cotisations" },
     { key: "sante", cat: "Santé et sécurité", d: "Lieu de travail, médecine du travail, contrôle" },
-    { key: "famille", cat: "Famille", d: "Naissance, mariage, séparation, décès et héritage, enfants" }
+    { key: "famille", cat: "Famille", d: "Naissance, mariage, séparation, décès et héritage, enfants" },
+    { key: "entreprise", cat: "Entreprise et commerce", d: "Bail commercial, création, sociétés, difficultés, créances" }
   ];
   var DOM_BY_KEY = {};
   DOMS.forEach(function (d) { DOM_BY_KEY[d.key] = d; });
@@ -3153,7 +3154,11 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     { kind: "Loi", name: "Droits et protection des enfants", ref: "Loi n° 2007-023", dom: "famille" },
     { kind: "Loi", name: "Nationalité malagasy : modifications du Code de la nationalité", ref: "Loi n° 2016-038", dom: "famille" },
     { kind: "Loi", name: "Successions, testaments et donations", ref: "Loi n° 68-012 du 4 juillet 1968", dom: "famille" },
-    { kind: "Recueil", name: "Droits civils : personnes, famille, filiation, adoption, biens", ref: "Recueil de textes", dom: "famille" }
+    { kind: "Recueil", name: "Droits civils : personnes, famille, filiation, adoption, biens", ref: "Recueil de textes", dom: "famille" },
+    { kind: "Loi", name: "Régime juridique des baux commerciaux", ref: "Loi n° 2015-037", dom: "entreprise" },
+    { kind: "Loi", name: "Statut du commerçant", ref: "Loi n° 99-018", dom: "entreprise" },
+    { kind: "Loi", name: "Sociétés commerciales", ref: "Loi n° 2003-036", dom: "entreprise" },
+    { kind: "Loi", name: "Procédures collectives d'apurement du passif", ref: "Loi n° 2003-042", dom: "entreprise" }
   ];
   var textsDT = null;
   function initTexts() {
@@ -4762,9 +4767,429 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   });
 
 
+  /* ---------- Parcours Entreprise et commerce ---------- */
+  var BAUX = "Loi n° 2015-037 sur le régime juridique des baux commerciaux";
+  var COM = "Loi n° 99-018 relative au statut du commerçant";
+  var SOC = "Loi n° 2003-036 sur les sociétés commerciales";
+  var PCO = "Loi n° 2003-042 sur les procédures collectives d'apurement du passif";
+  var ECO = { dom: "entreprise", back: "services.entreprise", backLabel: "Entreprise et commerce" };
+  function mo(dateIso, n) { return iso(addMonths(parse(dateIso), n)); }
+  function orv(x, d) { return (x || "").trim() || d; }
+  function futChips() { return [["Dans 3 mois", 90], ["Dans 6 mois", 180], ["Dans un an", 365]]; }
+  function mk(base, v) { for (var k in base) v[k] = base[k]; return v; }
+
+  /* 1. Bail commercial */
+  defVie(mk(ECO, {
+    id: "bail", short: "Bail commercial", title: "Bail commercial : renouvellement, congé, loyer, cession",
+    situation: "Je loue (ou je donne en location) un local commercial", desc: "Renouvellement, congé, indemnité d'éviction, loyer, impayés : vos dates limites", time: "4 min",
+    keys: /bail commercial|local commercial|loyer commercial|indemnit[ée] d.[ée]viction|renouvellement (du|de mon) bail|pas-de-porte|preneur|bailleur/i,
+    intro: "Quelques questions pour savoir ce que la loi vous permet, et avant quelle date agir : dans un bail commercial, un délai manqué fait perdre des droits.",
+    questions: [
+      { id: "role", type: "choice", q: "Vous êtes…", options: [{ v: "loc", t: "Locataire (preneur)", d: "Vous exploitez une activité dans le local" }, { v: "prop", t: "Propriétaire (bailleur)", d: "Vous louez un local à un commerçant, un artisan ou un professionnel" }] },
+      { id: "duree", type: "choice", q: "Votre bail est-il à durée déterminée ?", help: "Sans écrit ni date de fin, le bail est réputé à durée indéterminée.", options: [
+        { v: "det", t: "Oui, il a une date de fin" }, { v: "indet", t: "Non, il est à durée indéterminée" }, { v: "verbal", t: "Il n'y a pas d'écrit", d: "Un bail commercial peut exister même sans écrit" }] },
+      { id: "sitL", when: function (a) { return a.role === "loc"; }, type: "choice", q: "Que voulez-vous faire, ou que vous arrive-t-il ?", options: [
+        { v: "renouv", t: "Je veux faire renouveler mon bail" }, { v: "conge", t: "J'ai reçu un congé ou un refus de renouvellement" },
+        { v: "loyer", t: "Le loyer pose problème (révision, fixation)" }, { v: "cession", t: "Je veux céder mon bail ou sous-louer" }, { v: "impaye", t: "On me menace de résiliation (loyers impayés, clause non respectée)" }] },
+      { id: "sitB", when: function (a) { return a.role === "prop"; }, type: "choice", q: "Que voulez-vous faire, ou que vous arrive-t-il ?", options: [
+        { v: "recup", t: "Je veux récupérer mon local" }, { v: "demande", t: "Mon locataire demande le renouvellement" },
+        { v: "impaye", t: "Mon locataire ne paie pas ou ne respecte pas le bail" }, { v: "loyer", t: "Je veux faire réviser ou fixer le loyer" }] },
+      { id: "exploit", when: function (a) { return a.role === "loc" && (a.sitL === "renouv" || a.sitL === "conge"); }, type: "choice", q: "Exploitez-vous votre activité dans ces locaux depuis au moins 2 ans ?", help: "C'est la condition du droit au renouvellement.", options: [{ v: "oui", t: "Oui" }, { v: "non", t: "Non, moins de 2 ans" }] },
+      { id: "fin", when: function (a) { var s = a.sitL || a.sitB; return a.duree === "det" && (s === "renouv" || s === "recup" || s === "demande"); }, type: "date", future: true, chips: futChips(), q: "Quelle est la date de fin du bail ?", unknown: "Je ne la connais pas" },
+      { id: "signif", when: function (a) { return a.sitL === "conge"; }, type: "date", q: "À quelle date l'acte (congé ou refus de renouvellement) vous a-t-il été signifié ?", help: "La date de remise de l'acte par l'huissier.", unknown: "Je ne sais pas" },
+      { id: "effet", when: function (a) { return a.sitL === "conge" && a.duree !== "det"; }, type: "date", future: true, chips: futChips(), q: "Quelle est la date d'effet indiquée dans le congé ?", unknown: "Je ne la connais pas" }
+    ],
+    plan: function (a) {
+      var sit = a.sitL || a.sitB, loc = a.role === "loc";
+      var p = { title: "Votre plan pour le bail", ask: "Comment faire renouveler un bail commercial ?", deadlines: [], steps: [], docs: [], points: [] };
+      var det = a.duree === "det";
+      if (sit === "renouv") {
+        p.title = "Faire renouveler votre bail";
+        if (a.exploit === "non") {
+          p.verdict = { tone: "warn", t: "Le droit au renouvellement n'est pas encore acquis.", d: "Il faut avoir exploité son activité dans les lieux pendant au moins 2 ans. Vous pouvez demander l'accord du propriétaire, mais il n'est pas obligé d'accepter." };
+          p.points.push({ t: "Fondement", cite: "Loi 2015-037, art. 29" });
+        } else if (det && a.fin) {
+          var lim = mo(a.fin, -3), n = diffDays(today(), parse(lim));
+          p.verdict = n >= 0
+            ? { tone: n <= 30 ? "warn" : "ok", t: "Demandez le renouvellement avant le " + fmt(lim) + ".", d: "La demande se fait par acte extrajudiciaire (par un huissier), au plus tard 3 mois avant la fin du bail. Passé ce délai, vous perdez le droit au renouvellement." }
+            : { tone: "urgent", t: "Le délai de demande est dépassé.", d: "Le droit au renouvellement est perdu, sauf si votre bail prévoit un renouvellement automatique. Vérifiez votre contrat et parlez-en à un professionnel : une négociation reste possible." };
+          if (n >= 0) p.deadlines.push({ title: "Demander le renouvellement (acte extrajudiciaire)", date: lim, why: "Au plus tard 3 mois avant la fin du bail.", cite: "Loi 2015-037, art. 30", remind: 30 });
+          p.deadlines.push({ title: "Réponse du bailleur attendue", date: mo(a.fin, -1), why: "S'il ne répond pas, dans les mêmes formes, au plus tard 1 mois avant la fin du bail, il est réputé accepter le principe du renouvellement.", cite: "Art. 30", remind: 7 });
+        } else if (det) {
+          p.verdict = { tone: "warn", t: "Retrouvez la date de fin de votre bail : c'est elle qui fixe votre date limite.", d: "Vous devez demander le renouvellement par acte extrajudiciaire au plus tard 3 mois avant cette date, sous peine de perdre votre droit." };
+        } else {
+          p.verdict = { tone: "ok", t: "Un bail à durée indéterminée ne se renouvelle pas : il continue tant que personne ne donne congé.", d: "Le propriétaire doit vous donner congé par acte extrajudiciaire au moins 6 mois à l'avance. Vous gardez alors le droit de contester le congé." };
+        }
+        p.steps = [
+          { t: "Faites établir la demande par un huissier", d: "La demande de renouvellement est un acte extrajudiciaire. La lettre ci-dessous est pré-remplie : remettez-la à l'huissier.", cite: "Art. 30" },
+          { t: "Gardez la preuve de remise", d: "Rangez l'acte signifié dans votre coffre ZOU.", go: ["vault", "Ouvrir mon coffre"] },
+          { t: "Si le propriétaire refuse", d: "Il doit en principe vous payer une indemnité d'éviction, sauf motif sérieux et légitime ou projet de démolition. Vous pouvez rester dans les lieux jusqu'au versement de l'indemnité.", cite: "Art. 32 et 34" }
+        ];
+        p.points.push({ t: "Durée du bail renouvelé.", d: "La même durée que le bail précédent s'il était à durée déterminée ; 3 ans s'il était à durée indéterminée, sauf accord différent.", cite: "Art. 36" });
+        p.points.push({ t: "Le loyer.", d: "À défaut d'accord écrit sur le loyer du bail renouvelé, le président du tribunal de commerce est saisi et statue en référé, en tenant compte de la situation, de la superficie, de l'état des locaux et des loyers du voisinage.", cite: "Art. 21" });
+        p.letter = {
+          title: "Demande de renouvellement du bail (à faire signifier par huissier)", lede: "À remettre à l'huissier, qui la signifie au propriétaire. Complétez les champs : le texte se met à jour.",
+          fields: [{ id: "nom", label: "Vos nom et prénoms (ou dénomination)", wide: true }, { id: "adr", label: "Votre adresse", wide: true }, { id: "bailleur", label: "Nom et adresse du propriétaire", wide: true },
+            { id: "local", label: "Adresse du local loué", wide: true }, { id: "dbail", label: "Date du bail" }, { id: "fin", label: "Date de fin du bail", init: a.fin ? fmt(a.fin) : "" }, { id: "activ", label: "Activité exercée", wide: true }, { id: "ville", label: "Fait à" }],
+          text: function (f) {
+            return orv(f.nom, "[Vos nom et prénoms]") + "\n" + orv(f.adr, "[Votre adresse]") + "\n\nÀ " + orv(f.bailleur, "[nom et adresse du propriétaire]") +
+              "\n\nObjet : demande de renouvellement du bail commercial\n\nMadame, Monsieur,\n\nJe suis locataire des locaux situés " + orv(f.local, "[adresse du local]") + ", en vertu du bail conclu le " + orv(f.dbail, "[date du bail]") + ", où j'exploite l'activité suivante : " + orv(f.activ, "[activité]") +
+              ", depuis plus de deux ans.\n\nConformément aux articles 29 et 30 de la loi n° 2015-037 sur le régime juridique des baux commerciaux, je vous demande de bien vouloir renouveler ce bail, qui arrive à expiration le " + orv(f.fin, "[date de fin du bail]") + "." +
+              "\n\nÀ défaut de réponse de votre part dans les mêmes formes au plus tard un mois avant cette date, vous serez réputé avoir accepté le principe du renouvellement.\n\nVeuillez agréer, Madame, Monsieur, l'expression de mes salutations distinguées.\n\nFait à " + orv(f.ville, "[ville]") + ", le " + fmtLong(today()) + "\n\n[Signature]";
+          }
+        };
+      } else if (sit === "conge") {
+        p.title = "Vous avez reçu un congé ou un refus de renouvellement";
+        p.verdict = { tone: "warn", t: "Ne partez pas, et ne laissez pas passer les délais.", d: "Vous avez le droit de rester dans les lieux, aux conditions du bail, jusqu'au paiement de l'indemnité d'éviction si vous y avez droit. Mais pour contester le congé ou demander cette indemnité, vous devez saisir le tribunal de commerce dans les 6 mois, sous peine de forclusion." };
+        if (a.signif) p.deadlines.push({ title: "Saisir le tribunal de commerce", date: mo(a.signif, 6), why: "6 mois à compter de la signification du refus de renouvellement, pour contester ou demander une indemnité d'éviction.", cite: "Art. 33", remind: 30 });
+        if (a.effet) p.deadlines.push({ title: "Contester le congé (bail à durée indéterminée)", date: a.effet, why: "Par acte extrajudiciaire, au plus tard à la date d'effet du congé ; sinon vous perdez le droit au renouvellement.", cite: "Art. 31", remind: 30 });
+        else if (a.duree !== "det") p.points.push({ t: "Bail à durée indéterminée.", d: "Vous devez contester le congé par acte extrajudiciaire au plus tard à sa date d'effet, qui ne peut pas être inférieure à 6 mois après sa signification. Le bail cesse à la date fixée par le congé.", cite: "Art. 31" });
+        p.steps = [
+          { t: "Vérifiez que l'acte est valable", d: "L'acte de refus doit, à peine de nullité, indiquer le motif et rappeler le délai de 6 mois pour saisir le tribunal. Un congé fondé sur la démolition ou l'insalubrité doit joindre les justificatifs (travaux projetés, arrêté, expertise).", cite: "Art. 33 et 34" },
+          { t: a.exploit === "non" ? "Vous n'avez pas 2 ans d'exploitation : le droit au renouvellement n'est pas acquis" : "Rassemblez de quoi prouver votre exploitation depuis 2 ans", d: a.exploit === "non" ? "Sans ce droit, vous ne pouvez pas réclamer l'indemnité d'éviction. Vous pouvez toutefois demander le remboursement des constructions et aménagements faits avec l'autorisation du bailleur." : "Registre du commerce, factures, déclarations, quittances de loyer.", cite: a.exploit === "non" ? "Art. 29 et 38" : "Art. 29" },
+          { t: "Saisissez le tribunal de commerce du lieu du local", d: "Faites-vous aider d'un professionnel pour la requête.", go: ["pros", "Trouver un professionnel"], cite: "Art. 40" },
+          { t: "Demandez l'indemnité d'éviction", d: "Elle est égale au préjudice : valeur du fonds de commerce, frais de déménagement et de réinstallation, frais de mutation. Si le fonds est transférable sans perte de clientèle, elle se limite à la valeur du droit au bail. À défaut d'accord, le tribunal la fixe.", cite: "Art. 32" }
+        ];
+        p.points.push({ t: "Quand le propriétaire n'a pas à payer d'indemnité.", d: "S'il justifie d'un motif sérieux et légitime (inexécution d'une obligation importante ou cessation d'exploitation, si les faits durent plus de 2 mois après mise en demeure), d'un projet de démolition-reconstruction, ou d'une insalubrité reconnue. Pour les deux derniers cas, vous gardez une priorité pour louer dans l'immeuble reconstruit, à demander dans les 3 mois après votre départ.", cite: "Art. 34" });
+        p.points.push({ t: "Prescription.", d: "Toutes les actions nées de cette loi se prescrivent par 2 ans.", cite: "Art. 40" });
+      } else if (sit === "loyer") {
+        p.title = loc ? "Le loyer de votre local" : "Réviser ou fixer le loyer";
+        p.verdict = { tone: "ok", t: "Le loyer est libre, mais le juge peut le fixer à défaut d'accord.", d: "Il peut être à prix ferme ou révisable, selon un taux fixe, un indice des prix publié au Journal officiel ou un indice prévu au contrat." };
+        p.steps = [
+          { t: "Relisez la clause de révision du bail", d: "Elle dit comment le loyer peut varier.", cite: "Art. 20" },
+          { t: "Essayez de vous accorder par écrit", d: "Un accord écrit règle le loyer du bail renouvelé ou révisé." },
+          { t: "À défaut d'accord, saisissez le président du tribunal de commerce", d: "Il est saisi par la partie la plus diligente et statue en référé. Il tient compte de la situation des locaux, de leur superficie, de leur vétusté et des loyers pratiqués dans le voisinage ; il peut nommer un expert.", cite: "Art. 21" }
+        ];
+        p.points.push({ t: "Pas-de-porte.", d: "Quand le local était déjà exploité, le preneur verse une somme à l'entrée : un supplément de loyer qui ne dépasse pas 3 mois de loyer, ou une indemnité en cas de cession de fonds.", cite: "Art. 22" });
+      } else if (sit === "cession") {
+        p.title = "Céder votre bail ou sous-louer";
+        p.verdict = { tone: "ok", t: "Vous pouvez céder votre bail à l'acheteur de votre fonds de commerce.", d: "Toute clause qui l'interdit est nulle. Mais la cession doit être signifiée au propriétaire." };
+        p.steps = [
+          { t: "Signifiez la cession au propriétaire", d: "Par acte extrajudiciaire ou tout moyen laissant trace écrite, avec l'identité complète et l'adresse du cessionnaire et, s'il y a lieu, son numéro d'immatriculation au registre du commerce. Sans cela, la cession n'est pas opposable au bailleur.", cite: "Art. 23 à 25" },
+          { t: "Le propriétaire a 1 mois pour s'opposer", d: "Il doit saisir la juridiction dans ce délai, avec un motif sérieux et légitime (par exemple un loyer impayé). Tant que la procédure dure, vous restez tenu des obligations du bail.", cite: "Art. 26" },
+          { t: "Sous-location : demandez l'accord", d: "Elle est interdite sauf clause du bail ou autorisation expresse du propriétaire. Il doit en être informé par écrit, sinon elle ne lui est pas opposable. Si le loyer de sous-location dépasse votre loyer, il peut exiger une augmentation.", cite: "Art. 27 et 28" }
+        ];
+      } else if (sit === "impaye" || sit === "recup" || sit === "demande") {
+        if (sit === "demande") {
+          p.title = "Votre locataire demande le renouvellement";
+          if (det && a.fin) {
+            var rep = mo(a.fin, -1);
+            p.deadlines.push({ title: "Répondre à la demande de renouvellement", date: rep, why: "Par acte extrajudiciaire, au plus tard 1 mois avant la fin du bail ; sinon vous êtes réputé accepter le principe du renouvellement.", cite: "Loi 2015-037, art. 30", remind: 14 });
+            p.verdict = { tone: diffDays(today(), parse(rep)) >= 0 ? "warn" : "urgent", t: "Répondez avant le " + fmt(rep) + ".", d: "Sans réponse dans les mêmes formes, vous êtes réputé accepter le renouvellement." };
+          } else p.verdict = { tone: "warn", t: "Répondez dans les formes et dans le délai.", d: "Votre réponse doit se faire par acte extrajudiciaire, au plus tard 1 mois avant la fin du bail." };
+          p.steps = [
+            { t: "Vérifiez le droit du locataire", d: "Il faut qu'il ait exploité son activité dans les lieux pendant au moins 2 ans.", cite: "Art. 29" },
+            { t: "Acceptez, ou refusez en payant l'indemnité d'éviction", d: "Le refus est possible en réglant une indemnité égale au préjudice du locataire, ou sans indemnité dans les cas de l'article 34 (motif sérieux et légitime, démolition-reconstruction, insalubrité).", cite: "Art. 32 et 34" },
+            { t: "Si vous refusez, respectez la forme de l'acte", d: "L'acte doit indiquer le motif et rappeler au locataire le délai de 6 mois pour saisir le tribunal, à peine de nullité.", cite: "Art. 33" }
+          ];
+        } else if (sit === "recup") {
+          p.title = "Récupérer votre local";
+          if (det && a.fin) {
+            var cl = mo(a.fin, -6), nn = diffDays(today(), parse(cl));
+            p.deadlines.push({ title: "Donner congé (acte extrajudiciaire)", date: cl, why: "Au moins 6 mois avant le terme du bail à durée déterminée.", cite: "Loi 2015-037, art. 30 et 31", remind: 30 });
+            p.verdict = nn >= 0 ? { tone: "ok", t: "Vous pouvez encore donner congé jusqu'au " + fmt(cl) + ".", d: "Sans congé donné à temps, le droit du locataire au renouvellement s'applique." } : { tone: "urgent", t: "Le délai de 6 mois avant la fin du bail est dépassé.", d: "Vous ne pouvez plus refuser le renouvellement pour cette échéance. Parlez-en à un professionnel." };
+          } else p.verdict = { tone: "ok", t: "Vous devez donner congé par acte extrajudiciaire, au moins 6 mois à l'avance.", d: "Le bail cesse à la date fixée par le congé." };
+          p.steps = [
+            { t: "Choisissez le fondement du congé", d: "Soit vous payez au locataire une indemnité d'éviction égale à son préjudice, soit vous invoquez un cas sans indemnité : motif sérieux et légitime, démolition-reconstruction, insalubrité, ou reprise d'un logement accessoire.", cite: "Art. 32, 34 et 35" },
+            { t: "Faites établir l'acte par un huissier", d: "À peine de nullité, il indique le motif et rappelle que le locataire doit saisir le tribunal dans les 6 mois à compter de la signification, sous peine de forclusion. Joignez les justificatifs pour un projet de démolition ou un état d'insalubrité.", cite: "Art. 33 et 34" },
+            { t: "Si vous invoquez un manquement du locataire", d: "Il faut d'abord le mettre en demeure par acte extrajudiciaire : le motif n'est valable que si les faits se poursuivent ou se renouvellent plus de 2 mois après.", cite: "Art. 34" }
+          ];
+          p.points.push({ t: "Le locataire garde le droit de rester jusqu'au versement de l'indemnité.", cite: "Art. 32" });
+        } else {
+          p.title = loc ? "Menace de résiliation du bail" : "Loyers impayés ou bail non respecté";
+          p.verdict = { tone: loc ? "warn" : "ok", t: loc ? "Réglez ou contestez dans le mois qui suit la mise en demeure." : "La résiliation passe par une mise en demeure, puis le tribunal de commerce.", d: "Le bailleur doit d'abord faire délivrer par acte extrajudiciaire une mise en demeure de respecter le bail, qui reproduit l'article 43 et laisse un délai d'un mois." };
+          p.steps = loc ? [
+            { t: "Payez ou régularisez dans le mois", d: "Si vous le faites, la résiliation ne peut pas être poursuivie.", cite: "Art. 43" },
+            { t: "Vérifiez la validité de la mise en demeure", d: "Elle doit, sous peine de nullité, reproduire l'article 43 et mentionner le délai d'un mois. Une clause de résiliation de plein droit ne joue qu'un mois après un commandement resté sans effet.", cite: "Art. 41 et 43" },
+            { t: "Défendez-vous devant le tribunal de commerce", d: "Le bailleur doit demander la résiliation et l'expulsion au tribunal ; un locataire de bonne foi n'est pas expulsé sans décision.", cite: "Art. 43 et 44" }
+          ] : [
+            { t: "Faites délivrer une mise en demeure par un huissier", d: "Elle doit reproduire l'article 43 et indiquer qu'à défaut de paiement ou de respect du bail dans un délai d'un mois, la résiliation est poursuivie.", cite: "Art. 43" },
+            { t: "Demandez la résiliation au tribunal de commerce", d: "Vous pouvez demander la résiliation, l'expulsion du preneur et de tous occupants, et des dommages-intérêts.", cite: "Art. 43" },
+            { t: "Prévenez les créanciers inscrits", d: "Si le bail porte sur un fonds de commerce, la demande de résiliation leur est notifiée par acte extrajudiciaire, et le jugement ne peut intervenir qu'un mois après.", cite: "Art. 43" },
+            { t: "Locataire de mauvaise foi ou occupant sans titre", d: "Le juge des référés du tribunal de commerce peut ordonner l'expulsion, sauf contestation sérieuse.", cite: "Art. 44" }
+          ];
+          p.points.push({ t: "Redressement ou liquidation du locataire.", d: "L'ouverture d'une procédure collective n'entraîne pas à elle seule la résiliation du bail.", cite: "Art. 45" });
+        }
+      }
+      if (a.duree === "verbal") p.points.push({ t: "Pas d'écrit.", d: "Un bail commercial existe même sans écrit, et il est alors à durée indéterminée. Mieux vaut le faire constater par écrit.", cite: "Art. 4 et 5" });
+      p.points.push({ t: "Bail de moins de 2 ans.", d: "Les parties peuvent écarter la loi pour un bail de courte durée, à condition que la durée totale des baux successifs n'excède pas 2 ans.", cite: "Art. 6" });
+      p.points.push({ t: "Le tribunal compétent.", d: "Le tribunal de commerce du lieu du local, sauf clause d'arbitrage.", cite: "Art. 40" });
+      p.next = [["vault", "Ranger mon bail dans mon coffre"]];
+      return p;
+    },
+    sources: [BAUX + " : art. 4 à 6, 20 à 45."]
+  }));
+
+  /* 2. Se lancer : commerçant ou société */
+  defVie(mk(ECO, {
+    id: "creer", short: "Lancer mon activité", title: "Lancer une activité commerciale ou créer une société",
+    situation: "Je veux lancer mon activité commerciale", desc: "Pouvez-vous être commerçant, société ou non, étapes de création, comptabilité", time: "5 min",
+    keys: /cr[ée]er (une |mon |ma )?(soci[ée]t[ée]|entreprise)|monter (une |mon )?(soci[ée]t[ée]|entreprise)|sarl|statuts|devenir commer[cç]ant|registre du commerce|immatriculation d.une soci/i,
+    intro: "Avant de vous lancer : pouvez-vous exercer le commerce, sous quelle forme, et quelles obligations vous attendent.",
+    questions: [
+      { id: "statut", type: "choice", q: "Êtes-vous dans l'une de ces situations ?", help: "La loi interdit certains cumuls ou certaines personnes d'exercer le commerce.", options: [
+        { v: "non", t: "Non, aucune" }, { v: "fonct", t: "Je suis fonctionnaire ou agent d'une collectivité publique" },
+        { v: "prof", t: "Je suis avocat, notaire, huissier, comptable agréé, commissaire aux comptes ou conseil juridique" }, { v: "mineur", t: "J'ai moins de 18 ans (non émancipé)" },
+        { v: "condamne", t: "J'ai été condamné à au moins un an de prison ferme (vol, escroquerie, faux, banqueroute…)" }, { v: "interdit", t: "Un tribunal m'a interdit d'exercer le commerce" }] },
+      { id: "forme", when: function (a) { return a.statut === "non"; }, type: "choice", q: "Comment voulez-vous exercer ?", options: [
+        { v: "indiv", t: "Seul(e), à mon nom", d: "Entreprise individuelle" }, { v: "soc", t: "Dans une société, avec d'autres associés" }, { v: "unip", t: "Dans une société dont je serais le seul associé" }] },
+      { id: "assoc", when: function (a) { return a.forme === "soc"; }, type: "choice", q: "Parmi les futurs associés, y a-t-il…", options: [
+        { v: "non", t: "Seulement des adultes, sans couple marié ensemble" }, { v: "mineur", t: "Un mineur ou une personne incapable" }, { v: "epoux", t: "Deux époux" }] },
+      { id: "risque", when: function (a) { return a.forme === "soc" || a.forme === "unip"; }, type: "choice", q: "Voulez-vous que chaque associé ne risque que le montant de son apport ?", options: [
+        { v: "oui", t: "Oui, c'est important pour moi" }, { v: "non", t: "Non, ou je ne sais pas" }] },
+      { id: "imm", when: function (a) { return a.forme === "soc" || a.forme === "unip"; }, type: "date", chips: [], q: "La société est-elle déjà immatriculée ? Si oui, à quelle date ?", help: "Date de l'immatriculation au registre du commerce et des sociétés.", unknown: "Pas encore immatriculée" },
+      { id: "ca", when: function (a) { return a.forme === "indiv"; }, type: "choice", q: "Votre chiffre d'affaires annuel sera-t-il modeste (régime du forfait) ?", help: "Le seuil est fixé par le Code général des impôts.", options: [{ v: "oui", t: "Oui" }, { v: "non", t: "Non" }, { v: "nsp", t: "Je ne sais pas" }] }
+    ],
+    plan: function (a) {
+      var p = { title: "Votre plan de lancement", ask: "Comment créer une société à Madagascar ?", steps: [], docs: [], points: [], deadlines: [] };
+      if (a.statut !== "non") {
+        var msg = {
+          fonct: ["Votre situation est incompatible avec le commerce.", "L'exercice d'une activité commerciale est incompatible avec les fonctions de fonctionnaire et de personnel des collectivités publiques ou à participation publique.", "Loi 99-018, art. 2-4"],
+          prof: ["Votre profession est incompatible avec le commerce.", "C'est le cas des officiers ministériels et auxiliaires de justice (avocat, huissier, notaire, greffier…), des comptables agréés, commissaires aux comptes, conseils juridiques, et de toute profession dont la réglementation interdit le cumul.", "Art. 2-4"],
+          mineur: ["Un mineur non émancipé ne peut pas être commerçant.", "Il ne peut ni avoir la qualité de commerçant ni accomplir des actes de commerce. Vous pouvez demander l'émancipation, ou attendre 18 ans.", "Art. 2-2"],
+          condamne: ["Vous ne pouvez pas exercer le commerce pendant 5 ans.", "L'interdiction s'applique à une condamnation définitive à au moins un an de prison ferme pour vol, escroquerie, abus de confiance, recel, faux, banqueroute, corruption, infractions aux lois sur les sociétés ou en matière économique et financière.", "Art. 2-5"],
+          interdit: ["Une interdiction judiciaire d'exercer le commerce s'impose à vous.", "Elle peut être levée sur votre requête par la juridiction qui l'a prononcée, mais pas avant 5 ans après le prononcé (pour une interdiction de plus de 5 ans ou définitive).", "Art. 2-5 et 2-6"]
+        }[a.statut];
+        p.title = "Vous ne pouvez pas, pour l'instant, exercer le commerce";
+        p.verdict = { tone: "urgent", t: msg[0], d: msg[1] };
+        p.points.push({ t: "Fondement", cite: msg[2] });
+        p.points.push({ t: "Les actes accomplis restent valables envers les tiers de bonne foi.", d: "Mais la personne en situation d'incompatibilité ou d'interdiction ne peut pas s'en prévaloir.", cite: "Art. 2-3 et 2-7" });
+        p.next = [["pros", "Trouver un professionnel"]];
+        return p;
+      }
+      p.verdict = { tone: "ok", t: "Rien ne vous empêche d'exercer le commerce.", d: "Reste à choisir la forme et à accomplir les formalités." };
+      p.points.push({ t: "Qui est commerçant ?", d: "Celui qui accomplit des actes de commerce à titre indépendant, dans un but lucratif, et en fait sa profession habituelle (achat pour revente, transport, banque, courtage, location de meubles, activités industrielles ou minières…).", cite: "Art. 1-1 et 1-2" });
+      var comptes = [
+        { t: "Tenez une comptabilité", d: "Enregistrez chronologiquement les mouvements de votre entreprise, contrôlez votre inventaire au moins une fois par an, et établissez des comptes annuels (bilan, compte de résultat, annexe).", cite: "Art. 3-1 à 3-3" },
+        { t: "Conservez vos documents 5 ans", d: "Documents comptables et pièces justificatives, sans blanc ni altération. Ils peuvent être tenus par procédé informatique.", cite: "Art. 3-8" }];
+      if (a.forme === "indiv") {
+        p.title = "Exercer en entreprise individuelle";
+        p.steps = [{ t: "Faites-vous immatriculer au registre du commerce", d: "La procédure d'immatriculation d'un commerçant individuel n'est pas détaillée dans les textes chargés dans ZOU : renseignez-vous au greffe du tribunal de commerce." }].concat(comptes);
+        if (a.ca === "oui") p.steps.push({ t: "Régime simplifié possible", d: "Une personne physique dont le chiffre d'affaires ne dépasse pas le seuil du forfait peut utiliser un système comptable simplifié : enregistrer au jour le jour les recettes et les dépenses, et dresser un relevé en fin d'exercice.", cite: "Art. 3-9" });
+        p.points.push({ t: "Responsabilité.", d: "Vous exercez à votre nom : sans société, il n'y a pas de limitation de responsabilité prévue par ces textes." });
+      } else {
+        p.title = a.forme === "unip" ? "Créer une société à associé unique" : "Créer une société";
+        if (a.assoc === "mineur") p.verdict = { tone: "warn", t: "Un mineur ne peut pas être associé s'il répond des dettes au-delà de son apport.", d: "Un mineur non émancipé ou un incapable ne peut pas être associé d'une société où il serait tenu des dettes sociales au-delà de ses apports (société en nom collectif, par exemple). Une société à responsabilité limitée est possible." };
+        if (a.assoc === "epoux") p.verdict = { tone: "warn", t: "Deux époux ne peuvent pas être associés d'une même société à responsabilité illimitée.", d: "Ils ne peuvent pas être associés dans une société où ils répondent indéfiniment ou solidairement des dettes sociales. Une société à responsabilité limitée est possible." };
+        if (a.assoc === "mineur" || a.assoc === "epoux") p.points.push({ t: "Fondement", cite: "Loi 2003-036, art. 5 et 6" });
+        p.result = { title: "La forme qui limite le risque : la société à responsabilité limitée", items: [
+          { t: "SARL : chaque associé ne répond des dettes qu'à concurrence de ses apports", d: "Elle peut être créée par une seule personne (physique ou morale) ou par plusieurs. Son nom est suivi de « société à responsabilité limitée » ou « S.A.R.L. » (art. 325 et 326)." },
+          { t: "Autres formes commerciales", d: "Société en nom collectif, société en commandite simple, société en commandite par actions, société anonyme (art. 3). Une société à associé unique n'est permise que dans les cas prévus par la loi (art. 2)." }],
+          d: a.risque === "non" ? "Si vous acceptez de répondre des dettes sur vos biens, d'autres formes existent, mais la SARL reste la plus courante." : "Montant minimum du capital et valeur minimale d'une part : fixés par décret, que les textes chargés ne reproduisent pas. Demandez-les au greffe ou à un notaire.", cite: "Art. 327" };
+        p.steps = [
+          { t: "Choisissez le nom de la société", d: "Elle ne peut pas reprendre celui d'une société déjà immatriculée. Il doit figurer, avec la forme, le capital, le siège et l'immatriculation, sur toutes les lettres, factures et annonces.", cite: "Art. 11, 13 et 14" },
+          { t: "Rédigez les statuts", d: "Par acte notarié ou sous seing privé. Ils indiquent la forme, la dénomination, l'objet, le siège, la durée (99 ans au plus), les apports et les titres remis. Le siège doit avoir une adresse précise, pas seulement une boîte postale.", cite: "Art. 7, 10, 20 et 23" },
+          { t: "Tous les associés signent l'acte constitutif", d: "En personne ou par mandataire muni d'un pouvoir spécial, à peine de nullité.", cite: "Art. 334" },
+          { t: "Déposez les apports en argent", d: "Dans une banque (compte au nom de la société en formation) ou chez un notaire, contre récépissé. Les fonds sont bloqués jusqu'à l'immatriculation ; si elle n'a pas lieu dans les 6 mois, tout apporteur peut obtenir leur restitution.", cite: "Art. 331 à 333" },
+          { t: "Faites évaluer les apports en nature", d: "Un commissaire aux apports, expert-comptable, est obligatoire au-delà d'un seuil fixé par décret ; sans évaluation, les associés répondent solidairement de la valeur pendant 5 ans.", cite: "Art. 328 à 330" },
+          { t: "Faites immatriculer la société au registre du commerce et des sociétés", d: "La durée de la société court à compter de cette date.", cite: "Art. 24" },
+          { t: "Publiez un avis dans un journal d'annonces légales", d: "Dans les 15 jours qui suivent l'immatriculation.", cite: "Art. 278" }
+        ];
+        if (a.imm) p.deadlines.push({ title: "Publier l'avis de constitution", date: plus(a.imm, 15), why: "15 jours après l'immatriculation, dans un journal habilité à recevoir les annonces légales.", cite: "Loi 2003-036, art. 278", remind: 3 });
+        p.docs = [{ t: "Les pièces d'identité des associés" }, { t: "Le projet de statuts, signé de tous les associés" }, { t: "Le récépissé de dépôt des fonds" }, { t: "Le rapport du commissaire aux apports, si des apports en nature dépassent le seuil" }];
+        p.steps = p.steps.concat(comptes);
+      }
+      p.next = [["vie.societe", "Gérer ma société : comptes et assemblée"], ["pros", "Trouver un notaire"]];
+      return p;
+    },
+    sources: [COM + " : art. 1-1 à 3-9.", SOC + " : art. 2 à 14, 20, 23, 24, 278, 325 à 334."]
+  }));
+
+  /* 3. Gérer sa société */
+  defVie(mk(ECO, {
+    id: "societe", short: "Comptes et assemblée", title: "Gérer ma société : comptes annuels et assemblée générale",
+    situation: "Je gère une société : comptes et assemblée annuelle", desc: "Date limite de l'assemblée, commissaire aux comptes, dépôt des comptes, dividendes", time: "3 min",
+    keys: /assembl[ée]e g[ée]n[ée]rale|comptes annuels|approuver les comptes|dividende|r[ée]serve l[ée]gale|[ée]tats financiers/i,
+    intro: "Chaque année, une société doit approuver ses comptes dans un délai précis. Voyons ce qui s'applique à la vôtre.",
+    questions: [
+      { id: "forme", type: "choice", q: "Quelle est la forme de votre société ?", options: [{ v: "sarl", t: "SARL (société à responsabilité limitée)" }, { v: "sa", t: "Société anonyme" }, { v: "snc", t: "Société en nom collectif ou en commandite" }, { v: "nsp", t: "Je ne sais pas" }] },
+      { id: "cloture", type: "date", chips: [], q: "Quelle est la date de clôture du dernier exercice ?", help: "Le jour où l'exercice comptable s'est terminé (souvent le 31 décembre)." },
+      { id: "cac", type: "choice", q: "La société a-t-elle un commissaire aux comptes ?", options: [{ v: "oui", t: "Oui" }, { v: "non", t: "Non" }, { v: "nsp", t: "Je ne sais pas" }] },
+      { id: "approb", type: "date", chips: [], q: "À quelle date l'assemblée a-t-elle approuvé les comptes ?", unknown: "Pas encore tenue" }
+    ],
+    plan: function (a) {
+      var ag = mo(a.cloture, 6), n = diffDays(today(), parse(ag));
+      var p = { title: "Comptes et assemblée annuelle", ask: "Dans quel délai faut-il tenir l'assemblée générale annuelle ?", deadlines: [], steps: [], points: [] };
+      var art = a.forme === "sarl" ? "art. 155 et 370" : a.forme === "snc" ? "art. 155 et 303" : "art. 155";
+      if (a.approb) {
+        p.verdict = { tone: "ok", t: "Les comptes ont été approuvés : il reste à les déposer.", d: "Les SARL et les sociétés par actions déposent en double exemplaire, au registre du commerce et des sociétés, les états financiers, le rapport de gestion et la résolution d'affectation du résultat." };
+        if (a.forme === "sarl" || a.forme === "sa" || a.forme === "nsp") p.deadlines.push({ title: "Déposer les comptes au registre du commerce", date: mo(a.approb, 1), why: "Dans le mois de l'approbation (SARL et sociétés par actions). En cas de refus d'approbation, déposez la copie de la délibération dans le même délai.", cite: "Loi 2003-036, art. 158", remind: 7 });
+      } else {
+        p.verdict = n >= 0
+          ? { tone: n <= 45 ? "warn" : "ok", t: "L'assemblée doit se tenir avant le " + fmt(ag) + ".", d: "Elle statue sur les états financiers dans les 6 mois de la clôture de l'exercice." }
+          : { tone: "urgent", t: "Le délai de 6 mois est dépassé.", d: "Convoquez l'assemblée sans attendre. Dans une SARL, le gérant peut demander une prolongation du délai au président du tribunal de commerce par requête. Le commissaire aux comptes peut assortir sa certification d'une réserve ou la refuser." };
+        p.deadlines.push({ title: "Tenir l'assemblée qui approuve les comptes", date: ag, why: "6 mois après la clôture de l'exercice.", cite: "Loi 2003-036, " + art, remind: 30 });
+        if (a.cac === "oui") p.deadlines.push({ title: "Envoyer les comptes au commissaire aux comptes", date: plus(ag, -60), why: "Au moins 60 jours avant la date de l'assemblée.", cite: "Art. 155", remind: 14 });
+      }
+      p.steps = [
+        { t: "Arrêtez les états financiers", d: "À la clôture, le gérant, le conseil d'administration ou l'administrateur général établit les états financiers de synthèse, selon les règles comptables.", cite: "Art. 152" },
+        { t: "Rédigez le rapport de gestion", d: "Il expose la situation de la société durant l'exercice, son évolution prévisible, la trésorerie et le plan de financement. L'état annexé mentionne les cautionnements, avals, garanties et sûretés données.", cite: "Art. 153 et 154" },
+        { t: "Faites approuver les comptes par l'assemblée", d: "L'assemblée approuve les comptes et décide de l'affectation du résultat. Dans une SARL, l'assemblée ordinaire statue aussi sur les conventions entre la société et ses gérants ou associés.", cite: "Art. 157, 369 et 372" },
+        { t: "Dotez la réserve légale", d: "Sur le bénéfice, un vingtième au moins est mis en réserve légale, jusqu'à ce qu'elle atteigne le dixième du capital (SARL et sociétés par actions), à peine de nullité de toute délibération contraire.", cite: "Art. 159" },
+        { t: "Ne distribuez que ce qui est distribuable", d: "Aucune distribution n'est possible si les capitaux propres deviennent inférieurs au capital augmenté des réserves non distribuables. Des dividendes qui ne correspondent pas à des bénéfices réels peuvent être réclamés aux associés, dans les 3 ans.", cite: "Art. 160 et 368" }
+      ];
+      if (!a.approb) p.steps.push({ t: "Déposez les comptes dans le mois de l'approbation", d: "Pour les SARL et sociétés par actions.", cite: "Art. 158" });
+      p.points = [
+        { t: "Prolongation du délai (SARL).", d: "Les gérants peuvent demander une prolongation au président du tribunal de commerce, par requête.", cite: "Art. 370" },
+        { t: "Durée de la société.", d: "Elle est limitée à 99 ans. Un an au moins avant son terme, les associés doivent être consultés pour décider de la proroger ; à défaut, tout associé peut demander la désignation d'un mandataire de justice.", cite: "Art. 23 et 28" }
+      ];
+      p.next = [["pros", "Trouver un expert-comptable ou un avocat"]];
+      return p;
+    },
+    sources: [SOC + " : art. 23, 28, 152 à 160, 303, 368 à 372."]
+  }));
+
+  /* 4. Entreprise en difficulté */
+  defVie(mk(ECO, {
+    id: "difficultes", short: "Entreprise en difficulté", title: "Mon entreprise n'arrive plus à payer ses dettes",
+    situation: "Mon entreprise n'arrive plus à payer ses dettes", desc: "Cessation des paiements, règlement préventif, redressement judiciaire : délais et pièces", time: "5 min",
+    keys: /cessation des paiements|redressement judiciaire|liquidation des biens|r[èe]glement pr[ée]ventif|faillite|concordat|entreprise en difficult[ée]|n.arrive plus [àa] payer/i,
+    intro: "Une procédure existe pour sauver l'entreprise, ou la liquider proprement. Mais les délais sont courts. Quelques questions pour savoir où vous en êtes.",
+    questions: [
+      { id: "etat", type: "choice", q: "Pouvez-vous encore payer vos dettes exigibles avec l'argent dont vous disposez ?", help: "Dette exigible : une dette dont l'échéance est arrivée.", options: [
+        { v: "non", t: "Non, je ne peux plus", tone: "danger" }, { v: "diff", t: "Oui, mais les difficultés s'aggravent" }, { v: "nsp", t: "Je ne sais pas" }] },
+      { id: "dcess", when: function (a) { return a.etat === "non"; }, type: "date", chips: [["Aujourd'hui", 0], ["Il y a une semaine", -7], ["Il y a 2 semaines", -14]], q: "Depuis quand ne pouvez-vous plus payer ?", help: "Même approximativement. C'est le point de départ du délai de 30 jours.", unknown: "Je ne sais pas" },
+      { id: "assigne", type: "choice", q: "Un créancier vous a-t-il assigné devant le tribunal de commerce ?", options: [{ v: "non", t: "Non" }, { v: "oui", t: "Oui" }] },
+      { id: "dass", when: function (a) { return a.assigne === "oui"; }, type: "date", q: "À quelle date avez-vous reçu l'assignation ?", unknown: "Je ne sais pas" },
+      { id: "type", type: "choice", q: "Votre entreprise est…", options: [{ v: "indiv", t: "Une entreprise individuelle (à mon nom)" }, { v: "soc", t: "Une société" }] }
+    ],
+    plan: function (a) {
+      var p = { title: "Votre plan", ask: "Comment déclarer la cessation des paiements ?", deadlines: [], steps: [], docs: [], points: [] };
+      var cess = a.etat === "non" || a.etat === "nsp";
+      if (a.etat === "diff") {
+        p.title = "Éviter la cessation des paiements : le règlement préventif";
+        p.verdict = { tone: "ok", t: "Vous pouvez agir avant la cessation des paiements.", d: "Le règlement préventif permet à un dirigeant de demander au président du tribunal de commerce la désignation d'un conciliateur, pour trouver un accord avec les créanciers." };
+        p.steps = [
+          { t: "Déposez une requête au président du tribunal de commerce", d: "La requête, signée d'un dirigeant, expose les difficultés de l'entreprise et vos propositions, avec les éléments sur la situation financière, économique et sociale, notamment les états financiers de synthèse.", cite: "Loi 2003-042, art. 6 et 7" },
+          { t: "Le conciliateur est nommé pour 3 mois au plus", d: "La mission peut être prolongée une fois, à sa demande. Le président peut exiger une provision, consignée au greffe.", cite: "Art. 8" },
+          { t: "Concluez un accord avec tous les créanciers", d: "Il est constaté par écrit, signé, puis homologué par ordonnance du président du tribunal de commerce.", cite: "Art. 9" },
+          { t: "L'accord suspend les poursuites", d: "Pendant son exécution, les actions en justice et poursuites individuelles sur les créances concernées sont suspendues. Si vous ne le respectez pas, même partiellement, le tribunal peut le résilier et priver de tout délai de paiement.", cite: "Art. 10" }
+        ];
+        p.points.push({ t: "Attention.", d: "Si la situation bascule en cessation des paiements, le délai de 30 jours pour la déclarer commence à courir." });
+        p.letter = {
+          title: "Requête au président du tribunal de commerce (règlement préventif)", lede: "À faire relire par un professionnel. Elle reprend les éléments exigés par l'article 7.",
+          fields: [{ id: "nom", label: "Nom de l'entreprise", wide: true }, { id: "rcs", label: "Numéro d'immatriculation (RCS)" }, { id: "dir", label: "Votre nom et fonction (dirigeant)", wide: true },
+            { id: "diff", label: "Les difficultés rencontrées", type: "textarea", wide: true }, { id: "prop", label: "Vos propositions pour redresser l'entreprise", type: "textarea", wide: true }, { id: "trib", label: "Tribunal de commerce de" }],
+          text: function (f) {
+            return "À Monsieur le Président du Tribunal de commerce de " + orv(f.trib, "[ville]") + "\n\nObjet : requête aux fins de désignation d'un conciliateur (règlement préventif)\n\nMonsieur le Président,\n\nJe soussigné(e) " + orv(f.dir, "[nom et fonction]") + ", dirigeant(e) de " + orv(f.nom, "[entreprise]") + " (immatriculation : " + orv(f.rcs, "[numéro]") + "), sollicite, en application des articles 6 et suivants de la loi n° 2003-042 sur les procédures collectives d'apurement du passif, la désignation d'un conciliateur." +
+              "\n\nNotre entreprise, sans être en état de cessation des paiements, connaît des difficultés de nature à compromettre la continuité de l'exploitation :\n" + orv(f.diff, "[exposé des difficultés]") + "\n\nNos propositions pour favoriser le redressement :\n" + orv(f.prop, "[propositions]") + "\n\nSont jointes à la présente les informations utiles sur la situation financière, économique et sociale de l'entreprise, notamment les états financiers de synthèse.\n\nVeuillez agréer, Monsieur le Président, l'expression de ma haute considération.\n\nFait à " + orv(f.trib, "[ville]") + ", le " + fmtLong(today()) + "\n\n[Signature]";
+          }
+        };
+      } else {
+        p.title = cess && a.etat === "nsp" ? "Savez-vous si vous êtes en cessation des paiements ?" : "Déclarer la cessation des paiements";
+        if (a.etat === "nsp") p.points.push({ t: "Comment savoir ?", d: "Vous êtes en cessation des paiements si vous êtes dans l'impossibilité de faire face à votre passif exigible avec votre actif disponible. Dans ce cas, la déclaration est obligatoire. Si ce n'est pas encore le cas, le règlement préventif est possible.", cite: "Loi 2003-042, art. 6 et 11" });
+        var lim = a.dcess ? plus(a.dcess, 30) : null;
+        p.verdict = { tone: "urgent", t: lim ? (diffDays(today(), parse(lim)) >= 0 ? "Vous devez déclarer la cessation des paiements avant le " + fmt(lim) + "." : "Le délai de 30 jours est dépassé : déclarez sans attendre.") : "Vous devez déclarer la cessation des paiements dans les 30 jours.", d: "La déclaration se dépose au greffe du tribunal de commerce, contre récépissé. Attendre aggrave la situation." };
+        if (lim) {
+          p.deadlines.push({ title: "Déclarer la cessation des paiements", date: lim, why: "30 jours à compter de la cessation des paiements.", cite: "Loi 2003-042, art. 11", remind: 3 });
+          p.deadlines.push({ title: "Déposer l'offre de concordat", date: plus(lim, 15), why: "En même temps que la déclaration ou, au plus tard, 15 jours après.", cite: "Art. 13", remind: 3 });
+        }
+        if (a.assigne === "oui" && a.dass) p.deadlines.push({ title: "Déclarer et proposer un concordat (suite à l'assignation)", date: mo(a.dass, 1), why: "1 mois à compter de l'assignation ; le tribunal ne peut prolonger qu'une fois, pour une durée égale.", cite: "Art. 14", remind: 3 });
+        p.steps = [
+          { t: "Déposez la déclaration au greffe du tribunal de commerce", d: "Celui du siège ou du principal établissement. Gardez le récépissé.", cite: "Art. 5 et 11" },
+          { t: "Joignez les pièces exigées", d: "Datées, signées et certifiées conformes et sincères (voir la liste ci-dessous).", cite: "Art. 12" },
+          { t: "Préparez une offre de concordat", d: "Elle précise comment continuer l'entreprise (délais, remises, cession d'actifs, location-gérance), qui exécutera les engagements, comment seront réglées les dettes et, s'il y a lieu, les licenciements envisagés.", cite: "Art. 13" },
+          { t: "Le tribunal décide", d: "Il prononce le redressement judiciaire s'il juge votre concordat sérieux, sinon la liquidation des biens. Il peut convertir ensuite le redressement en liquidation.", cite: "Art. 19 et 20" }
+        ];
+        p.docs = [
+          { t: "Un extrait d'immatriculation au registre du commerce et des sociétés" }, { t: "Les états financiers : bilan, compte de résultat, tableau des ressources et emplois" }, { t: "Un état de la trésorerie" },
+          { t: "L'état chiffré des créances et dettes, avec les noms et domiciles" }, { t: "L'état des sûretés données ou reçues" }, { t: "L'inventaire des biens (biens revendiqués, clause de réserve de propriété)" },
+          { t: "Le nombre de salariés et les salaires et charges impayés" }, { t: "Le chiffre d'affaires et les bénéfices imposés des 3 dernières années" }, { t: "Le nom et l'adresse des représentants du personnel" },
+          { t: "Pour une société : la liste des associés indéfiniment et solidairement responsables, et des dirigeants" }
+        ];
+        p.points.push({ t: "Date de cessation des paiements.", d: "Le tribunal la fixe ; elle ne peut pas remonter à plus de 18 mois avant le jugement d'ouverture.", cite: "Art. 21" });
+        if (a.type === "soc") p.points.push({ t: "Associés indéfiniment responsables.", d: "La décision qui constate la cessation des paiements d'une société produit ses effets à l'égard de tous ses membres indéfiniment et solidairement responsables du passif.", cite: "Art. 19" });
+        p.points.push({ t: "Qui peut ouvrir la procédure ?", d: "Le débiteur, un créancier dont la créance est certaine, liquide et exigible, ou le tribunal lui-même.", cite: "Art. 14 et 15" });
+        p.letter = {
+          title: "Déclaration de cessation des paiements", lede: "À déposer au greffe contre récépissé, avec les pièces listées. À faire relire par un professionnel.",
+          fields: [{ id: "nom", label: "Nom de l'entreprise", wide: true }, { id: "rcs", label: "Numéro d'immatriculation (RCS)" }, { id: "dir", label: "Votre nom et fonction", wide: true }, { id: "date", label: "Date de la cessation des paiements", init: a.dcess ? fmt(a.dcess) : "" }, { id: "trib", label: "Tribunal de commerce de" }],
+          text: function (f) {
+            return "À Monsieur le Greffier en chef du Tribunal de commerce de " + orv(f.trib, "[ville]") + "\n\nObjet : déclaration de cessation des paiements\n\nMonsieur le Greffier en chef,\n\nJe soussigné(e) " + orv(f.dir, "[nom et fonction]") + ", agissant pour " + orv(f.nom, "[entreprise]") + " (immatriculation : " + orv(f.rcs, "[numéro]") + "), déclare que l'entreprise est dans l'impossibilité de faire face à son passif exigible avec son actif disponible depuis le " + orv(f.date, "[date]") +
+              ".\n\nConformément à l'article 11 de la loi n° 2003-042, je dépose la présente déclaration afin d'obtenir l'ouverture d'une procédure de redressement judiciaire ou de liquidation des biens. Sont jointes les pièces prévues à l'article 12. Une offre de concordat sera déposée dans le délai de quinze jours prévu à l'article 13.\n\nVeuillez agréer, Monsieur le Greffier en chef, l'expression de ma considération distinguée.\n\nFait à " + orv(f.trib, "[ville]") + ", le " + fmtLong(today()) + "\n\n[Signature]";
+          }
+        };
+      }
+      p.next = [["vie.creancier", "Voir le parcours « Un débiteur est en faillite »"], ["pros", "Trouver un avocat"]];
+      return p;
+    },
+    sources: [PCO + " : art. 2 à 25."]
+  }));
+
+  /* 5. Créancier d'une entreprise en procédure collective */
+  defVie(mk(ECO, {
+    id: "creancier", short: "Créance en faillite", title: "Une entreprise qui me doit de l'argent est en faillite",
+    situation: "Une entreprise qui me doit de l'argent est en faillite", desc: "Déclarer sa créance au syndic avant la forclusion, créances de salaires", time: "4 min",
+    keys: /d[ée]clarer (ma |une )?cr[ée]ance|syndic|forclusion|cr[ée]ances? (de )?salari/i,
+    intro: "Quand un tribunal ouvre une procédure collective contre votre débiteur, vos poursuites sont suspendues et un délai court pour déclarer votre créance.",
+    questions: [
+      { id: "qui", type: "choice", q: "Vous êtes…", options: [{ v: "cred", t: "Un fournisseur, un client, une banque… (créancier)" }, { v: "sal", t: "Un salarié de l'entreprise" }] },
+      { id: "ins", when: function (a) { return a.qui === "cred"; }, type: "date", q: "Quelle est la date de la première annonce du jugement dans un journal d'annonces légales ?", help: "Le syndic fait paraître deux annonces, à 15 jours d'écart.", unknown: "Je ne sais pas" },
+      { id: "ressort", when: function (a) { return a.qui === "cred"; }, type: "choice", q: "Êtes-vous domicilié(e) dans le ressort du tribunal qui a ouvert la procédure ?", options: [{ v: "oui", t: "Oui" }, { v: "non", t: "Non, ailleurs" }] },
+      { id: "avert", when: function (a) { return a.qui === "cred"; }, type: "date", q: "Le syndic vous a-t-il envoyé un avertissement personnel ? Si oui, à quelle date l'avez-vous reçu ?", unknown: "Non, je n'ai rien reçu" },
+      { id: "releve", when: function (a) { return a.qui === "sal"; }, type: "date", q: "À quelle date le relevé des créances salariales a-t-il été déposé au greffe ?", unknown: "Je ne sais pas" }
+    ],
+    plan: function (a) {
+      var p = { title: "Faire valoir votre créance", ask: "Comment déclarer une créance dans une faillite ?", deadlines: [], steps: [], docs: [], points: [] };
+      if (a.qui === "sal") {
+        p.title = "Vos salaires et indemnités impayés";
+        p.verdict = { tone: "ok", t: "Les salariés sont traités à part : vous n'êtes pas soumis à la même forclusion.", d: "Le syndic vérifie vos créances à partir des informations des salariés et du débiteur et établit un relevé, visé par le juge-commissaire et déposé au greffe du tribunal de commerce." };
+        if (a.releve) p.deadlines.push({ title: "Saisir le tribunal du travail si votre créance manque au relevé", date: mo(a.releve, 3), why: "3 mois à compter du dépôt du relevé au greffe, sous peine de forclusion.", cite: "Loi 2003-042, art. 79", remind: 14 });
+        p.steps = [
+          { t: "Vérifiez le relevé des créances salariales", d: "Il est communiqué au représentant des salariés pour vérification. Demandez-lui de contrôler que vos salaires, congés et indemnités y figurent.", cite: "Art. 79 et 80" },
+          { t: "Si votre créance manque, en tout ou en partie", d: "Saisissez le tribunal du travail dans les 3 mois du dépôt du relevé au greffe.", cite: "Art. 79" },
+          { t: "Désignez un représentant des salariés", d: "Dans le jugement d'ouverture, le tribunal invite les délégués du personnel ou, à défaut, les salariés à en désigner un, élu au scrutin secret.", cite: "Art. 22" }
+        ];
+        p.points.push({ t: "Pas de forclusion avant l'assemblée concordataire.", d: "Jusqu'à l'assemblée concordataire, le défaut de production ne peut pas être opposé aux créanciers de salaires.", cite: "Art. 84" });
+        p.points.push({ t: "Instances en cours.", d: "Les procès en cours devant le tribunal du travail se poursuivent en présence du syndic, qui informe les parties dans les 10 jours.", cite: "Art. 74" });
+        p.next = [["pros", "Trouver un professionnel"]];
+        return p;
+      }
+      var d77 = null, dW = null, eff = null;
+      if (a.ins) {
+        d77 = mo(plus(a.ins, 15), a.ressort === "non" ? 3 : 2);
+        if (a.avert) dW = mo(a.avert, a.ressort === "non" ? 2 : 1);
+        eff = dW && dW < d77 ? dW : d77;
+      }
+      if (eff) {
+        var n = diffDays(today(), parse(eff));
+        p.verdict = n >= 0 ? { tone: n <= 15 ? "urgent" : "warn", t: "Déclarez votre créance avant le " + fmt(eff) + ".", d: "Passé ce délai, vous êtes forclos : vous ne participez plus aux répartitions et dividendes." } : { tone: "urgent", t: "Le délai de déclaration semble dépassé.", d: "Vous pouvez demander au juge-commissaire de vous relever de la forclusion, tant que l'état des créances n'est pas arrêté et déposé, et si vous montrez que votre défaillance n'est pas de votre fait. Faites-vous aider sans attendre." };
+        p.deadlines.push({ title: "Déclarer votre créance au syndic", date: eff, why: dW && dW < d77 ? "1 mois après réception de l'avertissement du syndic (2 mois hors du ressort), sans pouvoir dépasser le délai général." : "2 mois après la deuxième annonce légale (3 mois hors du ressort du tribunal).", cite: "Art. 77 et 78", remind: 14 });
+      } else {
+        p.verdict = { tone: "warn", t: "Un délai court : retrouvez la date des annonces légales.", d: "Vous devez produire votre créance auprès du syndic, sous peine de forclusion, jusqu'à 2 mois après la deuxième annonce du jugement dans un journal d'annonces légales (3 mois si vous êtes domicilié hors du ressort du tribunal)." };
+      }
+      p.steps = [
+        { t: "Écrivez au syndic", d: "Une déclaration (directe ou par lettre recommandée) indiquant le montant dû au jour du jugement d'ouverture, les sommes à échoir et leurs dates, et la nature de la sûreté éventuelle. Joignez les justificatifs sous bordereau ; le syndic vous remet un récépissé.", cite: "Art. 81" },
+        { t: "Prouvez et chiffrez votre créance", d: "Fournissez les preuves si elle ne résulte pas d'un titre, évaluez-la si elle n'est pas liquide, et indiquez la juridiction saisie en cas de litige.", cite: "Art. 81" },
+        { t: "Répondez aux contestations dans les 15 jours", d: "Si le syndic conteste votre créance, vous avez 15 jours après réception de l'avis (30 jours hors du ressort) pour vous expliquer au juge-commissaire ; passé ce délai, vous ne pouvez plus contester.", cite: "Art. 86" },
+        { t: "Surveillez l'état des créances", d: "Vous avez 15 jours après sa publication (ou après l'avis de rejet) pour former opposition directement au greffe.", cite: "Art. 88 à 90" }
+      ];
+      p.docs = [{ t: "Le titre de créance : contrat, factures, bon de commande" }, { t: "Le décompte du montant dû au jour du jugement d'ouverture" }, { t: "Les justificatifs de la sûreté éventuelle (hypothèque, gage, nantissement)" }, { t: "La copie de l'annonce légale du jugement" }];
+      p.points = [
+        { t: "Vos poursuites individuelles sont suspendues.", d: "Le jugement d'ouverture interdit les actions en paiement et les voies d'exécution des créanciers dont la créance est antérieure, même garantie par une sûreté.", cite: "Art. 71 et 72" },
+        { t: "Les intérêts s'arrêtent.", d: "Le cours des intérêts légaux et conventionnels est arrêté à l'égard de la masse, sauf exceptions pour certains prêts longs.", cite: "Art. 76" },
+        { t: "La déclaration interrompt la prescription de la créance.", cite: "Art. 77" },
+        { t: "Créanciers connus.", d: "Le syndic doit avertir personnellement les créanciers connus qui n'ont pas produit dans les 15 jours de la première annonce. Si vous n'avez rien reçu, ne comptez pas dessus.", cite: "Art. 78" },
+        { t: "Revendication.", d: "Si vous êtes propriétaire d'un bien détenu par le débiteur, précisez dans votre déclaration que vous le revendiquez ; sinon vous êtes considéré comme créancier ordinaire.", cite: "Art. 77" }
+      ];
+      p.letter = {
+        title: "Déclaration de créance au syndic", lede: "À envoyer en recommandé, avec les justificatifs sous bordereau.",
+        fields: [{ id: "nom", label: "Votre nom (ou dénomination) et adresse", wide: true }, { id: "syndic", label: "Nom et adresse du syndic", wide: true }, { id: "deb", label: "Nom du débiteur (entreprise en procédure collective)", wide: true },
+          { id: "montant", label: "Montant dû au jour du jugement d'ouverture" }, { id: "echoir", label: "Sommes à échoir et dates d'échéance", type: "textarea", wide: true }, { id: "surete", label: "Sûreté éventuelle", ph: "Ex. hypothèque, gage, aucune" }, { id: "ville", label: "Fait à" }],
+        text: function (f) {
+          return orv(f.nom, "[Vos nom et adresse]") + "\n\nÀ " + orv(f.syndic, "[nom et adresse du syndic]") + "\n\nObjet : déclaration de créance dans la procédure collective de " + orv(f.deb, "[débiteur]") + "\n\nMonsieur le Syndic,\n\nJ'ai l'honneur de produire ma créance dans la procédure collective ouverte contre " + orv(f.deb, "[débiteur]") + ", conformément aux articles 77 et 81 de la loi n° 2003-042 sur les procédures collectives d'apurement du passif." +
+            "\n\nMontant dû au jour de la décision d'ouverture : " + orv(f.montant, "[montant]") + "\nSommes à échoir et dates d'échéance : " + orv(f.echoir, "aucune") + "\nSûreté dont la créance est assortie : " + orv(f.surete, "aucune") +
+            "\n\nVous trouverez ci-joint, sous bordereau, les documents justificatifs. Je vous remercie de m'en délivrer récépissé.\n\nVeuillez agréer, Monsieur le Syndic, l'expression de mes salutations distinguées.\n\nFait à " + orv(f.ville, "[ville]") + ", le " + fmtLong(today()) + "\n\n[Signature]";
+        }
+      };
+      p.next = [["pros", "Trouver un avocat"], ["vault", "Ranger mes justificatifs dans mon coffre"]];
+      return p;
+    },
+    sources: [PCO + " : art. 22, 24, 70 à 92."]
+  }));
+
   VIE_ORDER.forEach(function (id) {
     var v = VIES[id];
-    addItem({ key: "flow:vie-" + id, kind: "flow", id: "vie-" + id, dom: "famille", title: v.situation, desc: v.desc, time: v.time, go: "vie." + id });
+    addItem({ key: "flow:vie-" + id, kind: "flow", id: "vie-" + id, dom: v.dom || "famille", title: v.situation, desc: v.desc, time: v.time, go: "vie." + id });
   });
   var LIFE = [
     { go: "vie.deces", t: "Un proche est décédé", d: "Déclarer le décès, savoir qui hérite" },
@@ -4775,7 +5200,11 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     { go: "vie.enfant-danger", t: "Un enfant est en danger", d: "À qui le dire, comment, anonymat", tone: "urgent" },
     { go: "flow", t: "Je veux démissionner", d: "Préavis, lettre, preuve de remise" },
     { go: "urgent", t: "J'ai un problème maintenant", d: "Garde à vue, licenciement immédiat…", tone: "urgent" },
-    { go: "vie.nationalite", t: "Mon enfant est-il malagasy ?", d: "Nationalité par le père ou la mère" }
+    { go: "vie.nationalite", t: "Mon enfant est-il malagasy ?", d: "Nationalité par le père ou la mère" },
+    { go: "vie.bail", t: "Je loue un local commercial", d: "Renouvellement, congé, loyer, cession" },
+    { go: "vie.creer", t: "Je veux lancer mon activité", d: "Commerçant ou société, étapes, comptabilité" },
+    { go: "vie.difficultes", t: "Mon entreprise ne peut plus payer", d: "Cessation des paiements, délais, pièces", tone: "urgent" },
+    { go: "vie.creancier", t: "Un débiteur est en faillite", d: "Déclarer ma créance avant la forclusion" }
   ];
   function renderLife() {
     var g = $("#lifeGrid");
