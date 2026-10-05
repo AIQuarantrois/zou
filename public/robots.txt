@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /api/
+# Pré-lancement : ouvrir l'indexation en retirant la balise noindex de app.html.
