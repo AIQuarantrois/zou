@@ -1127,3 +1127,47 @@ h1.h-display { font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem); font-weight: 700; l
 .pref-sample { padding: 16px 18px; border-radius: var(--r-lg); background: var(--wash); display: flex; flex-direction: column; gap: 6px; }
 .pref-sample strong { font-size: calc(18px * var(--fs, 1)); color: var(--trust); }
 .pref-sample p { color: var(--ink-2); }
+/* ---------- Sensation d'application native (téléphone surtout) ---------- */
+html { -webkit-tap-highlight-color: transparent; }
+.main { overflow-x: clip; }
+.tabs, .site-head, .tab, .btn, .send, .q-row, .life-b, .vie-opt, .vie-next-b, .chip, .chip-btn, .svc-g, .suggest button, .head-back, .sheet-grab, .sheet-legal button { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+@media (hover: none) {
+  .q-row:active, .life-b:active, .vie-next-b:active, .tile:active, .mega-i:active, .vie-opt:active, .svc-g:active { background: var(--wash); }
+  .btn:active, .send:active, .chip:active, .chip-btn:active, .suggest button:active { filter: brightness(0.9); transform: scale(0.98); }
+  .tab:active, .head-back:active, .head-icon:active { opacity: 0.55; }
+}
+@media (display-mode: standalone) { html, body { overscroll-behavior-y: none; } }
+/* Écrans : l'écran suivant glisse depuis la droite, le retour depuis la gauche (onglets : sans animation) */
+@keyframes nav-push { from { opacity: 0; transform: translateX(32px); } }
+@keyframes nav-pop { from { opacity: 0; transform: translateX(-32px); } }
+@media (max-width: 999px) {
+  .nav-push { animation: nav-push 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .nav-pop { animation: nav-pop 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
+}
+@media (prefers-reduced-motion: reduce) { .nav-push, .nav-pop { animation: none; } }
+/* En-tête d'écran : retour en haut à gauche, titre qui apparaît quand le grand titre passe sous l'en-tête */
+.head-in { position: relative; }
+.head-back { display: none; align-items: center; gap: 0; min-height: 44px; max-width: 30%; margin-left: -10px; padding: 0 6px 0 0; background: none; border: 0; color: var(--accent); font-size: calc(16px * var(--fs, 1)); font-weight: 500; }
+.head-back .ico { width: 28px; height: 28px; flex: none; transform: scaleX(-1); stroke-width: 2; }
+.head-back span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.head-title { display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: 44%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(16px * var(--fs, 1)); font-weight: 650; letter-spacing: -0.01em; color: var(--ink); opacity: 0; transition: opacity 0.16s ease; pointer-events: none; }
+.head-title.on { opacity: 1; }
+@media (max-width: 999px) {
+  .site-head.sub .brand { display: none; }
+  .site-head.sub .head-back { display: inline-flex; }
+  .site-head.sub .head-title { display: block; }
+  body.is-sub [data-view]:not([hidden]) .back:not(.vie-backstep), body.is-sub [data-view]:not([hidden]) .crumb { display: none; }
+  /* Pas de pied de page de site dans une application : ses liens sont dans « Plus » */
+  .site-foot { display: none; }
+  .main { padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
+}
+/* Feuille « Plus » : poignée, ouverture glissée, fermeture au doigt */
+.sheet-grab { display: block; position: relative; width: 100%; height: 24px; margin: -8px 0 0; padding: 0; background: none; border: 0; cursor: grab; }
+.sheet-grab::before { content: ""; position: absolute; left: 50%; top: 10px; width: 36px; height: 5px; margin-left: -18px; border-radius: 3px; background: var(--rule-strong); }
+.sheet-menu { transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); overscroll-behavior: contain; }
+.sheet-menu.dragging { transition: none; }
+.scrim { transition: opacity 0.22s ease; }
+@starting-style { .sheet-menu { transform: translateY(100%); } .scrim { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .sheet-menu, .scrim { transition: none; } }
+.sheet-about { padding: 14px 0 4px; font-size: calc(13px * var(--fs, 1)); line-height: 1.5; color: var(--ink-3); }
+.sheet-about strong { color: var(--ink-2); }

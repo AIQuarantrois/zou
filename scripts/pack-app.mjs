@@ -1,5 +1,6 @@
 // Transforme la page publiée en artefact (fragment HTML) en vrai document servi par Vercel :
 // <head> complet, CSS et JS extraits en fichiers (CSP sans 'unsafe-inline' pour les scripts), manifeste PWA, service worker.
+import { splashLinks } from "./splash-sizes.mjs";
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
 
@@ -47,6 +48,10 @@ const html = `<!doctype html>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ZOU">
+${splashLinks()}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">

@@ -1194,6 +1194,78 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   };
   var cur = { name: "home", arg: "" };
   var hashSet = null;
+  /* Écrans racines (un par onglet) et écrans empilés : sens des animations, retour dans l'en-tête */
+  var ROOTS = { home: 1, services: 1, cases: 1, vault: 1, agenda: 1, pros: 1 };
+  function depthOf(n) { return ROOTS[n] ? 0 : 1; }
+  var navDir = "", navCount = 0, titleObs = null;
+  var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  function slideIn(node, dir) {
+    if (!node || !dir || reduceMotion) return;
+    node.classList.remove("nav-push", "nav-pop");
+    void node.offsetWidth;
+    node.classList.add("nav-" + dir);
+    node.addEventListener("animationend", function done(e) {
+      if (e.target !== node) return;
+      node.classList.remove("nav-" + dir);
+      node.removeEventListener("animationend", done);
+    });
+  }
+  function backEl() {
+    var v = $("[data-view]:not([hidden])");
+    if (!v) return null;
+    var b = v.querySelector(".back:not(.vie-backstep)");
+    if (b) return b;
+    var cr = v.querySelectorAll(".crumb button");
+    return cr.length ? cr[cr.length - 1] : null;
+  }
+  function watchTitle() {
+    if (titleObs) { titleObs.disconnect(); titleObs = null; }
+    var ht = $("#headTitle");
+    ht.classList.remove("on");
+    if (!$("#siteHead").classList.contains("sub")) return;
+    var v = $("[data-view]:not([hidden])");
+    var h = v && v.querySelector("h1:not(.sr), h2.vie-title");
+    // Question d'un parcours : le grand titre est la question, le titre d'écran reste affiché.
+    if (!h || h.tagName === "H2" || !("IntersectionObserver" in window)) { ht.classList.add("on"); return; }
+    var top = $("#siteHead").offsetHeight;
+    titleObs = new IntersectionObserver(function (es) { ht.classList.toggle("on", !es[es.length - 1].isIntersecting); }, { rootMargin: "-" + top + "px 0px 0px 0px" });
+    titleObs.observe(h);
+  }
+  function updateHead(name, title) {
+    var sub = depthOf(name) === 1;
+    $("#siteHead").classList.toggle("sub", sub);
+    document.body.classList.toggle("is-sub", sub);
+    var b = sub ? backEl() : null;
+    var label = b ? b.textContent.trim() : "Retour";
+    $("#headBackT").textContent = label;
+    $("#headBack").setAttribute("aria-label", "Retour : " + label);
+    $("#headTitle").textContent = sub ? title : "";
+    watchTitle();
+  }
+  function headBack() {
+    var b = backEl();
+    navDir = "pop";
+    if (b) b.click();
+    else if (navCount > 0) history.back();
+    else go("home");
+  }
+  /* Onglets : chacun garde son dernier écran et sa position ; toucher l'onglet actif remonte, puis revient à sa racine */
+  var tabMem = {};
+  function curTab() { var c = $(".tab[aria-current='page']"); return c ? c.getAttribute("data-tab") : ""; }
+  function curToken() { return cur.arg ? cur.name + "." + cur.arg : cur.name; }
+  function tabTap(btn) {
+    var key = btn.getAttribute("data-tab"), root = btn.getAttribute("data-go"), now = curTab();
+    if (key === now) {
+      if (depthOf(cur.name) === 1) { go(root, { dir: "pop" }); return; }
+      if (window.pageYOffset > 4) { window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }); return; }
+      if (curToken() !== root) go(root);
+      return;
+    }
+    if (now) tabMem[now] = { token: curToken(), y: window.pageYOffset };
+    var m = tabMem[key];
+    if (m) { go(m.token, { dir: "none" }); window.scrollTo(0, m.y); }
+    else go(root, { dir: "none" });
+  }
 
   function toast(msg) {
     toastEl.textContent = msg;
@@ -1210,6 +1282,39 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     $("#scrim").hidden = true;
     if (returnFocus) { if (wasMega) mb.focus(); else if (wasMore) ob.focus(); }
   }
+  function dismissSheet() {
+    var sh = $("#moreSheet"), sc = $("#scrim");
+    if (sh.hidden) return;
+    if (reduceMotion) { closeMenus(true); return; }
+    sh.classList.remove("dragging");
+    sh.style.transform = "translateY(105%)";
+    sc.style.opacity = "0";
+    setTimeout(function () { closeMenus(true); sh.style.transform = ""; sc.style.opacity = ""; }, 230);
+  }
+  (function () {
+    var sh = $("#moreSheet"), y0 = null, dy = 0, t0 = 0;
+    sh.addEventListener("touchstart", function (e) {
+      if (sh.scrollTop > 0 || e.touches.length > 1) { y0 = null; return; }
+      y0 = e.touches[0].clientY; dy = 0; t0 = Date.now();
+    }, { passive: true });
+    sh.addEventListener("touchmove", function (e) {
+      if (y0 == null) return;
+      dy = e.touches[0].clientY - y0;
+      if (dy <= 0) { if (dy < -6) y0 = null; sh.style.transform = ""; return; }
+      e.preventDefault();
+      sh.classList.add("dragging");
+      sh.style.transform = "translateY(" + dy + "px)";
+    }, { passive: false });
+    function end() {
+      if (y0 == null) return;
+      var fast = dy / Math.max(1, Date.now() - t0) > 0.5;
+      y0 = null;
+      sh.classList.remove("dragging");
+      if (dy > 90 || (fast && dy > 24)) dismissSheet(); else sh.style.transform = "";
+    }
+    sh.addEventListener("touchend", end);
+    sh.addEventListener("touchcancel", end);
+  })();
   function toggleMenu(kind) {
     var isMega = kind === "mega";
     var panel = isMega ? $("#mega") : $("#moreSheet");
@@ -1234,6 +1339,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     } catch (e) { /* hash unavailable */ }
   }
   function go(token, opts) {
+    navCount++;
     var r = parseToken(token);
     if (!VALID[r.name]) r = { name: "home", arg: "" };
     if (r.name === "flow" && !state.flow.started) { state.flow.started = true; save(); }
@@ -1278,6 +1384,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (name === "page" && !PAGES[arg]) { name = "home"; arg = ""; }
     if (name === "ask" && !askQ) { name = "home"; arg = ""; }
     if (name === "vie" && !VIES[arg]) { name = "services"; arg = "famille"; }
+    var prev = cur.name;
     cur = { name: name, arg: arg };
     views.forEach(function (v) { v.hidden = v.getAttribute("data-view") !== name; });
     setNav(name, arg);
@@ -1304,6 +1411,14 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (name === "vie") title = VIES[arg].title;
     document.title = (title && name !== "home" ? title + " | " : "") + "ZOU";
     window.scrollTo(0, 0);
+    updateHead(name, title);
+    var dir = opts.dir || navDir;
+    navDir = "";
+    if (!dir) {
+      var d0 = depthOf(prev), d1 = depthOf(name);
+      dir = d1 > d0 ? "push" : d1 < d0 ? "pop" : opts.fromHash ? "pop" : d1 === 1 && (prev !== name || name === "vie") ? "push" : "none";
+    }
+    if (booted && dir !== "none") slideIn($("[data-view]:not([hidden])"), dir);
     if (booted && !opts.noFocus) {
       var h = $("[data-view]:not([hidden]) h1");
       if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
@@ -1316,8 +1431,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (t === hashSet) { hashSet = null; return; }
     var r = parseToken(t);
     if (!VALID[r.name]) r = { name: "home", arg: "" };
-    show(r.name, r.arg);
+    show(r.name, r.arg, { fromHash: true });
   });
+  $("#headBack").addEventListener("click", headBack);
   /* ================= Notice calculation ================= */
   function noticeOf(sen, grp) {
     var c = TABLE[sen][parseInt(grp, 10)];
@@ -2842,7 +2958,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     tab("Tous", "services", !svc.group);
     GROUPS.forEach(function (g) { tab(g.t, "services.g-" + g.key, svc.group === g.key); });
     var on = nav.querySelector(".on");
-    nav.scrollLeft = on ? Math.max(0, on.offsetLeft - 16) : 0;
+    nav.scrollLeft = on ? Math.max(0, on.getBoundingClientRect().left - nav.getBoundingClientRect().left + nav.scrollLeft - 16) : 0;
   }
 
   /* ================= Guide ================= */
@@ -3877,6 +3993,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       if (!$("#moreSheet").hidden) { var fb = $("#moreSheet button"); if (fb) fb.focus({ preventScroll: true }); }
       return;
     }
+    if (kind === "sheet-close") { dismissSheet(); return; }
     if (kind === "install") { closeMenus(); doInstall(); return; }
     if (kind === "install-later") { try { localStorage.setItem("zou_inst_off", String(Date.now())); } catch (e2) { /* ignore */ } renderInstall(); return; }
     /* Any other click outside an open menu closes it */
@@ -3889,6 +4006,8 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (md) { go("model." + md.getAttribute("data-model")); return; }
     var qq = t.closest("[data-q]");
     if (qq) { $("#askInput").value = qq.getAttribute("data-q"); submitAsk(); return; }
+    var tabBtn = t.closest(".tab[data-go]");
+    if (tabBtn) { tabTap(tabBtn); return; }
     var gobtn = t.closest("[data-go]");
     if (gobtn) {
       if (gobtn.tagName === "A") e.preventDefault();
@@ -3909,7 +4028,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (sg) { setStep(parseInt(sg.getAttribute("data-step-go"), 10)); return; }
     var mv = t.closest("[data-motive]");
     if (mv) { f().motive = mv.getAttribute("data-motive"); $("#l-motive").value = f().motive; save(); flowUpdate(); return; }
-    if (t.id === "scrim") { closeMenus(true); return; }
+    if (t.id === "scrim") { if (!$("#moreSheet").hidden) dismissSheet(); else closeMenus(true); return; }
     if (!act) return;
     var id = act.getAttribute("data-id");
     switch (kind) {
@@ -4107,6 +4226,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       renderViePlan(v, s, box);
     }
     document.title = v.title + " | ZOU";
+    if (cur.name === "vie") watchTitle();
   }
 
   function vieAnswer(q, val) {
@@ -4123,6 +4243,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     save();
     renderVie(vieCur.id);
     focusVie();
+    slideIn($("#vieBody"), "push");
   }
   function focusVie() {
     var h = $("#vieBody h2, #vieBody h1");
@@ -4131,8 +4252,8 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   }
   function vieBackStep() {
     var s = vieState(vieCur.id);
-    if (s.step > 0) { s.step--; save(); renderVie(vieCur.id); focusVie(); }
-    else go(VIES[vieCur.id].back || "services.famille");
+    if (s.step > 0) { s.step--; save(); renderVie(vieCur.id); focusVie(); slideIn($("#vieBody"), "pop"); }
+    else go(VIES[vieCur.id].back || "services.famille", { dir: "pop" });
   }
 
   function renderVieQuestion(v, s, q, box) {
