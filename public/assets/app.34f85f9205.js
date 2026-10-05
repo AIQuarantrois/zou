@@ -2462,7 +2462,8 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     { key: "sante", cat: "Santé et sécurité", d: "Lieu de travail, médecine du travail, contrôle" },
     { key: "famille", cat: "Famille", d: "Naissance, mariage, séparation, décès et héritage, enfants" },
     { key: "entreprise", cat: "Entreprise et commerce", d: "Bail commercial, création, sociétés, difficultés, créances" },
-    { key: "copro", cat: "Copropriété et sûretés", d: "Copropriété, caution, hypothèque, gage et autres garanties" }
+    { key: "copro", cat: "Copropriété et sûretés", d: "Copropriété, caution, hypothèque, gage et autres garanties" },
+    { key: "etrangers", cat: "Séjour des étrangers", d: "Visa, carte de séjour, travail, terre, expulsion, réfugiés" }
   ];
   var DOM_BY_KEY = {};
   DOMS.forEach(function (d) { DOM_BY_KEY[d.key] = d; });
@@ -3161,7 +3162,11 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     { kind: "Loi", name: "Sociétés commerciales", ref: "Loi n° 2003-036", dom: "entreprise" },
     { kind: "Loi", name: "Procédures collectives d'apurement du passif", ref: "Loi n° 2003-042", dom: "entreprise" },
     { kind: "Décret", name: "Statut de la copropriété des immeubles divisés par appartements", ref: "Décret n° 50-1631 du 27 décembre 1950", dom: "copro" },
-    { kind: "Loi", name: "Sûretés : cautionnement, garanties, gage, nantissement, hypothèque, fehivava", ref: "Loi n° 2003-041", dom: "copro" }
+    { kind: "Loi", name: "Sûretés : cautionnement, garanties, gage, nantissement, hypothèque, fehivava", ref: "Loi n° 2003-041", dom: "copro" },
+    { kind: "Loi", name: "Organisation et contrôle de l'immigration", ref: "Loi n° 62-006 du 6 juin 1962", dom: "etrangers" },
+    { kind: "Décret", name: "Application de la loi sur l'immigration : visas, carte de séjour, réfugiés et apatrides", ref: "Décret n° 94-652 du 11 octobre 1994", dom: "etrangers" },
+    { kind: "Arrêté", name: "Conditions et modalités d'octroi des visas d'entrée et de séjour", ref: "Arrêté interministériel n° 8421/97", dom: "etrangers" },
+    { kind: "Décret", name: "Institution de la carte de résident", ref: "Décret n° 98-352 du 24 avril 1998", dom: "etrangers" }
   ];
   var textsDT = null;
   function initTexts() {
@@ -5610,6 +5615,399 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     sources: [SUR + " : art. 58 à 219."]
   }));
 
+  /* ---------- Parcours Séjour des étrangers ---------- */
+  var IMM = "Loi n° 62-006 du 6 juin 1962 fixant l'organisation et le contrôle de l'immigration (modifiée en 1995)";
+  var IMD = "Décret n° 94-652 du 11 octobre 1994 (modifié en 1997) appliquant la loi sur l'immigration";
+  var IMA = "Arrêté interministériel n° 8421/97 du 19 septembre 1997 sur les visas";
+  var CTT = "Loi n° 2024-014 portant Code du travail";
+  var ETR = { dom: "etrangers", back: "services.etrangers", backLabel: "Séjour des étrangers" };
+  var L62 = "Loi 62-006", D94 = "Décret 94-652", A97 = "Arrêté 8421/97";
+  /** Date après n jours ouvrables (dimanches exclus ; les jours fériés ne sont pas connus ici). */
+  function ouvr(dateIso, n) { var d = parse(dateIso); while (n > 0) { d = addDays(d, 1); if (d.getDay() !== 0) n--; } return iso(d); }
+  function moisChips() { return [["Dans un mois", 30], ["Dans 3 mois", 90], ["Dans 6 mois", 180]]; }
+
+  /* 1. Visa, séjour, carte de séjour */
+  defVie(mk(ETR, {
+    id: "visa", short: "Visa et séjour", title: "Visa, séjour et carte de séjour à Madagascar",
+    situation: "Un étranger veut venir ou rester à Madagascar", desc: "Visa, durée du séjour, carte de séjour, renouvellement : pièces et dates limites", time: "5 min",
+    keys: /\bvisa\b|titre de s[ée]jour|carte de s[ée]jour|carte de r[ée]sident|permis de s[ée]jour|immigr|passeport/i,
+    intro: "La loi distingue le séjour de trois mois ou moins et l'installation de plus de trois mois. Voyons dans quel cas vous êtes, et avant quelle date agir.",
+    questions: [
+      { id: "sit", type: "choice", q: "Où en êtes-vous ?", options: [
+        { v: "avant", t: "Je prépare mon voyage ou ma demande", d: "Je ne suis pas encore à Madagascar" },
+        { v: "ici", t: "Je suis déjà à Madagascar avec un visa" },
+        { v: "accorde", t: "Mon visa de séjour vient de m'être accordé" },
+        { v: "refus", t: "Ma demande a été refusée, ou mon visa m'est retiré", tone: "danger" }] },
+      { id: "duree", when: function (a) { return a.sit === "avant"; }, type: "choice", q: "Combien de temps voulez-vous rester ?", options: [
+        { v: "court", t: "Trois mois ou moins", d: "Tourisme, affaires, visite, mission ponctuelle" },
+        { v: "long", t: "Plus de trois mois", d: "Installation : travail, études, retraite, famille…" }] },
+      { id: "motifC", when: function (a) { return a.sit === "avant" && a.duree === "court"; }, type: "choice", q: "Pour quelle raison venez-vous ?", options: [
+        { v: "tourisme", t: "Tourisme, visite familiale, conférence, événement" },
+        { v: "affaires", t: "Voyages d'affaires" },
+        { v: "sante", t: "Soins médicaux" },
+        { v: "science", t: "Recherche scientifique" },
+        { v: "film", t: "Tournage de film ou plaisance" }] },
+      { id: "motifL", when: function (a) { return a.sit === "avant" && a.duree === "long"; }, type: "choice", q: "Pour quelle raison voulez-vous vous installer ?", options: [
+        { v: "salarie", t: "Travailler comme salarié" },
+        { v: "invest", t: "Investir ou monter une activité" },
+        { v: "retraite", t: "Profiter de ma retraite" },
+        { v: "etudes", t: "Faire des études" },
+        { v: "famille", t: "Rejoindre ma famille (regroupement familial)" },
+        { v: "religieux", t: "Raison religieuse (mission, congrégation)" },
+        { v: "science", t: "Recherche scientifique" },
+        { v: "native", t: "Je suis né à Madagascar sans en avoir la nationalité" }] },
+      { id: "visaici", when: function (a) { return a.sit === "ici"; }, type: "choice", q: "Quel visa avez-vous ?", options: [
+        { v: "court", t: "Un visa de court séjour", d: "Moins de trois mois, tourisme ou affaires" },
+        { v: "unmois", t: "Un visa d'un mois, prorogeable et transformable", d: "Pour finaliser un dossier d'installation" },
+        { v: "long", t: "Un visa de séjour d'immigrant (long séjour)" }] },
+      { id: "arrivee", when: function (a) { return a.sit === "ici" && a.visaici !== "long"; }, type: "date", q: "À quelle date êtes-vous arrivé à Madagascar ?", unknown: "Je ne m'en souviens pas" },
+      { id: "exp", when: function (a) { return a.sit === "ici"; }, type: "date", future: true, chips: moisChips(), q: "Quelle est la date d'expiration de votre visa ?", unknown: "Je ne la connais pas" },
+      { id: "adulte", when: function (a) { return a.sit === "ici" && a.visaici !== "court"; }, type: "choice", q: "Avez-vous 21 ans révolus ?", help: "La carte de séjour est exigée à partir de 21 ans.", options: [{ v: "oui", t: "Oui" }, { v: "non", t: "Non" }] },
+      { id: "notifv", when: function (a) { return a.sit === "accorde"; }, type: "date", q: "À quelle date la décision accordant le visa vous a-t-elle été notifiée ?", unknown: "Je ne sais pas" }
+    ],
+    plan: function (a) {
+      var p = { title: "Votre plan", ask: "Quelles sont les conditions pour séjourner à Madagascar ?", deadlines: [], steps: [], docs: [], points: [] };
+      var DOCL = {
+        salarie: ["Une autorisation de travail délivrée à Madagascar par le ministère du Travail", "Une attestation d'emploi de l'employeur à Madagascar", "La carte de numéro d'identification fiscale (CNIF)"],
+        invest: ["Pour une société : statuts, attestation bancaire d'un compte local, déclaration d'existence, inscription au registre du commerce, demande de carte professionnelle, CNIF", "Pour une entreprise individuelle : attestation bancaire, demande de carte professionnelle, CNIF"],
+        retraite: ["Une attestation de mise à la retraite", "L'ouverture d'un compte bancaire ou postal à Madagascar", "Une attestation bancaire montrant que le compte est alimenté par la caisse de retraite ou une banque extérieure"],
+        etudes: ["Le diplôme et un certificat d'inscription", "Une attestation de bourse ou la preuve de ressources", "Un certificat d'hébergement et de prise en charge, avec la pièce d'identité de l'hébergeant"],
+        famille: ["L'acte de naissance ou l'acte de mariage", "Une photocopie du passeport et du visa des parents ou de l'époux déjà à Madagascar"],
+        religieux: ["Une attestation d'appartenance", "Un certificat d'hébergement et de prise en charge délivré par la congrégation légalement établie à Madagascar", "Pour un missionnaire laïc : une autorisation d'emploi bénévole"],
+        science: ["Une autorisation de recherche délivrée par le ministère de la Recherche scientifique ou de l'Enseignement supérieur"],
+        native: ["L'acte de naissance"]
+      };
+      if (a.sit === "avant" && a.duree === "court") {
+        p.title = "Venir pour trois mois ou moins";
+        p.verdict = { tone: "ok", t: "Il vous faut un passeport, un visa d'entrée et de séjour, un billet aller-retour et le carnet de vaccination.", d: "Le visa est délivré par une représentation diplomatique ou consulaire malgache, par le commissariat de police chargé de l'immigration à l'aéroport ou au port, ou exceptionnellement par correspondance auprès du ministère des Affaires étrangères." };
+        p.steps = [
+          { t: "Vérifiez votre passeport", d: "En cours de validité, et valable au moins six mois pour la demande de visa. Avant 15 ans, on peut figurer sur le passeport de son père ou de sa mère ; après, le passeport individuel est obligatoire.", cite: D94 + ", art. 9 ; " + A97 + ", annexe I" },
+          { t: "Demandez le visa d'entrée et de séjour", d: "Il indique sa nature, son objet, votre nom, la date et l'autorité qui l'a délivré. Il donne une à trois entrées au maximum. Joignez le formulaire, une photo (si vous le demandez en ambassade), et réglez le droit de visa.", cite: A97 + ", art. 1 et annexe I" },
+          { t: "Prenez un billet aller-retour", d: "Ou un titre de voyage circulaire, sauf dispense du cautionnement de retour prévu par la loi.", cite: D94 + ", art. 9" },
+          { t: "Emportez la carte internationale de vaccination", d: "Le certificat de fièvre jaune est demandé si vous avez séjourné dans les six derniers jours dans un pays infecté.", cite: D94 + ", art. 9 ; " + A97 + ", annexe I" }
+        ];
+        var ex = { sante: ["Soins médicaux", "Un certificat médical et un billet d'admission dans un centre hospitalier."], science: ["Recherche scientifique", "Une autorisation de recherche délivrée au préalable par le ministère de la Recherche scientifique ou de l'Enseignement supérieur."], film: ["Tournage ou plaisance", "Pour un tournage : l'autorisation des ministères de l'Information et de la Culture. Pour un voilier : les documents du bâtiment, l'itinéraire, l'équipage et la période de séjour, soumis au commissaire du port."], affaires: ["Voyages d'affaires", "Une lettre de votre société à l'étranger. Si vous venez souvent, vous pouvez demander un visa permanent d'entrée et de sortie valable trois ans au plus, pour 90 jours maximum par séjour."] }[a.motifC];
+        if (ex) p.steps.push({ t: "Pièce en plus : " + ex[0].toLowerCase(), d: ex[1], cite: A97 + ", art. 4 et annexe I" });
+        p.points.push({ t: "Ce visa ne permet pas de travailler.", d: "Il ne donne pas le droit d'exercer un emploi rémunéré ni une activité lucrative.", cite: D94 + ", art. 11 ; " + A97 + ", art. 3" });
+        p.points.push({ t: "Prolongation : les textes se contredisent.", d: "Le décret dit que ce visa n'est ni prorogeable ni transformable ; l'arrêté de 1997 admet une prorogation auprès du commissariat de police, pour trois mois au total. Dans les deux cas, il n'est pas transformable en visa de long séjour. Vérifiez auprès du commissariat avant de compter dessus.", cite: D94 + ", art. 10 ; " + A97 + ", art. 2" });
+        p.points.push({ t: "Fin du séjour.", d: "Vous devez quitter le territoire à l'expiration du visa. Une prolongation ne peut dépasser trente jours et doit relever de la force majeure. Aucun visa de sortie n'est exigé.", cite: L62 + ", art. 7 ; " + D94 + ", art. 12 et 18" });
+        p.next = [["vie.visa", "Si vous voulez rester plus longtemps"]];
+      } else if (a.sit === "avant") {
+        p.title = "S'installer plus de trois mois";
+        p.verdict = { tone: "warn", t: "Vous devenez « immigrant » : visa, cautionnement, dossier au ministère de l'Intérieur, puis carte de séjour.", d: "Un étranger qui séjourne plus de trois mois doit être muni d'une carte de séjour délivrée par le ministre de l'Intérieur. Le visa de séjour est personnel, précaire et révocable." };
+        p.steps = [
+          { t: "Obtenez le bon visa", d: "Soit un visa d'immigrant (compétence du ministère de l'Intérieur), soit un visa d'entrée et de séjour d'un mois, prorogeable et transformable, demandé dans une ambassade ou un consulat. Ce dernier doit être annoncé dès la demande du visa de court séjour, et n'est jamais délivré à l'aéroport ou au port.", cite: D94 + ", art. 13 ; " + A97 + ", art. 5" },
+          { t: "Versez le cautionnement de retour", d: "Au Trésor ou à une caisse publique : le prix d'un billet de retour (classe touriste au moins), plus d'éventuels frais d'hospitalisation fixés par arrêté. Le ministre de l'Intérieur peut en dispenser à titre exceptionnel.", cite: L62 + ", art. 5 ; " + D94 + ", art. 13 et 15" },
+          { t: "Constituez le dossier", d: "Adressé au ministre chargé de l'Intérieur, avec les avis des autorités locales et les renseignements de la police ou de la gendarmerie. Voir les pièces ci-dessous.", cite: A97 + ", art. 7 et annexe II" },
+          { t: "Déclarez votre identité à votre arrivée", d: "Dans les sept jours ouvrables suivant le débarquement, auprès de l'autorité administrative du lieu de résidence. Obligatoire dès 15 ans.", cite: D94 + ", art. 15" },
+          { t: "Demandez la carte de séjour", d: "Pour tout immigrant de plus de 21 ans, auprès de l'autorité administrative du lieu de résidence.", cite: D94 + ", art. 15 et 22" },
+          { t: "Anticipez le renouvellement", d: "Demandez-le trois mois avant l'expiration du visa en cours.", cite: D94 + ", art. 15 ; " + A97 + ", art. 11" }
+        ];
+        p.docs = [{ t: "Quatre photos d'identité et une demande motivée, timbrée, adressée au ministre chargé de l'Intérieur" }, { t: "Une notice de renseignements" }, { t: "Un extrait de casier judiciaire de votre pays d'origine, de moins de six mois" }, { t: "Photocopie du passeport et du visa, et deux enveloppes timbrées avec une adresse à Madagascar" }, { t: "Le récépissé du cautionnement versé au Trésor public" }].concat((DOCL[a.motifL] || []).map(function (x) { return { t: x }; }));
+        p.points.push({ t: "Le mariage ne donne pas un droit automatique de rester.", d: "Épouser une personne résidant à Madagascar ne vous permet pas de vous établir au-delà du séjour accordé : il faut déposer une nouvelle demande en indiquant votre situation matrimoniale. En revanche, un immigrant marié à un national est dispensé du droit de visa de la carte de séjour.", cite: D94 + ", art. 18 et 27" });
+        p.points.push({ t: "Sortir et revenir.", d: "Le visa de long séjour vaut visa permanent de sortie et de retour pendant sa durée.", cite: D94 + ", art. 16 ; " + A97 + ", art. 17" });
+        p.next = [["vie.travail-etranger", "Travailler ou monter une activité"]];
+      } else if (a.sit === "ici") {
+        var exp = a.exp, left = exp ? diffDays(today(), parse(exp)) : null;
+        if (a.visaici === "court") {
+          p.title = "Visa de court séjour : quand partir ?";
+          var cap = a.arrivee ? mo(a.arrivee, 3) : null;
+          var lim = exp && cap ? (exp < cap ? exp : cap) : (exp || cap);
+          if (exp) p.deadlines.push({ title: "Fin de votre visa", date: exp, why: "Vous devez quitter le territoire à l'expiration du visa de séjour accordé.", cite: L62 + ", art. 7", remind: 7 });
+          if (cap) p.deadlines.push({ title: "Fin maximale du séjour cumulé", date: cap, why: "Un visa de moins de trois mois ne peut être prorogé que pour une durée totale cumulée de trois mois.", cite: A97 + ", art. 2", remind: 7 });
+          p.verdict = lim ? (diffDays(today(), parse(lim)) >= 0 ? { tone: diffDays(today(), parse(lim)) <= 10 ? "urgent" : "warn", t: "Vous devez quitter Madagascar avant le " + fmt(lim) + ".", d: "Le séjour d'un non-immigrant ne peut pas dépasser trois mois, même avec une prorogation." } : { tone: "urgent", t: "Votre séjour semble dépasser ce que la loi permet.", d: "Rester après l'expiration expose à un refoulement et à des peines. Faites-vous aider sans attendre." }) : { tone: "warn", t: "Retrouvez la date d'expiration de votre visa et celle de votre arrivée.", d: "Le séjour ne peut pas dépasser trois mois au total." };
+          p.steps = [
+            { t: "Demandez une prorogation si nécessaire", d: "Auprès du commissariat de police, pour une durée totale cumulée de trois mois au plus. Le décret dit pourtant ce visa non prorogeable : vérifiez sur place.", cite: A97 + ", art. 2 ; " + D94 + ", art. 10" },
+            { t: "Ne travaillez pas", d: "Un visa de court séjour ne donne pas le droit d'exercer un emploi rémunéré ni une activité lucrative.", cite: D94 + ", art. 11" },
+            { t: "Si un cas de force majeure vous retient", d: "Une prolongation de trente jours au plus peut être accordée, à l'appréciation du ministère de l'Intérieur.", cite: A97 + ", art. 15" },
+            { t: "Gardez vos papiers sur vous", d: "Vous devez pouvoir présenter à toute réquisition les pièces qui vous autorisent à résider.", cite: D94 + ", art. 19" }
+          ];
+          p.points.push({ t: "Pas de transformation en long séjour.", d: "Ce visa ne se transforme pas en visa de long séjour : pour vous installer, il aurait fallu demander un visa d'un mois transformable avant de venir.", cite: A97 + ", art. 2 et 5" });
+          p.points.push({ t: "Dépasser le séjour a des conséquences.", d: "L'étranger qui n'a pas quitté le territoire à l'expiration de son séjour peut être refoulé, sans préjudice des condamnations encourues.", cite: L62 + ", art. 12 et 19" });
+          p.next = [["vie.expulsion", "Je suis menacé de refoulement"]];
+        } else if (a.visaici === "unmois") {
+          p.title = "Visa d'un mois : finaliser votre dossier d'installation";
+          if (exp) {
+            p.deadlines.push({ title: "Déposer le dossier de séjour et demander la prorogation", date: exp, why: "Le visa d'un mois est prorogeable au commissariat de police, pour trois mois au plus, sur présentation du récépissé du dépôt du dossier au ministère de l'Intérieur.", cite: A97 + ", art. 5 et 6", remind: 7 });
+            p.deadlines.push({ title: "Fin maximale avec prorogation", date: mo(exp, 3), why: "La prorogation ne peut pas dépasser trois mois, pour permettre de finaliser le dossier.", cite: A97 + ", art. 6", remind: 14 });
+          }
+          if (a.arrivee) p.deadlines.push({ title: "Déclarer votre identité et votre nationalité", date: ouvr(a.arrivee, 7), why: "Sept jours ouvrables après le débarquement, auprès de l'autorité administrative du lieu de résidence. Date indicative : les jours fériés ne sont pas décomptés ici, gardez de la marge.", cite: D94 + ", art. 15", remind: 2 });
+          p.verdict = exp ? (left >= 0 ? { tone: left <= 7 ? "urgent" : "warn", t: "Déposez votre dossier avant le " + fmt(exp) + ".", d: "Passé ce délai, vous devez quitter le territoire." } : { tone: "urgent", t: "Votre visa d'un mois est expiré.", d: "Si vous n'avez pas déposé de dossier, vous êtes en situation irrégulière. Faites-vous aider sans attendre." }) : { tone: "warn", t: "Retrouvez la date d'expiration de votre visa.", d: "C'est elle qui fixe le délai pour déposer votre dossier." };
+          p.steps = [
+            { t: "Déposez le dossier au ministère chargé de l'Intérieur", d: "Demande motivée, timbrée ; notice ; casier judiciaire de moins de six mois ; photocopies du passeport et du visa ; récépissé du cautionnement ; pièces selon votre motif.", cite: A97 + ", art. 7 et annexe II" },
+            { t: "Obtenez le récépissé de dépôt", d: "C'est lui qui permet de proroger le visa au commissariat de police.", cite: A97 + ", art. 6" },
+            { t: "Versez le cautionnement de retour", d: "Sauf dispense exceptionnelle du ministre de l'Intérieur.", cite: D94 + ", art. 13 et 15" },
+            { t: a.adulte === "oui" ? "Demandez votre carte de séjour" : "Pas de carte de séjour avant 21 ans", d: a.adulte === "oui" ? "Dossier à l'autorité administrative du lieu de résidence : demande sur papier timbré, récépissé des droits, quatre photos 4 x 4 cm, certificat médical, photocopies du passeport, du visa d'entrée et du dernier visa, notice de renseignements et certificat de résidence." : "L'obligation de carte de séjour concerne les immigrants de plus de 21 ans.", cite: D94 + ", art. 15 et 22" }
+          ];
+        } else {
+          p.title = "Visa de long séjour : renouvellement et carte de séjour";
+          if (exp) {
+            var ren = mo(exp, -3);
+            p.deadlines.push({ title: "Déposer la demande de renouvellement", date: ren, why: "Trois mois avant l'expiration du visa en cours, avec les mêmes conditions que pour le premier visa.", cite: D94 + ", art. 15 ; " + A97 + ", art. 11", remind: 30 });
+            p.deadlines.push({ title: "Expiration de votre visa", date: exp, why: "Vous devez quitter le territoire à l'expiration du visa, sauf renouvellement.", cite: L62 + ", art. 7", remind: 14 });
+            p.verdict = diffDays(today(), parse(ren)) >= 0 ? { tone: diffDays(today(), parse(ren)) <= 30 ? "warn" : "ok", t: "Demandez le renouvellement avant le " + fmt(ren) + ".", d: "Trois mois avant l'expiration de votre visa du " + fmt(exp) + "." } : (left >= 0 ? { tone: "urgent", t: "Le délai de trois mois est dépassé : déposez votre demande tout de suite.", d: "Votre visa expire le " + fmt(exp) + ". Une demande tardive n'est pas exclue par les textes chargés, mais elle risque d'être refusée." } : { tone: "urgent", t: "Votre visa est expiré.", d: "Rester sans visa valide expose à un refoulement et à des peines. Faites-vous aider sans attendre." });
+          } else p.verdict = { tone: "warn", t: "Retrouvez la date d'expiration de votre visa.", d: "La demande de renouvellement se dépose trois mois avant." };
+          p.steps = [
+            { t: "Déposez la demande de renouvellement", d: "Elle suit les mêmes règles que le premier visa : dossier au ministère chargé de l'Intérieur, avec les avis des autorités locales et de la police ou de la gendarmerie. La décision d'octroi ou de refus vous est notifiée.", cite: A97 + ", art. 7, 9 et 11" },
+            { t: "Joignez les pièces de renouvellement", d: "Extrait de casier judiciaire bulletin n° 3 de moins de trois mois délivré à Madagascar, photocopie de la carte d'identité d'étranger et du visa, certificat de résidence, et les pièces propres à votre motif (par exemple attestation de paiement d'impôt pour un salarié ou un investisseur).", cite: A97 + ", annexe II" },
+            { t: a.adulte === "oui" ? "Faites viser votre carte de séjour" : "Pas de carte de séjour avant 21 ans", d: a.adulte === "oui" ? "La carte doit être présentée au visa de l'autorité administrative du lieu de résidence, avec le récépissé des droits correspondant au séjour obtenu. Elle est valable dix ans, puis renouvelée." : "L'obligation de carte de séjour concerne les immigrants de plus de 21 ans.", cite: D94 + ", art. 23 et 25" },
+            { t: "Déclarez chaque changement de domicile", d: "Faites porter la mention sur la carte par l'autorité du lieu que vous quittez, puis, dans les trois jours, par l'autorité et le commissariat de police du nouveau lieu.", cite: D94 + ", art. 24" }
+          ];
+          p.points.push({ t: "Une carte irrégulière expose à un refus de visa.", d: "Le non-respect de la délivrance, du visa ou de la déclaration de changement de domicile rend la carte non valable et expose à un refus de visa de séjour.", cite: D94 + ", art. 26" });
+          p.points.push({ t: "Un visa précaire et révocable.", d: "Il peut être retiré en cas d'irrégularité, de menace pour l'ordre ou la sécurité publique, ou si le motif initial disparaît.", cite: A97 + ", art. 12" });
+          p.points.push({ t: "Sortir et revenir.", d: "Le résident titulaire d'un visa en cours de validité peut sortir du territoire et y revenir sans formalité préalable.", cite: A97 + ", art. 17" });
+          p.points.push({ t: "Carte de résident.", d: "Elle est délivrée par le ministre de l'Intérieur au moment du visa de séjour, sa validité correspond à celle du visa, et elle peut servir de pièce d'identité devant les autorités.", cite: "Décret 98-352, art. 4, 5 et 7" });
+          p.letter = {
+            title: "Demande de renouvellement du visa de séjour", lede: "À déposer au ministère chargé de l'Intérieur, au moins trois mois avant l'expiration.",
+            fields: [{ id: "nom", label: "Vos nom et prénoms", wide: true }, { id: "nat", label: "Nationalité" }, { id: "adr", label: "Adresse à Madagascar", wide: true }, { id: "cie", label: "N° de carte d'identité d'étranger" }, { id: "exp", label: "Date d'expiration du visa", init: exp ? fmt(exp) : "" }, { id: "motif", label: "Motif de votre séjour", ph: "Ex. travail salarié, retraite, études" }, { id: "ville", label: "Fait à" }],
+            text: function (f) {
+              return orv(f.nom, "[Vos nom et prénoms]") + "\nNationalité : " + orv(f.nat, "[nationalité]") + "\n" + orv(f.adr, "[Adresse à Madagascar]") + "\n\nÀ Monsieur le Ministre chargé de l'Intérieur\n\nObjet : demande de renouvellement de mon visa de séjour d'immigrant\n\nMonsieur le Ministre,\n\nTitulaire de la carte d'identité d'étranger n° " + orv(f.cie, "[numéro]") + ", j'ai l'honneur de solliciter le renouvellement de mon visa de séjour, qui expire le " + orv(f.exp, "[date d'expiration]") + ", au titre du motif suivant : " + orv(f.motif, "[motif]") + "." +
+                "\n\nConformément à l'article 11 de l'arrêté interministériel n° 8421/97 du 19 septembre 1997, ma demande est déposée plus de trois mois avant l'expiration du visa en cours. Vous trouverez ci-joint les pièces exigées, dont un extrait de casier judiciaire bulletin n° 3, la photocopie de ma carte d'identité d'étranger et de mon visa, et un certificat de résidence.\n\nVeuillez agréer, Monsieur le Ministre, l'expression de ma haute considération.\n\nFait à " + orv(f.ville, "[ville]") + ", le " + fmtLong(today()) + "\n\n[Signature]";
+            }
+          };
+        }
+      } else if (a.sit === "accorde") {
+        p.title = "Votre visa de séjour vient d'être accordé";
+        if (a.notifv) {
+          var ap = mo(a.notifv, 3), nn = diffDays(today(), parse(ap));
+          p.deadlines.push({ title: "Faire apposer le visa dans vos documents", date: ap, why: "Un visa de séjour accordé dont le bénéficiaire n'a pas rempli la formalité d'apposition dans les trois mois suivant la notification est annulé.", cite: A97 + ", art. 13", remind: 14 });
+          p.verdict = nn >= 0 ? { tone: nn <= 14 ? "urgent" : "warn", t: "Faites apposer votre visa avant le " + fmt(ap) + ".", d: "Passé ce délai, le visa est annulé." } : { tone: "urgent", t: "Le délai de trois mois est dépassé.", d: "Le visa a pu être annulé. Renseignez-vous sans attendre auprès du ministère de l'Intérieur." };
+        } else p.verdict = { tone: "warn", t: "Faites apposer le visa dans les trois mois suivant la notification.", d: "Sinon, il est annulé." };
+        p.steps = [
+          { t: "Faites apposer le visa dans vos documents", d: "Auprès de l'autorité qui vous l'a notifié, dans les trois mois.", cite: A97 + ", art. 13" },
+          { t: "Déclarez votre identité si ce n'est pas fait", d: "Dans les sept jours ouvrables suivant le débarquement, obligatoire dès 15 ans.", cite: D94 + ", art. 15" },
+          { t: "Demandez la carte de séjour (21 ans et plus)", d: "Auprès de l'autorité administrative du lieu de résidence.", cite: D94 + ", art. 22" }
+        ];
+        p.points.push({ t: "Un visa précaire.", d: "Le visa de séjour est accordé à titre individuel, précaire et révocable.", cite: A97 + ", art. 8 et 12" });
+      } else {
+        p.title = "Visa refusé ou retiré";
+        p.verdict = { tone: "urgent", t: "Vous devez quitter le territoire dans le délai qui vous est accordé.", d: "Un étranger dont la demande de visa est rejetée reçoit un visa d'attente « non renouvelable » pour préparer son départ." };
+        p.steps = [
+          { t: "Lisez la décision qui vous a été notifiée", d: "L'octroi comme le refus ou le retrait doivent vous être notifiés. Notez le délai de départ qui vous est donné.", cite: A97 + ", art. 9, 10 et 14" },
+          { t: "Comprenez le motif", d: "Le ministère peut retirer un visa en cas d'irrégularité dans l'octroi, l'admission ou le séjour, de menace pour l'ordre ou la sécurité publique, ou si le motif initial a disparu.", cite: A97 + ", art. 12" },
+          { t: "Préparez votre départ, ou faites-vous aider", d: "Les textes chargés dans ZOU ne détaillent pas de recours contre un refus de visa. Un professionnel peut vérifier si une nouvelle demande est possible.", go: ["pros", "Trouver un professionnel"] }
+        ];
+        p.points.push({ t: "Rester après le délai est risqué.", d: "L'étranger qui n'a pas quitté le territoire à l'expiration du séjour accordé peut être refoulé, sans préjudice des condamnations.", cite: L62 + ", art. 12" });
+        p.next = [["vie.expulsion", "Je suis menacé de refoulement ou d'expulsion"]];
+      }
+      return p;
+    },
+    sources: [IMM + " : art. 1 à 7, 12, 19.", IMD + " : art. 3 à 28.", IMA + " : art. 1 à 17 et annexes."]
+  }));
+
+  /* 2. Travail et activité d'un étranger */
+  defVie(mk(ETR, {
+    id: "travail-etranger", short: "Travail des étrangers", title: "Travailler ou exercer une activité à Madagascar quand on est étranger",
+    situation: "Un étranger veut travailler (ou je veux employer un étranger)", desc: "Contrat visé, permis de travail, carte professionnelle, sanctions", time: "3 min",
+    keys: /(travailleur|salari[ée]|employer|embaucher|recruter) (un |une |des )?[ée]trangers?|[ée]trangers? (qui )?(veut |peut )?(travailler|salari)|permis de travail|carte de travail|carte professionnelle/i,
+    intro: "Un étranger ne peut pas exercer n'importe quelle activité : la loi distingue les salariés et les non-salariés.",
+    questions: [
+      { id: "role", type: "choice", q: "Vous êtes…", options: [
+        { v: "salarie", t: "Un étranger qui veut travailler comme salarié" },
+        { v: "employeur", t: "Un employeur qui veut embaucher un étranger" },
+        { v: "independant", t: "Un étranger qui veut travailler à son compte", d: "Commerce, industrie, artisanat, agriculture" }] },
+      { id: "visa", when: function (a) { return a.role === "salarie" || a.role === "independant"; }, type: "choice", q: "Quel visa avez-vous aujourd'hui ?", options: [
+        { v: "court", t: "Un visa de court séjour (touriste, affaires)" },
+        { v: "long", t: "Un visa de long séjour (immigrant)" },
+        { v: "aucun", t: "Pas encore de visa", d: "Je prépare ma venue" }] }
+    ],
+    plan: function (a) {
+      var p = { title: "Votre plan", ask: "Un étranger peut-il travailler à Madagascar ?", deadlines: [], steps: [], docs: [], points: [] };
+      if (a.visa === "court") {
+        p.verdict = { tone: "urgent", t: "Un visa de court séjour ne vous permet pas de travailler.", d: "Il ne donne pas le droit d'exercer un emploi rémunéré ni une activité lucrative. L'étranger qui enfreint les règles sur l'activité professionnelle risque une amende et de deux à six mois de prison, ou l'une de ces deux peines." };
+        p.points.push({ t: "Fondement", cite: D94 + ", art. 11 ; " + L62 + ", art. 19" });
+      }
+      if (a.role === "salarie") {
+        p.title = "Travailler comme salarié étranger";
+        if (!p.verdict) p.verdict = { tone: "warn", t: "Il faut un contrat visé et un permis de travail du ministère du Travail.", d: "Un étranger salarié ne peut pas occuper un emploi sans l'autorisation du ministre du Travail et des Lois sociales. Le visa d'entrée et de séjour d'un salarié est lié à un contrat de travail visé." };
+        p.steps = [
+          { t: "Faites viser le contrat de travail", d: "Par un inspecteur du travail et des lois sociales du service compétent du ministère chargé du Travail.", cite: CTT + ", art. 61 ; " + L62 + ", art. 9" },
+          { t: "Obtenez le permis de travail", d: "Délivré par le ministre chargé du Travail (ou par délégation, le directeur général du Travail et des Lois sociales). Il indique au moins l'identité, la nationalité, le poste, la catégorie professionnelle, la validité et le lieu de travail. L'emploi est aussi soumis à l'autorisation du ministère après avis du ministère chargé de la Police nationale.", cite: CTT + ", art. 61 ; " + D94 + ", art. 29" },
+          { t: "Demandez le visa qui correspond", d: "Visa d'immigrant avec le dossier du salarié : autorisation de travail, attestation d'emploi de l'employeur, carte de numéro d'identification fiscale.", cite: A97 + ", annexe II" },
+          { t: "Restez dans votre catégorie professionnelle", d: "La carte de travail indique la catégorie. On ne peut pas exercer sans autorisation une profession d'une autre catégorie.", cite: L62 + ", art. 9" }
+        ];
+        p.points.push({ t: "Bénévoles et volontaires.", d: "Les travailleurs immigrés bénévoles et les volontaires internationaux en entreprise sont soumis aux mêmes deux conditions : contrat visé et permis de travail.", cite: CTT + ", art. 61" });
+        p.next = [["vie.visa", "Visa et carte de séjour"]];
+      } else if (a.role === "employeur") {
+        p.title = "Employer un étranger";
+        p.verdict = { tone: "warn", t: "Employer un étranger sans carte de travail valable pour sa catégorie est puni d'une amende.", d: "Elle vise toute personne qui emploie un étranger non muni d'une carte de travail, ou muni d'une carte valable pour une autre catégorie professionnelle. Les montants sont exprimés en francs dans la loi de 1962 : vérifiez-les auprès d'un professionnel." };
+        p.steps = [
+          { t: "Vérifiez sa carte ou son permis de travail", d: "Il doit mentionner la catégorie professionnelle correspondant au poste.", cite: L62 + ", art. 9 et 20 ; " + CTT + ", art. 61" },
+          { t: "Faites viser le contrat de travail", d: "Par un inspecteur du travail et des lois sociales, avant l'emploi.", cite: CTT + ", art. 61" },
+          { t: "Obtenez l'autorisation d'emploi", d: "L'emploi d'un étranger dans votre entreprise est soumis à l'autorisation du ministère du Travail, après avis du ministère chargé de la Police nationale.", cite: D94 + ", art. 29" },
+          { t: "Remettez-lui une attestation d'emploi", d: "Elle fait partie du dossier de visa d'un salarié immigrant.", cite: A97 + ", annexe II" },
+          { t: "N'affectez pas un autre type de poste sans autorisation", d: "La carte de travail est liée à une catégorie professionnelle.", cite: L62 + ", art. 9" }
+        ];
+        p.points.push({ t: "Recrutement par un intermédiaire.", d: "Les conditions d'autorisation des intermédiaires dans le recrutement des travailleurs immigrés relèvent d'un texte réglementaire non chargé dans ZOU.", cite: CTT + ", art. 61" });
+        p.next = [["pros", "Trouver un professionnel"]];
+      } else {
+        p.title = "Travailler à son compte quand on est étranger";
+        if (!p.verdict) p.verdict = { tone: "warn", t: "Il faut une carte professionnelle et une déclaration à l'autorité du lieu.", d: "Aucun étranger ne peut exercer un commerce, une industrie ou une profession soumise à la patente sans carte professionnelle délivrée par le ministère compétent et sans déclaration à l'autorité administrative du lieu d'installation." };
+        p.steps = [
+          { t: "Demandez la carte professionnelle", d: "Délivrée aux étrangers non salariés par le ministre chargé de l'Économie. Elle mentionne la catégorie d'activité : professions agricoles, industrielles et artisanales, ou commerciales. On ne peut pas, sans autorisation, exercer une activité d'une autre catégorie.", cite: L62 + ", art. 8 et 10 ; " + D94 + ", art. 30" },
+          { t: "Déclarez-vous à l'autorité administrative du lieu", d: "Là où vous voulez vous installer. La déclaration est inscrite au registre des étrangers et transmise aux ministères de l'Intérieur et de la Police nationale.", cite: D94 + ", art. 30" },
+          { t: "Si vous déménagez votre établissement principal", d: "Faites la déclaration simultanément auprès de l'ancienne et de la nouvelle autorités.", cite: D94 + ", art. 30" },
+          { t: "Préparez votre visa d'investisseur", d: "Pour une société : statuts, attestation bancaire locale, déclaration d'existence, registre du commerce, demande de carte professionnelle, CNIF. Pour une entreprise individuelle : attestation bancaire, demande de carte professionnelle, CNIF.", cite: A97 + ", annexe II" }
+        ];
+        p.points.push({ t: "Certaines professions sont fermées.", d: "Leur exercice peut être interdit aux étrangers ou soumis à autorisation par arrêté.", cite: L62 + ", art. 8" });
+        p.points.push({ t: "La terre.", d: "L'acquisition d'immeubles est interdite aux étrangers.", cite: L62 + ", art. 11" });
+        p.next = [["vie.terre-etranger", "Un étranger et la terre"], ["vie.creer", "Lancer une activité commerciale"], ["vie.visa", "Visa et carte de séjour"]];
+      }
+      return p;
+    },
+    sources: [IMM + " : art. 8 à 10, 19, 20.", IMD + " : art. 11, 29, 30.", CTT + " : art. 61.", IMA + " : annexe II."]
+  }));
+
+  /* 3. Un étranger et la terre */
+  defVie(mk(ETR, {
+    id: "terre-etranger", short: "Étranger et terre", title: "Un étranger peut-il acheter ou louer un terrain ?",
+    situation: "Un étranger veut acheter ou louer un terrain", desc: "Interdiction d'acquérir, bail emphytéotique de 50 ans au plus, risques pour le vendeur", time: "2 min",
+    keys: /[ée]trangers?.{0,40}(terrain|acheter|immobili|maison|terre)|(terrain|acheter|immobili|maison|terre).{0,40}[ée]trangers?|bail emphyt[ée]otique/i,
+    intro: "Une règle simple, mais qui a deux versions dans les textes. Voyons ce qui s'applique à votre cas.",
+    questions: [
+      { id: "projet", type: "choice", q: "Vous êtes…", options: [
+        { v: "acheter", t: "Un étranger qui veut acheter un terrain ou un bien immobilier" },
+        { v: "louer", t: "Un étranger qui veut louer longtemps" },
+        { v: "societe", t: "Un étranger qui veut passer par une société" },
+        { v: "vendre", t: "Un propriétaire à qui un étranger veut acheter" }] }
+    ],
+    plan: function (a) {
+      var p = { title: "Votre plan", ask: "Un étranger peut-il acheter un terrain à Madagascar ?", deadlines: [], steps: [], docs: [], points: [] };
+      p.title = "Les étrangers et la terre";
+      p.verdict = a.projet === "louer"
+        ? { tone: "ok", t: "Un étranger peut conclure un bail emphytéotique de 50 ans au plus, renouvelable.", d: "C'est l'alternative que la loi prévoit à l'acquisition interdite." }
+        : a.projet === "societe"
+          ? { tone: "warn", t: "Les textes chargés ne disent pas ce qu'il en est pour une société.", d: "Ils interdisent l'acquisition à « quelque titre que ce soit » aux étrangers. Ce qu'il advient d'une société qui compte des associés étrangers n'y est pas précisé : demandez à un notaire." }
+          : { tone: "urgent", t: "L'acquisition d'immeubles est interdite aux étrangers.", d: "L'interdiction vaut « à quelque titre que ce soit » (achat, échange…). Les étrangers peuvent seulement conclure un bail emphytéotique n'excédant pas 50 ans, renouvelable en cas de besoin." };
+      p.steps = a.projet === "vendre" ? [
+        { t: "Ne signez pas de vente à un étranger", d: "Une vente à un étranger irait contre l'interdiction. Proposez plutôt un bail emphytéotique de 50 ans au plus.", cite: L62 + ", art. 11" },
+        { t: "Passez par un notaire", d: "Pour vérifier la nationalité de l'acheteur et la forme du bail.", go: ["pros", "Trouver un notaire"] }
+      ] : [
+        { t: "Privilégiez le bail emphytéotique", d: "Durée de 50 ans au plus, renouvelable en cas de besoin.", cite: L62 + ", art. 11" },
+        { t: "Faites établir l'acte par un notaire", d: "Pour qu'il soit conforme et inscrit.", go: ["pros", "Trouver un notaire"] }
+      ];
+      p.points.push({ t: "Deux versions de l'article 11.", d: "La loi garde l'ancienne rédaction (autorisation préalable du ministre de l'Intérieur) à côté de la nouvelle, issue de la loi de 1995, qui interdit l'acquisition. C'est la nouvelle qui s'applique.", cite: L62 + ", art. 11" });
+      p.points.push({ t: "Le décret décrit encore une procédure d'autorisation.", d: "Le décret de 1994 prévoit un dossier (certificat d'immatriculation, relevés des propriétés, certificat de revenus, certificat de nationalité, casier judiciaire) examiné par un comité interministériel. Il a été écrit avant l'interdiction de 1995 : n'en déduisez pas qu'une autorisation est possible sans l'avoir vérifié auprès du ministère de l'Intérieur.", cite: D94 + ", art. 31 et 32" });
+      p.points.push({ t: "Domaine privé de l'État.", d: "Un autre texte foncier évoque une autorisation, selon la loi sur les investissements, pour l'acquisition de biens du domaine privé par des étrangers. Cette loi n'est pas chargée dans ZOU.", cite: "Recueil foncier" });
+      p.next = [["services.terrain", "Voir les services du domaine Terrain"], ["pros", "Trouver un notaire"]];
+      return p;
+    },
+    sources: [IMM + " : art. 11.", IMD + " : art. 31 et 32."]
+  }));
+
+  /* 4. Refoulement et expulsion */
+  defVie(mk(ETR, {
+    id: "expulsion", short: "Expulsion", title: "Refoulement ou expulsion d'un étranger",
+    situation: "Un étranger est menacé de refoulement ou d'expulsion", desc: "Huit jours pour demander à être entendu, commission spéciale, assignation à résidence", time: "3 min",
+    keys: /expuls|refoul|assign[ée] [àa] r[ée]sidence|quitter le territoire/i,
+    intro: "Le refoulement et l'expulsion ne suivent pas la même procédure. Le délai est très court : quelques questions pour savoir où vous en êtes.",
+    questions: [
+      { id: "mesure", type: "choice", q: "Que vous arrive-t-il ?", options: [
+        { v: "arrete", t: "J'ai reçu un arrêté d'expulsion", tone: "danger" },
+        { v: "refoule", t: "On me menace de refoulement", d: "Entrée irrégulière, séjour dépassé, ou menace pour l'ordre public" }] },
+      { id: "notif", when: function (a) { return a.mesure === "arrete"; }, type: "date", q: "À quelle date l'arrêté d'expulsion vous a-t-il été notifié ?", unknown: "Je ne sais pas" }
+    ],
+    plan: function (a) {
+      var p = { title: "Votre plan", ask: "Comment contester un arrêté d'expulsion ?", deadlines: [], steps: [], docs: [], points: [] };
+      if (a.mesure === "arrete") {
+        p.title = "Un arrêté d'expulsion vous a été notifié";
+        if (a.notif) {
+          var lim = plus(a.notif, 8), n = diffDays(today(), parse(lim));
+          p.deadlines.push({ title: "Demander à être entendu par la commission spéciale", date: lim, why: "Huit jours après la notification de l'arrêté d'expulsion, par recours gracieux adressé au ministre de l'Intérieur.", cite: L62 + ", art. 15 ; " + D94 + ", art. 35", remind: 2 });
+          p.verdict = n >= 0 ? { tone: "urgent", t: "Demandez à être entendu avant le " + fmt(lim) + ".", d: "Passé huit jours, vous perdez le droit d'être entendu par la commission spéciale." } : { tone: "urgent", t: "Le délai de huit jours est dépassé.", d: "Le droit d'être entendu est en principe perdu. Faites-vous aider sans attendre : l'arrêté peut être rapporté dans les mêmes formes." };
+        } else p.verdict = { tone: "urgent", t: "Vous avez huit jours à compter de la notification pour demander à être entendu.", d: "Retrouvez la date de notification de l'arrêté." };
+        p.steps = [
+          { t: "Adressez un recours gracieux au ministre de l'Intérieur", d: "Demandez à être entendu par la commission spéciale, dans les huit jours de la notification. Le courrier ci-dessous est pré-rempli.", cite: L62 + ", art. 15 ; " + D94 + ", art. 35" },
+          { t: "Le ministre saisit la commission", d: "Il saisit le président de la commission dans les huit jours et vous en avise, sauf urgence absolue reconnue par lui : dans ce cas, vous n'avez pas ce droit.", cite: D94 + ", art. 35 ; " + L62 + ", art. 15" },
+          { t: "Préparez votre défense", d: "La commission se réunit dans les quinze jours sur convocation de son président. Vous êtes entendu seul ou assisté d'un conseil de votre choix, à huis clos, et vous pouvez invoquer toutes vos raisons. Elle peut ordonner une enquête complémentaire.", cite: L62 + ", art. 15 et 16 ; " + D94 + ", art. 36 et 37", go: ["pros", "Trouver un avocat"] },
+          { t: "Attendez la décision du ministre", d: "Le procès-verbal et l'avis motivé de la commission lui sont transmis ; il statue. L'arrêté peut être rapporté dans les mêmes formes.", cite: L62 + ", art. 14 et 16 ; " + D94 + ", art. 37" }
+        ];
+        p.points.push({ t: "Si vous ne pouvez pas quitter le territoire.", d: "Si vous justifiez d'une impossibilité de partir, vous pouvez être astreint par arrêté à résider dans un lieu fixé et à vous présenter périodiquement à la police ou à la gendarmerie.", cite: L62 + ", art. 17" });
+        p.points.push({ t: "Ne pas partir est puni.", d: "Hors cas d'impossibilité constatée, ne pas quitter le territoire après un arrêté d'expulsion est puni de six mois à trois ans de prison.", cite: L62 + ", art. 21" });
+        p.points.push({ t: "Qui siège à la commission ?", d: "Le président de la délégation spéciale du Faritany (ou son vice-président), celui du Fivondronampokontany du lieu de résidence (ou son représentant), le directeur régional de la sécurité et de la police (ou son représentant), avec un secrétaire désigné.", cite: D94 + ", art. 34" });
+        p.points.push({ t: "Recours devant un tribunal.", d: "Les textes chargés dans ZOU n'en détaillent pas. Un avocat peut vous dire si un recours est possible dans votre cas." });
+        p.points.push({ t: "Motif de l'expulsion.", d: "Elle peut être prononcée par arrêté du ministre de l'Intérieur si la résidence de l'étranger menace l'ordre ou la sécurité publique.", cite: L62 + ", art. 14" });
+        p.letter = {
+          title: "Recours gracieux : demande d'audition par la commission spéciale", lede: "À remettre ou envoyer au ministère de l'Intérieur dans les huit jours de la notification de l'arrêté.",
+          fields: [{ id: "nom", label: "Vos nom et prénoms", wide: true }, { id: "nat", label: "Nationalité" }, { id: "adr", label: "Adresse à Madagascar", wide: true }, { id: "arr", label: "N° de l'arrêté d'expulsion" }, { id: "dnot", label: "Date de notification", init: a.notif ? fmt(a.notif) : "" }, { id: "conseil", label: "Votre conseil, s'il y en a un", wide: true }, { id: "moyens", label: "Vos raisons de contester (résumé)", type: "textarea", wide: true }, { id: "ville", label: "Fait à" }],
+          text: function (f) {
+            return orv(f.nom, "[Vos nom et prénoms]") + "\nNationalité : " + orv(f.nat, "[nationalité]") + "\n" + orv(f.adr, "[Adresse à Madagascar]") + "\n\nÀ Monsieur le Ministre de l'Intérieur\n\nObjet : recours gracieux contre l'arrêté d'expulsion n° " + orv(f.arr, "[numéro]") + " et demande d'audition\n\nMonsieur le Ministre,\n\nL'arrêté d'expulsion n° " + orv(f.arr, "[numéro]") + " m'a été notifié le " + orv(f.dnot, "[date de notification]") + ". En application de l'article 15 de la loi n° 62-006 du 6 juin 1962 et de l'article 35 du décret n° 94-652 du 11 octobre 1994, je demande à être entendu(e) par la commission spéciale, seul(e) ou assisté(e) de mon conseil" + (f.conseil ? " (" + f.conseil + ")" : "") + ", dans le délai de huit jours qui suit cette notification." +
+              "\n\nMes raisons de contester cette mesure sont les suivantes :\n" + orv(f.moyens, "[résumé de vos raisons]") + "\n\nJe vous prie de saisir sans délai le président de la commission et de m'en aviser.\n\nVeuillez agréer, Monsieur le Ministre, l'expression de ma haute considération.\n\nFait à " + orv(f.ville, "[ville]") + ", le " + fmtLong(today()) + "\n\n[Signature]";
+          }
+        };
+      } else {
+        p.title = "Menace de refoulement";
+        p.verdict = { tone: "warn", t: "Le refoulement est possible dans trois cas, sans procédure d'audition prévue par ces textes.", d: "Entrée irrégulière, séjour non quitté à l'expiration du séjour accordé, ou, pour un étranger admis temporairement, présence qui menace l'ordre public, la santé, la moralité ou la sécurité publique." };
+        p.steps = [
+          { t: "Régularisez votre situation si c'est encore possible", d: "Visa, prorogation, demande de visa d'immigrant : voir le parcours « visa ». Une prolongation de trente jours au plus peut être accordée en cas de force majeure.", cite: A97 + ", art. 15", go: ["vie.visa", "Voir le parcours visa"] },
+          { t: "Gardez vos papiers sur vous", d: "Vous devez pouvoir présenter à toute réquisition les pièces qui vous autorisent à résider.", cite: D94 + ", art. 19" },
+          { t: "Faites-vous assister", d: "Les textes chargés ne décrivent pas de procédure d'audition pour le refoulement, contrairement à l'expulsion.", go: ["pros", "Trouver un avocat"] }
+        ];
+        p.points.push({ t: "Sanctions pénales : entrée.", d: "Entrer sans les documents et visas exigés, ou avec de faux documents, ou aider quelqu'un à le faire, est puni d'une amende et de six mois à un an de prison, ou de l'une de ces peines.", cite: L62 + ", art. 18" });
+        p.points.push({ t: "Sanctions pénales : séjour.", d: "L'étranger qui enfreint les règles sur la carte de séjour, la sortie à l'expiration du visa ou l'activité professionnelle risque une amende et deux à six mois de prison. Les montants sont exprimés en francs dans la loi de 1962.", cite: L62 + ", art. 19" });
+        p.points.push({ t: "Le transporteur.", d: "Celui qui a accepté un passager étranger sans les formalités exigées doit assurer son rapatriement à ses frais.", cite: L62 + ", art. 5 ; " + D94 + ", art. 17" });
+      }
+      return p;
+    },
+    sources: [IMM + " : art. 12 à 21.", IMD + " : art. 33 à 37."]
+  }));
+
+  /* 5. Réfugiés et apatrides */
+  defVie(mk(ETR, {
+    id: "refugie", short: "Réfugiés et apatrides", title: "Réfugié ou apatride à Madagascar",
+    situation: "Je suis réfugié ou apatride (ou je veux le devenir)", desc: "Bureau des réfugiés et apatrides, carte de séjour, délais d'un mois et de trois mois", time: "3 min",
+    keys: /r[ée]fugi[ée]|apatride|asile/i,
+    intro: "Les réfugiés et les apatrides ont un guichet à part. Voyons dans quelle situation vous êtes.",
+    questions: [
+      { id: "statut", type: "choice", q: "Votre situation", options: [
+        { v: "admis", t: "J'ai été admis comme réfugié ou apatride" },
+        { v: "demande", t: "Je veux demander cette reconnaissance" },
+        { v: "epouse", t: "Je suis apatride et j'ai épousé (ou j'épouse) un Malagasy" }] },
+      { id: "arrivee", when: function (a) { return a.statut === "admis"; }, type: "date", q: "À quelle date avez-vous été débarqué à Madagascar ?", unknown: "Je ne m'en souviens pas" },
+      { id: "mariage", when: function (a) { return a.statut === "epouse"; }, type: "date", q: "À quelle date le mariage a-t-il été célébré ?", unknown: "Pas encore marié(e)" }
+    ],
+    plan: function (a) {
+      var p = { title: "Votre plan", ask: "Comment obtenir le statut de réfugié ou d'apatride à Madagascar ?", deadlines: [], steps: [], docs: [], points: [] };
+      if (a.statut === "admis") {
+        p.title = "Demander votre carte de séjour de réfugié ou d'apatride";
+        if (a.arrivee) {
+          var lim = mo(a.arrivee, 1), n = diffDays(today(), parse(lim));
+          p.deadlines.push({ title: "Demander la carte de séjour", date: lim, why: "Un mois après le débarquement, pour les apatrides et les réfugiés admis sur le territoire.", cite: D94 + ", art. 45", remind: 7 });
+          p.verdict = n >= 0 ? { tone: n <= 7 ? "urgent" : "warn", t: "Demandez votre carte de séjour avant le " + fmt(lim) + ".", d: "Vous disposez d'un mois après votre débarquement." } : { tone: "urgent", t: "Le délai d'un mois est dépassé.", d: "Présentez-vous sans attendre au Bureau des apatrides et réfugiés du ministère de l'Intérieur." };
+        } else p.verdict = { tone: "warn", t: "Vous disposez d'un mois après votre débarquement pour demander votre carte de séjour.", d: "Retrouvez la date de votre arrivée." };
+        p.steps = [
+          { t: "Adressez-vous au Bureau des apatrides et réfugiés", d: "Il dépend du ministère de l'Intérieur, protège juridiquement et administrativement les réfugiés et apatrides, et établit leur carte de séjour d'apatride ou de réfugié.", cite: D94 + ", art. 39 et 41 ; Décret 62-001, art. 1" },
+          { t: "Faites établir les pièces utiles à votre vie civile", d: "Le Bureau peut délivrer, après enquête, les pièces nécessaires aux actes de la vie civile, sauf les actes d'état civil. Il peut aussi renseigner sur votre situation de famille d'après des actes du pays d'origine, certifier vos métiers et titres antérieurs, et attester votre bonne conduite.", cite: D94 + ", art. 40 et 41" },
+          { t: "Payez les taxes de chancellerie", d: "Aux taux généralement applicables, sous réserve d'exonérations.", cite: D94 + ", art. 42" }
+        ];
+        p.points.push({ t: "Les mêmes règles que les immigrants.", d: "Sous réserve des dispositions particulières et des conventions internationales sur les réfugiés et apatrides.", cite: D94 + ", art. 38" });
+      } else if (a.statut === "demande") {
+        p.title = "Demander la reconnaissance de réfugié ou d'apatride";
+        p.verdict = { tone: "ok", t: "Ce n'est pas la même autorité selon que l'on est réfugié ou apatride.", d: "Les textes chargés ne décrivent pas de formulaire ni de délai pour la demande : adressez-vous au Bureau des apatrides et réfugiés du ministère de l'Intérieur." };
+        p.steps = [
+          { t: "Réfugié", d: "Est réfugié l'étranger qui, pour des raisons politiques ou autres, a été admis comme tel sur le territoire par décision du ministre de l'Intérieur.", cite: D94 + ", art. 8" },
+          { t: "Apatride", d: "Est apatride la personne qu'aucun État ne considère comme son ressortissant, ou dont la nationalité est inconnue. La qualité est reconnue, sur demande, par la commission interministérielle chargée des problèmes de l'apatridie, qui doit aussi autoriser l'admission d'un apatride sur le territoire.", cite: D94 + ", art. 8 et 44" },
+          { t: "Contactez le Bureau des apatrides et réfugiés", d: "Il applique les conventions internationales concernant ces personnes, auxquelles Madagascar a adhéré.", cite: D94 + ", art. 39", go: ["pros", "Trouver un professionnel"] }
+        ];
+      } else {
+        p.title = "Apatride qui épouse un Malagasy";
+        if (a.mariage) {
+          var dm = mo(a.mariage, 3), nm = diffDays(today(), parse(dm));
+          p.deadlines.push({ title: "Déclarer le mariage au Bureau des apatrides et réfugiés", date: dm, why: "Trois mois après la célébration, avec une copie de l'acte de mariage.", cite: D94 + ", art. 43", remind: 14 });
+          p.verdict = nm >= 0 ? { tone: nm <= 14 ? "urgent" : "warn", t: "Déclarez le mariage avant le " + fmt(dm) + ".", d: "Pour la femme apatride qui épouse un national malagasy : trois mois à compter de la célébration." } : { tone: "urgent", t: "Le délai de trois mois est dépassé.", d: "Présentez-vous sans attendre au Bureau avec une copie de l'acte de mariage." };
+        } else p.verdict = { tone: "warn", t: "Après le mariage, vous avez trois mois pour le déclarer au Bureau.", d: "Pour la femme apatride qui épouse un national malagasy." };
+        p.steps = [
+          { t: "Déclarez le mariage", d: "Au Bureau des apatrides et réfugiés, avec une copie de l'acte de mariage.", cite: D94 + ", art. 43" },
+          { t: "Pour la nationalité", d: "Le mariage avec un Malagasy peut ouvrir des droits en matière de nationalité : voir le parcours « nationalité ».", go: ["vie.nationalite", "Voir le parcours nationalité"] }
+        ];
+        p.points.push({ t: "La règle ne vise que la femme apatride.", d: "L'article parle de « la femme apatride qui épouse un national malagasy ». Les textes chargés ne disent rien d'une règle équivalente pour un homme apatride.", cite: D94 + ", art. 43" });
+      }
+      p.next = [["vie.visa", "Visa et carte de séjour"]];
+      return p;
+    },
+    sources: [IMD + " : art. 8 et 38 à 45.", "Décret n° 62-001 du 5 janvier 1962 créant le Bureau des réfugiés et apatrides."]
+  }));
+
   VIE_ORDER.forEach(function (id) {
     var v = VIES[id];
     addItem({ key: "flow:vie-" + id, kind: "flow", id: "vie-" + id, dom: v.dom || "famille", title: v.situation, desc: v.desc, time: v.time, go: "vie." + id });
@@ -5630,7 +6028,10 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     { go: "vie.creancier", t: "Un débiteur est en faillite", d: "Déclarer ma créance avant la forclusion" },
     { go: "vie.copro", t: "Je suis copropriétaire", d: "Charges, votes, syndic, titre de l'appartement" },
     { go: "vie.caution", t: "On me demande de me porter caution", d: "Ce que vous risquez, la forme exigée, vos recours", tone: "urgent" },
-    { go: "vie.garantie", t: "Hypothèque, gage : garantir un prêt", d: "Terrain, matériel, stocks : forme et inscription" }
+    { go: "vie.garantie", t: "Hypothèque, gage : garantir un prêt", d: "Terrain, matériel, stocks : forme et inscription" },
+    { go: "vie.visa", t: "Un étranger veut venir ou rester", d: "Visa, carte de séjour, renouvellement" },
+    { go: "vie.travail-etranger", t: "Un étranger veut travailler", d: "Contrat visé, permis de travail, activité à son compte" },
+    { go: "vie.expulsion", t: "Refoulement ou expulsion", d: "Huit jours pour demander à être entendu", tone: "urgent" }
   ];
   function renderLife() {
     var g = $("#lifeGrid");

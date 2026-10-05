@@ -839,6 +839,7 @@ h1.h-display { font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem); font-weight: 700; l
 ::selection { background: rgba(59, 130, 246, 0.25); }
 
 /* ---------- Parcours de vie ---------- */
+#vieBody .cite { white-space: normal; }
 .vie-top { display: flex; flex-direction: column; gap: 14px; max-width: 720px; }
 .vie-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--ink-3); font-weight: 500; }
 .vie-bar { height: 6px; background: var(--rule); border-radius: 999px; overflow: hidden; }
