@@ -2678,22 +2678,44 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   }
 
   /* ================= Home, menus, footer ================= */
-  var HOME_TILES = ["tool:notice", "flow:demission", "guide:licenciement-abusif", "guide:immatriculer-terrain", "guide:porter-plainte", "guide:accident-travail-declaration-delais"];
+  /* Thèmes : cinq groupes qui regroupent les domaines (accueil, menu, services, pied de page). */
+  var GROUPS = [
+    { key: "famille-papiers", t: "Famille et papiers", d: "Naissance, mariage, décès, nationalité, séjour des étrangers", doms: ["famille", "etrangers"] },
+    { key: "travail-protection", t: "Travail et protection", d: "Contrat, licenciement, accident du travail, maternité, retraite", doms: ["travail", "social", "sante"] },
+    { key: "logement-biens", t: "Logement et biens", d: "Terrain, titre foncier, copropriété, hypothèque, caution", doms: ["terrain", "copro"] },
+    { key: "entreprise", t: "Entreprise", d: "Bail commercial, société, difficultés de paiement, créances", doms: ["entreprise"] },
+    { key: "justice", t: "Justice", d: "Plainte, garde à vue, procès, appel, délais de procédure", doms: ["penal", "civil"] }
+  ];
+  var GROUP_BY_KEY = {}, GROUP_OF = {};
+  GROUPS.forEach(function (g) { GROUP_BY_KEY[g.key] = g; g.doms.forEach(function (d) { GROUP_OF[d] = g.key; }); });
+  function countGroup(g) { var n = 0; g.doms.forEach(function (d) { n += countIn(d); }); return n; }
   var SUGGEST = ["préavis démission", "titre foncier", "porter plainte", "congé maternité", "salaire impayé"];
   function renderHome() {
     renderLife();
-    var box = $("#homeTiles");
-    box.textContent = "";
-    var items = HOME_TILES.map(function (k) { return ITEM_BY_KEY[k]; }).filter(Boolean);
-    box.appendChild(itemList(items, { domain: true, head: true }));
-    var dm = $("#homeDomains");
-    dm.textContent = "";
-    var ul = el("ul", "q-table dom");
-    ul.appendChild(headRow([["main", "Domaine"], ["count", "Services"]]));
-    DOMS.forEach(function (d) {
-      ul.appendChild(rowEl("services." + d.key, d.cat, d.d, { count: plural(countIn(d.key), "service", "services") }));
+    var tp = $("#homeTopics");
+    tp.textContent = "";
+    GROUPS.forEach(function (g) {
+      var li = el("li"), b = el("button", "topic");
+      b.type = "button"; b.setAttribute("data-go", "services.g-" + g.key);
+      b.appendChild(el("span", "topic-t", g.t));
+      b.appendChild(el("span", "topic-n", plural(countGroup(g), "service", "services")));
+      b.appendChild(el("span", "topic-d", g.d));
+      li.appendChild(b); tp.appendChild(li);
     });
-    dm.appendChild(ul);
+    var rl = $("#homeResumeList"), nr = 0;
+    rl.textContent = "";
+    VIE_ORDER.forEach(function (id) {
+      var s = state.vies && state.vies[id];
+      if (nr >= 3 || !s || !s.started) return;
+      var v = VIES[id], qs = vieQuestions(v, s.a || {});
+      if ((s.step || 0) >= qs.length) return;
+      var li = el("li"), b = el("button", "topic");
+      b.type = "button"; b.setAttribute("data-go", "vie." + id);
+      b.appendChild(el("span", "topic-t", v.situation));
+      b.appendChild(el("span", "topic-d", "Question " + ((s.step || 0) + 1) + " sur " + qs.length));
+      li.appendChild(b); rl.appendChild(li); nr++;
+    });
+    $("#homeResume").hidden = !nr;
     var sg = $("#suggest");
     if (!sg.children.length) {
       SUGGEST.forEach(function (s) {
@@ -2707,14 +2729,19 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   function renderMenus() {
     var mi = $("#megaIn");
     mi.textContent = "";
-    DOMS.forEach(function (d) {
-      var b = el("button", "mega-i");
-      b.setAttribute("data-go", "services." + d.key);
-      var mt = el("span", "mega-t", d.cat);
-      mt.appendChild(el("span", "mega-n", String(countIn(d.key))));
-      b.appendChild(mt);
-      b.appendChild(el("span", "mega-d", d.d));
-      mi.appendChild(b);
+    GROUPS.forEach(function (g) {
+      var col = el("div", "mega-g");
+      var gt = el("button", "mega-gt", g.t);
+      gt.type = "button"; gt.setAttribute("data-go", "services.g-" + g.key);
+      col.appendChild(gt);
+      g.doms.forEach(function (dk) {
+        var l = el("button", "mega-l");
+        l.type = "button"; l.setAttribute("data-go", "services." + dk);
+        l.appendChild(el("span", "", DOM_BY_KEY[dk].cat));
+        l.appendChild(el("span", "mega-n", String(countIn(dk))));
+        col.appendChild(l);
+      });
+      mi.appendChild(col);
     });
     var all = el("div", "mega-all");
     var ab = el("button", "link-btn", "Voir tous les services");
@@ -2723,25 +2750,25 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     mi.appendChild(all);
     var fd = $("#footDomains");
     fd.textContent = "";
-    DOMS.forEach(function (d) {
+    GROUPS.forEach(function (g) {
       var li = el("li");
-      var a = el("a", "", d.cat);
-      a.href = "#services." + d.key;
-      a.setAttribute("data-go", "services." + d.key);
+      var a = el("a", "", g.t);
+      a.href = "#services.g-" + g.key;
+      a.setAttribute("data-go", "services.g-" + g.key);
       li.appendChild(a);
       fd.appendChild(li);
     });
   }
 
   /* ================= Services hub ================= */
-  var svc = { q: "" };
+  var svc = { q: "", group: "" };
   var svcDT = null;
   function durMin(it) { var m = parseInt(it.time, 10); return isNaN(m) ? 0 : m; }
   function domCat(it) { return DOM_BY_KEY[it.dom] ? DOM_BY_KEY[it.dom].cat : ""; }
   function initServices() {
     svcDT = DT.create({
       name: "services", host: $("#svcTable"), layout: "table", noun: ["service", "services"],
-      rows: function () { return ITEMS; },
+      rows: function () { return svc.group ? ITEMS.filter(function (it) { return GROUP_OF[it.dom] === svc.group; }) : ITEMS; },
       go: function (it) { return itemToken(it); },
       search: {
         label: "Rechercher un service", placeholder: "Rechercher un service ou un mot-clé",
@@ -2791,12 +2818,30 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   function servicesEnter(arg) {
     if (!svcDT) initServices();
     var o = {};
+    svc.group = "";
     if (arg === "q") o = { q: svc.q };
-    else if (DOM_BY_KEY[arg]) o = { f: { dom: DOM_BY_KEY[arg].cat } };
+    else if (arg.indexOf("g-") === 0 && GROUP_BY_KEY[arg.slice(2)]) svc.group = arg.slice(2);
+    else if (DOM_BY_KEY[arg]) { o = { f: { dom: DOM_BY_KEY[arg].cat } }; svc.group = GROUP_OF[arg] || ""; }
     else if (arg === "tool") o = { f: { type: "Calcul" } };
     else if (arg === "model") o = { f: { type: "Lettre" } };
+    else if (arg === "flow") o = { f: { type: "Parcours guidé" } };
     svc.q = "";
     svcDT.set(o);
+    renderSvcGroups();
+  }
+  function renderSvcGroups() {
+    var nav = $("#svcGroups");
+    nav.textContent = "";
+    function tab(label, go, on) {
+      var b = el("button", "svc-g" + (on ? " on" : ""), label);
+      b.type = "button"; b.setAttribute("data-go", go);
+      if (on) b.setAttribute("aria-current", "true");
+      nav.appendChild(b);
+    }
+    tab("Tous", "services", !svc.group);
+    GROUPS.forEach(function (g) { tab(g.t, "services.g-" + g.key, svc.group === g.key); });
+    var on = nav.querySelector(".on");
+    nav.scrollLeft = on ? Math.max(0, on.offsetLeft - 16) : 0;
   }
 
   /* ================= Guide ================= */
@@ -4114,6 +4159,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (p.verdict) {
       var vd = el("div", "vie-verdict " + (p.verdict.tone || "ok"));
       vd.setAttribute("role", p.verdict.tone === "urgent" ? "alert" : "note");
+      vd.appendChild(el("span", "vie-verdict-l", { ok: "À savoir", warn: "Attention", urgent: "Urgent" }[p.verdict.tone || "ok"]));
       vd.appendChild(el("strong", "", p.verdict.t));
       if (p.verdict.d) vd.appendChild(el("p", "", p.verdict.d));
       if (p.verdict.go) {
@@ -4160,7 +4206,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
           s.checks[ck] = cb.checked; li.classList.toggle("done", cb.checked); save();
         });
         var body = el("span", "vie-item-b");
-        if (key === "steps") body.appendChild(el("span", "vie-n", String(i + 1)));
+        if (key === "steps") body.appendChild(el("span", "vie-n", "Étape " + (i + 1)));
         var tx = el("span", "vie-item-t", it.t);
         body.appendChild(tx);
         if (it.d) { var dd = el("span", "vie-item-d", it.d + (it.cite ? " " : "")); if (it.cite) dd.appendChild(cite(it.cite)); body.appendChild(dd); }
@@ -6019,28 +6065,46 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     { go: "vie.separation", t: "Nous nous séparons", d: "Conciliation, divorce, enfants, biens" },
     { go: "vie.sans-acte", t: "Je n'ai pas d'acte de naissance", d: "Le jugement supplétif, pas à pas" },
     { go: "vie.enfant-danger", t: "Un enfant est en danger", d: "À qui le dire, comment, anonymat", tone: "urgent" },
-    { go: "flow", t: "Je veux démissionner", d: "Préavis, lettre, preuve de remise" },
-    { go: "urgent", t: "J'ai un problème maintenant", d: "Garde à vue, licenciement immédiat…", tone: "urgent" },
+    { go: "flow", t: "Je veux démissionner", d: "Préavis, lettre, preuve de remise", dom: "travail" },
+    { go: "urgent", t: "J'ai un problème maintenant", d: "Garde à vue, licenciement immédiat…", tone: "urgent", dom: "penal" },
     { go: "vie.nationalite", t: "Mon enfant est-il malagasy ?", d: "Nationalité par le père ou la mère" },
     { go: "vie.bail", t: "Je loue un local commercial", d: "Renouvellement, congé, loyer, cession" },
     { go: "vie.creer", t: "Je veux lancer mon activité", d: "Commerçant ou société, étapes, comptabilité" },
-    { go: "vie.difficultes", t: "Mon entreprise ne peut plus payer", d: "Cessation des paiements, délais, pièces", tone: "urgent" },
+    { go: "vie.difficultes", t: "Mon entreprise ne peut plus payer", d: "Cessation des paiements, délais, pièces" },
     { go: "vie.creancier", t: "Un débiteur est en faillite", d: "Déclarer ma créance avant la forclusion" },
     { go: "vie.copro", t: "Je suis copropriétaire", d: "Charges, votes, syndic, titre de l'appartement" },
-    { go: "vie.caution", t: "On me demande de me porter caution", d: "Ce que vous risquez, la forme exigée, vos recours", tone: "urgent" },
+    { go: "vie.caution", t: "On me demande de me porter caution", d: "Ce que vous risquez, la forme exigée, vos recours" },
     { go: "vie.garantie", t: "Hypothèque, gage : garantir un prêt", d: "Terrain, matériel, stocks : forme et inscription" },
     { go: "vie.visa", t: "Un étranger veut venir ou rester", d: "Visa, carte de séjour, renouvellement" },
     { go: "vie.travail-etranger", t: "Un étranger veut travailler", d: "Contrat visé, permis de travail, activité à son compte" },
     { go: "vie.expulsion", t: "Refoulement ou expulsion", d: "Huit jours pour demander à être entendu", tone: "urgent" }
   ];
+  var LIFE_FEAT = ["vie.deces", "vie.naissance", "flow", "urgent", "vie.bail", "vie.caution", "vie.visa", "vie.expulsion"];
+  function lifeDom(x) {
+    if (x.dom) return x.dom;
+    var m = /^vie\.(.+)$/.exec(x.go);
+    return (m && VIES[m[1]] && VIES[m[1]].dom) || "famille";
+  }
+  function lifeTile(x) {
+    var b = el("button", "life-b" + (x.tone ? " urgent" : "")); b.type = "button"; b.setAttribute("data-go", x.go);
+    if (x.tone) b.appendChild(el("span", "tag", "Urgent"));
+    b.appendChild(el("span", "t", x.t)); b.appendChild(el("span", "d", x.d));
+    return b;
+  }
   function renderLife() {
     var g = $("#lifeGrid");
     if (!g || g.children.length) return;
-    LIFE.forEach(function (x) {
-      var b = el("button", "life-b" + (x.tone ? " " + x.tone : "")); b.type = "button"; b.setAttribute("data-go", x.go);
-      b.appendChild(el("span", "t", x.t)); b.appendChild(el("span", "d", x.d));
-      g.appendChild(b);
+    LIFE_FEAT.forEach(function (go) { LIFE.forEach(function (x) { if (x.go === go) g.appendChild(lifeTile(x)); }); });
+    var all = $("#lifeAll"), rest = 0;
+    GROUPS.forEach(function (gr) {
+      var items = LIFE.filter(function (x) { return LIFE_FEAT.indexOf(x.go) < 0 && GROUP_OF[lifeDom(x)] === gr.key; });
+      if (!items.length) return;
+      var sec = el("div", "life-grp"), grid = el("div", "life-grid");
+      sec.appendChild(el("h3", "", gr.t));
+      items.forEach(function (x) { grid.appendChild(lifeTile(x)); rest++; });
+      sec.appendChild(grid); all.appendChild(sec);
     });
+    $("#lifeMoreT").textContent = "Voir les " + rest + " autres situations";
   }
   /** Parcours dont les mots-clés correspondent à la question posée à l'assistant (au plus un). */
   function vieFor(q) {

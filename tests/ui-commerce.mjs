@@ -30,7 +30,7 @@ async function open(viewport = { width: 390, height: 844 }) {
   await page.waitForSelector(".life-b");
   return { ctx, page };
 }
-const start = (page, label) => page.locator(".life-b", { hasText: label }).click();
+const start = async (page, label) => { await page.locator("#lifeMore").evaluate((d) => { d.open = true; }); await page.locator(".life-b", { hasText: label }).click(); };
 const pick = async (page, text, exact = false) => {
   await page.locator(".vie-opt", { hasText: exact ? new RegExp("^\\s*" + text + "\\s*$") : text }).first().click();
   await page.waitForTimeout(220);
@@ -212,7 +212,7 @@ await page.close();
 ({ page } = await open({ width: 1280, height: 900 }));
 await page.goto(BASE + "/#services.entreprise"); await page.waitForTimeout(400);
 const svcText = await page.locator('[data-view="services"]').innerText();
-assert.match(svcText, /5 services sur \d+/);
+assert.match(svcText, /5 services/);
 assert.match(svcText, /local commercial/); assert.match(svcText, /n'arrive plus à payer/);
 ok("services : le domaine « Entreprise et commerce » liste ses 5 parcours");
 await page.goto(BASE + "/#services.famille"); await page.waitForTimeout(400);

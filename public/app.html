@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
-<link rel="stylesheet" href="/assets/app.3c9ccc5564.css">
+<link rel="stylesheet" href="/assets/app.1fad0f957a.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -90,16 +90,20 @@
             <div class="section-head"><h2>Qu'est-ce qui vous arrive ?</h2></div>
             <p class="sub" style="margin-top:4px">Choisissez votre situation : ZOU pose quelques questions, puis vous donne vos dates limites, vos démarches et vos papiers.</p>
             <div class="life-grid" id="lifeGrid"></div>
+            <details class="life-more" id="lifeMore">
+              <summary><span id="lifeMoreT">Voir les autres situations</span><svg class="ico"><use href="#i-down"/></svg></summary>
+              <div id="lifeAll"></div>
+            </details>
+          </div>
+
+          <div class="section" id="homeResume" hidden>
+            <div class="section-head"><h2>Reprendre</h2></div>
+            <ul class="topics" id="homeResumeList"></ul>
           </div>
 
           <div class="section">
-            <div class="section-head"><h2>Les plus consultés</h2><button class="link-btn small" data-go="services">Tous les services</button></div>
-            <div id="homeTiles"></div>
-          </div>
-
-          <div class="section">
-            <div class="section-head"><h2>Par domaine</h2></div>
-            <div id="homeDomains"></div>
+            <div class="section-head"><h2>Explorer par thème</h2><button class="link-btn small" data-go="services">Tous les services</button></div>
+            <ul class="topics" id="homeTopics"></ul>
           </div>
 
           <div class="section">
@@ -132,6 +136,7 @@
             <h1 id="h-services" class="h-display" tabindex="-1">Services</h1>
             <p class="lede">Des démarches guidées, des calculs et des lettres prêtes à envoyer, tirés des textes de loi.</p>
           </div>
+          <nav class="svc-groups" id="svcGroups" aria-label="Thèmes"></nav>
           <div id="svcTable" class="svc-table"></div>
         </section>
 
@@ -1098,7 +1103,7 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.34f85f9205.js"></script>
+<script src="/assets/app.c0048026b9.js"></script>
 <script src="/register-sw.js"></script>
 </body>
 </html>

@@ -31,7 +31,7 @@ async function open(viewport = { width: 390, height: 844 }) {
   await page.waitForSelector(".life-b");
   return { ctx, page };
 }
-const start = (page, label) => page.locator(".life-b", { hasText: label }).click();
+const start = async (page, label) => { await page.locator("#lifeMore").evaluate((d) => { d.open = true; }); await page.locator(".life-b", { hasText: label }).click(); };
 const pick = async (page, text, exact = false) => {
   await page.locator(".vie-opt", { hasText: exact ? new RegExp("^\\s*" + text + "\\s*$") : text }).first().click();
   await page.waitForTimeout(220);
@@ -185,9 +185,9 @@ await page.close();
 ({ page } = await open({ width: 1280, height: 900 }));
 await page.goto(BASE + "/#services.etrangers"); await page.waitForTimeout(400);
 const svcText = await page.locator('[data-view="services"]').innerText();
-assert.match(svcText, /5 services sur \d+/); assert.match(svcText, /venir ou rester/); assert.match(svcText, /refoulement ou d'expulsion/);
+assert.match(svcText, /5 services/); assert.match(svcText, /venir ou rester/); assert.match(svcText, /refoulement ou d'expulsion/);
 ok("services : le domaine « Séjour des étrangers » liste ses 5 parcours");
-for (const [dom, re] of [["entreprise", /5 services sur \d+/], ["famille", /7 services sur \d+/], ["copro", /3 services sur \d+/]]) {
+for (const [dom, re] of [["entreprise", /5 services/], ["famille", /7 services sur \d+/], ["copro", /3 services sur \d+/]]) {
   await page.goto(BASE + "/#services." + dom); await page.waitForTimeout(300);
   assert.match(await page.locator('[data-view="services"]').innerText(), re);
 }
