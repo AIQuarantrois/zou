@@ -1293,12 +1293,38 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     else go(root, { dir: "none" });
   }
 
-  function toast(msg) {
-    toastEl.textContent = msg;
+  /* Bannière : un message, et pour une suppression, « Annuler » pendant 6 secondes (au lieu d'une boîte de confirmation).
+     Pendant ce délai, la synchronisation attend : rien n'est effacé sur le serveur tant qu'on peut encore annuler. */
+  var undoUntil = 0;
+  function toast(msg, action) {
+    toastEl.textContent = "";
+    toastEl.appendChild(el("span", "", msg));
+    toastEl.classList.toggle("has-act", !!action);
+    if (action) {
+      undoUntil = Date.now() + 6000;
+      var b = el("button", "toast-act", action.label || "Annuler"); b.type = "button";
+      b.addEventListener("click", function () {
+        clearTimeout(toastTimer); toastEl.classList.remove("on", "has-act"); undoUntil = 0;
+        action.run();
+      });
+      toastEl.appendChild(b);
+    }
     toastEl.classList.add("on");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toastEl.classList.remove("on"); }, 3400);
+    toastTimer = setTimeout(function () { toastEl.classList.remove("on", "has-act"); }, action ? 6000 : 3400);
   }
+  function undoable(msg, restore, done) {
+    toast(msg, { run: function () { restore(); save(); renderAll(); toast(done); } });
+  }
+  (function () {
+    function typing(t) { return t && (t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !/^(checkbox|radio|file|date|button|submit|range|color)$/.test(t.type))); }
+    document.addEventListener("focusin", function (e) { if (typing(e.target)) document.body.classList.add("kb-open"); });
+    // Retour différé : le toucher qui a fermé le clavier doit atteindre son bouton avant que la barre ne réapparaisse dessous.
+    document.addEventListener("focusout", function (e) {
+      if (!typing(e.target)) return;
+      setTimeout(function () { if (!typing(document.activeElement)) document.body.classList.remove("kb-open"); }, 250);
+    });
+  })();
 
   function closeMenus(returnFocus) {
     var mb = $("#megaBtn"), ob = $("#moreBtn");
@@ -2338,7 +2364,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       if (cfg.search) {
         var sw = el("div", "dt-search");
         var sl = el("label", "sr", cfg.search.label || "Rechercher"); sl.setAttribute("for", id + "-q");
-        var si = el("input"); si.type = "search"; si.id = id + "-q"; si.placeholder = cfg.search.placeholder || "Rechercher"; si.autocomplete = "off";
+        var si = el("input"); si.type = "search"; si.id = id + "-q"; si.placeholder = cfg.search.placeholder || "Rechercher"; si.autocomplete = "off"; si.setAttribute("enterkeyhint", "search");
         si.addEventListener("input", function () { st.q = si.value; st.page = 1; render(); });
         sw.appendChild(sl); sw.appendChild(si);
         bar.appendChild(sw);
@@ -4089,12 +4115,26 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       case "doc-open": openFile(id); break;
       case "doc-attach": attachFor = id; $("#attachInput").click(); break;
       case "del-doc":
-        delete PENDING[id];
-        state.docs = state.docs.filter(function (d) { return d.id !== id; });
-        save(); renderAll(); toast("Document supprimé."); break;
+        (function () {
+          var i = -1; state.docs.forEach(function (d, k) { if (d.id === id) i = k; });
+          if (i < 0) return;
+          var gone = state.docs[i], pend = PENDING[id];
+          delete PENDING[id];
+          state.docs.splice(i, 1);
+          save(); renderAll();
+          undoable("Document supprimé.", function () { state.docs.splice(Math.min(i, state.docs.length), 0, gone); if (pend) PENDING[id] = pend; }, "Document rétabli.");
+        })();
+        break;
       case "del-date":
-        state.dates = state.dates.filter(function (d) { return d.id !== id; });
-        save(); renderAll(); toast("Date supprimée."); break;
+        (function () {
+          var i = -1; state.dates.forEach(function (d, k) { if (d.id === id) i = k; });
+          if (i < 0) return;
+          var gone = state.dates[i];
+          state.dates.splice(i, 1);
+          save(); renderAll();
+          undoable("Date supprimée.", function () { state.dates.splice(Math.min(i, state.dates.length), 0, gone); }, "Date rétablie.");
+        })();
+        break;
       case "doc-date":
         var doc = state.docs.filter(function (d) { return d.id === id; })[0];
         go("agenda");
@@ -4102,9 +4142,19 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         $("#a-date").focus();
         break;
       case "clear-examples":
-        state.docs = state.docs.filter(function (d) { return !d.example; });
-        state.dates = state.dates.filter(function (d) { return !d.example; });
-        save(); renderAll(); toast("Exemples effacés."); break;
+        (function () {
+          var docs = state.docs.slice(), dates = state.dates.slice();
+          state.docs = state.docs.filter(function (d) { return !d.example; });
+          state.dates = state.dates.filter(function (d) { return !d.example; });
+          save(); renderAll();
+          undoable("Exemples effacés.", function () {
+            var keepD = {}, keepT = {};
+            state.docs.forEach(function (d) { keepD[d.id] = 1; }); state.dates.forEach(function (d) { keepT[d.id] = 1; });
+            state.docs = docs.filter(function (d) { return d.example || keepD[d.id]; }).concat(state.docs.filter(function (d) { return !docs.some(function (x) { return x.id === d.id; }); }));
+            state.dates = dates.filter(function (d) { return d.example || keepT[d.id]; }).concat(state.dates.filter(function (d) { return !dates.some(function (x) { return x.id === d.id; }); }));
+          }, "Exemples rétablis.");
+        })();
+        break;
       case "send-contact":
         toast("Ce profil est un exemple : aucune demande n'est envoyée.");
         break;
@@ -4518,8 +4568,13 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     edB.addEventListener("click", function () { s.step = 0; save(); renderVie(v.id); focusVie(); });
     var rsB = el("button", "link-btn", "Recommencer à zéro"); rsB.type = "button";
     rsB.addEventListener("click", function () {
-      if (!window.confirm("Effacer vos réponses à ce parcours et recommencer ?")) return;
+      var before = JSON.stringify({ a: s.a, step: s.step, checks: s.checks, letter: s.letter, started: s.started });
       s.a = {}; s.step = 0; s.checks = {}; s.letter = {}; s.started = false; save(); renderVie(v.id); focusVie();
+      toast("Réponses effacées.", { run: function () {
+        var b = JSON.parse(before), t = vieState(v.id);
+        t.a = b.a; t.step = b.step; t.checks = b.checks; t.letter = b.letter; t.started = b.started;
+        save(); if (cur.name === "vie" && cur.arg === v.id) { renderVie(v.id); focusVie(); } toast("Réponses rétablies.");
+      } });
     });
     acts.appendChild(askB); acts.appendChild(proB); acts.appendChild(edB); acts.appendChild(rsB);
     box.appendChild(acts);
@@ -4882,6 +4937,11 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       var inp = el(f.type === "textarea" ? "textarea" : "input");
       if (f.type !== "textarea") inp.type = f.type || "text"; else inp.rows = 4;
       inp.id = id; inp.value = vals[f.id] || ""; if (f.ph) inp.placeholder = f.ph;
+      // Champs qui décrivent la personne elle-même : le téléphone peut les remplir ; montants : clavier numérique.
+      var ac = { nom: "name", adr: "street-address", ville: "address-level2" }[f.id];
+      if (ac) inp.setAttribute("autocomplete", ac);
+      if (f.type === "number") inp.setAttribute("inputmode", "decimal");
+      if (f.type !== "textarea") inp.setAttribute("enterkeyhint", "next");
       inp.addEventListener("input", function () { vals[f.id] = inp.value; paint(); });
       inp.addEventListener("change", function () { save(); });
       w.appendChild(lab); w.appendChild(inp);
@@ -6990,6 +7050,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   }
   function runSync(withPull) {
     if (!USER || loggingOut) return Promise.resolve();
+    if (Date.now() < undoUntil) { scheduleSync(); return Promise.resolve(); } // une suppression peut encore être annulée
     if (syncBusy) { syncAgain = true; return Promise.resolve(); }
     syncBusy = true;
     setSyncStatus("Synchronisation en cours…");
@@ -7009,7 +7070,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   function scheduleSync() {
     if (!SYNC_READY || !USER) return;
     clearTimeout(syncTimer);
-    syncTimer = setTimeout(function () { runSync(false); }, 800);
+    syncTimer = setTimeout(function () { runSync(false); }, Math.max(800, undoUntil - Date.now() + 300));
   }
   window.addEventListener("online", function () { if (USER) runSync(true); });
   document.addEventListener("visibilitychange", function () {

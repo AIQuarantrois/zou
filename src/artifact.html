@@ -1,9 +1,9 @@
 <title>ZOU</title>
 <meta name="description" content="Le droit malgache expliqué, calculé et rédigé à partir des textes de loi.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
 <style>
+/* Inter 4 (axes graisse et taille optique), hébergée avec l'application : licence SIL OFL 1.1, /assets/fonts/OFL-Inter.txt */
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("/assets/fonts/inter-4-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("/assets/fonts/inter-4-latin-ext.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 /* ZOU. Direction « institutionnel sobre » (GOV.UK, DSFR) : neutres sans teinte, titres en encre,
    bleu marine réservé à ce qui se touche (boutons, liens, onglet actif). Inter.
    Scale: 4-point spacing; radii 4 (controls) / 6 (containers); type steps 13/14/16/17/22/28-40/32-52. */
@@ -1242,6 +1242,14 @@ html { -webkit-tap-highlight-color: transparent; }
   .split .pane-detail .guide-grid, .split .pane-detail .answer-grid, .split .pane-detail .letter-grid { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   .split .pane-detail .guide-aside, .split .pane-detail .letter-grid .sheet-col { position: static; }
 }
+/* ---------- Finitions : clavier, bannières d'annulation ---------- */
+@media (max-width: 767px) {
+  body.kb-open .tabs { display: none; }
+  body.kb-open .toast { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+}
+.toast.has-act { display: flex; align-items: center; gap: 4px 16px; padding: 4px 6px 4px 16px; pointer-events: auto; }
+.toast-act { flex: none; min-height: 44px; padding: 0 12px; background: none; border: 0; border-radius: var(--r); color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.toast-act:hover { text-decoration-thickness: 2px; }
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="zou-wordmark" viewBox="68 62 406 186"><g style="fill: var(--trust)"><path d="M115 0H1248V253H778C677 253 577 253 476 248C539 321 599 395 652 468L1245 1306V1490H112V1237H599C694 1237 789 1237 884 1241C825 1173 768 1104 719 1036L115 183Z" transform="translate(60.000,205.000) scale(0.092773,-0.092773)"/><path d="M789 -20C1184 -20 1484 259 1484 744C1484 1231 1184 1510 789 1510C394 1510 94 1231 94 744C94 260 394 -20 789 -20ZM789 251C558 251 404 425 404 744C404 1064 558 1239 789 1239C1020 1239 1174 1065 1174 744C1174 425 1020 251 789 251Z" transform="translate(192.172,205.000) scale(0.092773,-0.092773)"/><path d="M750 -21C1118 -21 1365 197 1365 523V1490H1059V548C1059 374 937 249 750 249C563 249 440 374 440 548V1490H135V523C135 197 379 -21 750 -21Z" transform="translate(344.568,205.000) scale(0.092773,-0.092773)"/></g><path d="M 224.37 224.00 Q 265.37 249.00 306.37 224.00" fill="none" style="stroke: var(--smile)" stroke-width="15" stroke-linecap="round"/></symbol>
@@ -1333,7 +1341,7 @@ html { -webkit-tap-highlight-color: transparent; }
             <p class="lede">Des réponses fondées sur les textes de loi malgaches. Chaque réponse cite l'article dont elle vient.</p>
             <form class="ask" id="askForm" role="search">
               <label for="askInput" class="sr">Votre question</label>
-              <textarea id="askInput" rows="1" placeholder="Ex. Préavis de démission ?"></textarea>
+              <textarea id="askInput" rows="1" enterkeyhint="send" placeholder="Ex. Préavis de démission ?"></textarea>
               <button class="send" type="submit" aria-label="Lancer la recherche"><svg class="ico"><use href="#i-arrow"/></svg></button>
             </form>
             <div class="suggest" id="suggest"></div>
@@ -1649,7 +1657,7 @@ html { -webkit-tap-highlight-color: transparent; }
               <div class="ask-vie" id="askVie" hidden></div>
               <form class="ask mt" id="askAgain" role="search">
                 <label for="askAgainInput" class="sr">Une autre question</label>
-                <textarea id="askAgainInput" rows="2" placeholder="Posez une autre question"></textarea>
+                <textarea id="askAgainInput" rows="2" enterkeyhint="send" placeholder="Posez une autre question"></textarea>
                 <button class="send" type="submit" aria-label="Poser la question"><svg class="ico"><use href="#i-arrow"/></svg></button>
               </form>
               <div class="note mt" role="note">
@@ -1899,7 +1907,7 @@ html { -webkit-tap-highlight-color: transparent; }
             <div class="fields">
               <div class="field field-wide">
                 <label for="a-title">Titre</label>
-                <input type="text" id="a-title" placeholder="Ex. Audience, échéance du bail, remise du dossier">
+                <input type="text" id="a-title" enterkeyhint="done" placeholder="Ex. Audience, échéance du bail, remise du dossier">
               </div>
               <div class="field">
                 <label for="a-date">Date</label>
@@ -1970,7 +1978,7 @@ html { -webkit-tap-highlight-color: transparent; }
                 </div>
                 <div class="field">
                   <label for="ps-name">Nom affiché</label>
-                  <input type="text" id="ps-name" placeholder="Prénom et nom">
+                  <input type="text" id="ps-name" autocomplete="name" placeholder="Prénom et nom">
                 </div>
                 <div class="field">
                   <label for="ps-reg">Numéro d'inscription</label>
@@ -2042,12 +2050,12 @@ html { -webkit-tap-highlight-color: transparent; }
               <div class="fields">
                 <div class="field field-wide">
                   <label for="acc-email">Adresse e-mail</label>
-                  <input type="email" id="acc-email" inputmode="email" autocomplete="email" placeholder="Ex. nom@exemple.mg">
+                  <input type="email" id="acc-email" inputmode="email" autocomplete="email" enterkeyhint="send" autocapitalize="off" spellcheck="false" placeholder="Ex. nom@exemple.mg">
                   <p class="hint">Un code de connexion à 6 chiffres vous est envoyé par e-mail. Pas de mot de passe.</p>
                 </div>
                 <div class="field field-wide" id="acc-code-box" hidden>
                   <label for="acc-code">Code reçu par e-mail</label>
-                  <input type="text" id="acc-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="6 chiffres">
+                  <input type="text" id="acc-code" inputmode="numeric" autocomplete="one-time-code" enterkeyhint="done" maxlength="6" pattern="[0-9]{6}" placeholder="6 chiffres">
                   <p class="hint" id="acc-code-hint">Valable 10 minutes. Pensez à regarder dans les courriers indésirables.</p>
                 </div>
               </div>
@@ -2157,9 +2165,9 @@ html { -webkit-tap-highlight-color: transparent; }
               <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
                 <div class="fields">
                   <div class="field field-wide"><label for="l-name">Votre nom complet</label><input type="text" id="l-name" autocomplete="name"></div>
-                  <div class="field field-wide"><label for="l-role">Votre fonction</label><input type="text" id="l-role" placeholder="Ex. Comptable"></div>
-                  <div class="field field-wide"><label for="l-employer">Nom de l'employeur</label><input type="text" id="l-employer" placeholder="Ex. Société Exemple SA"></div>
-                  <div class="field field-wide"><label for="l-city">Ville</label><input type="text" id="l-city"></div>
+                  <div class="field field-wide"><label for="l-role">Votre fonction</label><input type="text" id="l-role" autocomplete="organization-title" placeholder="Ex. Comptable"></div>
+                  <div class="field field-wide"><label for="l-employer">Nom de l'employeur</label><input type="text" id="l-employer" autocomplete="organization" placeholder="Ex. Société Exemple SA"></div>
+                  <div class="field field-wide"><label for="l-city">Ville</label><input type="text" id="l-city" autocomplete="address-level2"></div>
                   <div class="field field-wide">
                     <label for="l-motive">Motif de votre démission</label>
                     <textarea id="l-motive" placeholder="Le motif est obligatoire"></textarea>
@@ -3687,12 +3695,38 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     else go(root, { dir: "none" });
   }
 
-  function toast(msg) {
-    toastEl.textContent = msg;
+  /* Bannière : un message, et pour une suppression, « Annuler » pendant 6 secondes (au lieu d'une boîte de confirmation).
+     Pendant ce délai, la synchronisation attend : rien n'est effacé sur le serveur tant qu'on peut encore annuler. */
+  var undoUntil = 0;
+  function toast(msg, action) {
+    toastEl.textContent = "";
+    toastEl.appendChild(el("span", "", msg));
+    toastEl.classList.toggle("has-act", !!action);
+    if (action) {
+      undoUntil = Date.now() + 6000;
+      var b = el("button", "toast-act", action.label || "Annuler"); b.type = "button";
+      b.addEventListener("click", function () {
+        clearTimeout(toastTimer); toastEl.classList.remove("on", "has-act"); undoUntil = 0;
+        action.run();
+      });
+      toastEl.appendChild(b);
+    }
     toastEl.classList.add("on");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toastEl.classList.remove("on"); }, 3400);
+    toastTimer = setTimeout(function () { toastEl.classList.remove("on", "has-act"); }, action ? 6000 : 3400);
   }
+  function undoable(msg, restore, done) {
+    toast(msg, { run: function () { restore(); save(); renderAll(); toast(done); } });
+  }
+  (function () {
+    function typing(t) { return t && (t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !/^(checkbox|radio|file|date|button|submit|range|color)$/.test(t.type))); }
+    document.addEventListener("focusin", function (e) { if (typing(e.target)) document.body.classList.add("kb-open"); });
+    // Retour différé : le toucher qui a fermé le clavier doit atteindre son bouton avant que la barre ne réapparaisse dessous.
+    document.addEventListener("focusout", function (e) {
+      if (!typing(e.target)) return;
+      setTimeout(function () { if (!typing(document.activeElement)) document.body.classList.remove("kb-open"); }, 250);
+    });
+  })();
 
   function closeMenus(returnFocus) {
     var mb = $("#megaBtn"), ob = $("#moreBtn");
@@ -4732,7 +4766,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       if (cfg.search) {
         var sw = el("div", "dt-search");
         var sl = el("label", "sr", cfg.search.label || "Rechercher"); sl.setAttribute("for", id + "-q");
-        var si = el("input"); si.type = "search"; si.id = id + "-q"; si.placeholder = cfg.search.placeholder || "Rechercher"; si.autocomplete = "off";
+        var si = el("input"); si.type = "search"; si.id = id + "-q"; si.placeholder = cfg.search.placeholder || "Rechercher"; si.autocomplete = "off"; si.setAttribute("enterkeyhint", "search");
         si.addEventListener("input", function () { st.q = si.value; st.page = 1; render(); });
         sw.appendChild(sl); sw.appendChild(si);
         bar.appendChild(sw);
@@ -6483,12 +6517,26 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       case "doc-open": openFile(id); break;
       case "doc-attach": attachFor = id; $("#attachInput").click(); break;
       case "del-doc":
-        delete PENDING[id];
-        state.docs = state.docs.filter(function (d) { return d.id !== id; });
-        save(); renderAll(); toast("Document supprimé."); break;
+        (function () {
+          var i = -1; state.docs.forEach(function (d, k) { if (d.id === id) i = k; });
+          if (i < 0) return;
+          var gone = state.docs[i], pend = PENDING[id];
+          delete PENDING[id];
+          state.docs.splice(i, 1);
+          save(); renderAll();
+          undoable("Document supprimé.", function () { state.docs.splice(Math.min(i, state.docs.length), 0, gone); if (pend) PENDING[id] = pend; }, "Document rétabli.");
+        })();
+        break;
       case "del-date":
-        state.dates = state.dates.filter(function (d) { return d.id !== id; });
-        save(); renderAll(); toast("Date supprimée."); break;
+        (function () {
+          var i = -1; state.dates.forEach(function (d, k) { if (d.id === id) i = k; });
+          if (i < 0) return;
+          var gone = state.dates[i];
+          state.dates.splice(i, 1);
+          save(); renderAll();
+          undoable("Date supprimée.", function () { state.dates.splice(Math.min(i, state.dates.length), 0, gone); }, "Date rétablie.");
+        })();
+        break;
       case "doc-date":
         var doc = state.docs.filter(function (d) { return d.id === id; })[0];
         go("agenda");
@@ -6496,9 +6544,19 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         $("#a-date").focus();
         break;
       case "clear-examples":
-        state.docs = state.docs.filter(function (d) { return !d.example; });
-        state.dates = state.dates.filter(function (d) { return !d.example; });
-        save(); renderAll(); toast("Exemples effacés."); break;
+        (function () {
+          var docs = state.docs.slice(), dates = state.dates.slice();
+          state.docs = state.docs.filter(function (d) { return !d.example; });
+          state.dates = state.dates.filter(function (d) { return !d.example; });
+          save(); renderAll();
+          undoable("Exemples effacés.", function () {
+            var keepD = {}, keepT = {};
+            state.docs.forEach(function (d) { keepD[d.id] = 1; }); state.dates.forEach(function (d) { keepT[d.id] = 1; });
+            state.docs = docs.filter(function (d) { return d.example || keepD[d.id]; }).concat(state.docs.filter(function (d) { return !docs.some(function (x) { return x.id === d.id; }); }));
+            state.dates = dates.filter(function (d) { return d.example || keepT[d.id]; }).concat(state.dates.filter(function (d) { return !dates.some(function (x) { return x.id === d.id; }); }));
+          }, "Exemples rétablis.");
+        })();
+        break;
       case "send-contact":
         toast("Ce profil est un exemple : aucune demande n'est envoyée.");
         break;
@@ -6912,8 +6970,13 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     edB.addEventListener("click", function () { s.step = 0; save(); renderVie(v.id); focusVie(); });
     var rsB = el("button", "link-btn", "Recommencer à zéro"); rsB.type = "button";
     rsB.addEventListener("click", function () {
-      if (!window.confirm("Effacer vos réponses à ce parcours et recommencer ?")) return;
+      var before = JSON.stringify({ a: s.a, step: s.step, checks: s.checks, letter: s.letter, started: s.started });
       s.a = {}; s.step = 0; s.checks = {}; s.letter = {}; s.started = false; save(); renderVie(v.id); focusVie();
+      toast("Réponses effacées.", { run: function () {
+        var b = JSON.parse(before), t = vieState(v.id);
+        t.a = b.a; t.step = b.step; t.checks = b.checks; t.letter = b.letter; t.started = b.started;
+        save(); if (cur.name === "vie" && cur.arg === v.id) { renderVie(v.id); focusVie(); } toast("Réponses rétablies.");
+      } });
     });
     acts.appendChild(askB); acts.appendChild(proB); acts.appendChild(edB); acts.appendChild(rsB);
     box.appendChild(acts);
@@ -7276,6 +7339,11 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       var inp = el(f.type === "textarea" ? "textarea" : "input");
       if (f.type !== "textarea") inp.type = f.type || "text"; else inp.rows = 4;
       inp.id = id; inp.value = vals[f.id] || ""; if (f.ph) inp.placeholder = f.ph;
+      // Champs qui décrivent la personne elle-même : le téléphone peut les remplir ; montants : clavier numérique.
+      var ac = { nom: "name", adr: "street-address", ville: "address-level2" }[f.id];
+      if (ac) inp.setAttribute("autocomplete", ac);
+      if (f.type === "number") inp.setAttribute("inputmode", "decimal");
+      if (f.type !== "textarea") inp.setAttribute("enterkeyhint", "next");
       inp.addEventListener("input", function () { vals[f.id] = inp.value; paint(); });
       inp.addEventListener("change", function () { save(); });
       w.appendChild(lab); w.appendChild(inp);
@@ -9384,6 +9452,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   }
   function runSync(withPull) {
     if (!USER || loggingOut) return Promise.resolve();
+    if (Date.now() < undoUntil) { scheduleSync(); return Promise.resolve(); } // une suppression peut encore être annulée
     if (syncBusy) { syncAgain = true; return Promise.resolve(); }
     syncBusy = true;
     setSyncStatus("Synchronisation en cours…");
@@ -9403,7 +9472,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   function scheduleSync() {
     if (!SYNC_READY || !USER) return;
     clearTimeout(syncTimer);
-    syncTimer = setTimeout(function () { runSync(false); }, 800);
+    syncTimer = setTimeout(function () { runSync(false); }, Math.max(800, undoUntil - Date.now() + 300));
   }
   window.addEventListener("online", function () { if (USER) runSync(true); });
   document.addEventListener("visibilitychange", function () {

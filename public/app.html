@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>ZOU</title>
 <meta name="description" content="Le droit malgache expliqué, calculé et rédigé à partir des textes de loi.">
 <meta name="theme-color" content="#FFFFFF">
@@ -41,10 +41,8 @@
 <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" href="/icons/splash/dark-828x1792.png">
 <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: light)" href="/icons/splash/light-750x1334.png">
 <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" href="/icons/splash/dark-750x1334.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
-<link rel="stylesheet" href="/assets/app.1f59c2615e.css">
+<link rel="preload" href="/assets/fonts/inter-4-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/app.4a034c3fda.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -137,7 +135,7 @@
             <p class="lede">Des réponses fondées sur les textes de loi malgaches. Chaque réponse cite l'article dont elle vient.</p>
             <form class="ask" id="askForm" role="search">
               <label for="askInput" class="sr">Votre question</label>
-              <textarea id="askInput" rows="1" placeholder="Ex. Préavis de démission ?"></textarea>
+              <textarea id="askInput" rows="1" enterkeyhint="send" placeholder="Ex. Préavis de démission ?"></textarea>
               <button class="send" type="submit" aria-label="Lancer la recherche"><svg class="ico"><use href="#i-arrow"/></svg></button>
             </form>
             <div class="suggest" id="suggest"></div>
@@ -453,7 +451,7 @@
               <div class="ask-vie" id="askVie" hidden></div>
               <form class="ask mt" id="askAgain" role="search">
                 <label for="askAgainInput" class="sr">Une autre question</label>
-                <textarea id="askAgainInput" rows="2" placeholder="Posez une autre question"></textarea>
+                <textarea id="askAgainInput" rows="2" enterkeyhint="send" placeholder="Posez une autre question"></textarea>
                 <button class="send" type="submit" aria-label="Poser la question"><svg class="ico"><use href="#i-arrow"/></svg></button>
               </form>
               <div class="note mt" role="note">
@@ -703,7 +701,7 @@
             <div class="fields">
               <div class="field field-wide">
                 <label for="a-title">Titre</label>
-                <input type="text" id="a-title" placeholder="Ex. Audience, échéance du bail, remise du dossier">
+                <input type="text" id="a-title" enterkeyhint="done" placeholder="Ex. Audience, échéance du bail, remise du dossier">
               </div>
               <div class="field">
                 <label for="a-date">Date</label>
@@ -774,7 +772,7 @@
                 </div>
                 <div class="field">
                   <label for="ps-name">Nom affiché</label>
-                  <input type="text" id="ps-name" placeholder="Prénom et nom">
+                  <input type="text" id="ps-name" autocomplete="name" placeholder="Prénom et nom">
                 </div>
                 <div class="field">
                   <label for="ps-reg">Numéro d'inscription</label>
@@ -846,12 +844,12 @@
               <div class="fields">
                 <div class="field field-wide">
                   <label for="acc-email">Adresse e-mail</label>
-                  <input type="email" id="acc-email" inputmode="email" autocomplete="email" placeholder="Ex. nom@exemple.mg">
+                  <input type="email" id="acc-email" inputmode="email" autocomplete="email" enterkeyhint="send" autocapitalize="off" spellcheck="false" placeholder="Ex. nom@exemple.mg">
                   <p class="hint">Un code de connexion à 6 chiffres vous est envoyé par e-mail. Pas de mot de passe.</p>
                 </div>
                 <div class="field field-wide" id="acc-code-box" hidden>
                   <label for="acc-code">Code reçu par e-mail</label>
-                  <input type="text" id="acc-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="6 chiffres">
+                  <input type="text" id="acc-code" inputmode="numeric" autocomplete="one-time-code" enterkeyhint="done" maxlength="6" pattern="[0-9]{6}" placeholder="6 chiffres">
                   <p class="hint" id="acc-code-hint">Valable 10 minutes. Pensez à regarder dans les courriers indésirables.</p>
                 </div>
               </div>
@@ -961,9 +959,9 @@
               <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
                 <div class="fields">
                   <div class="field field-wide"><label for="l-name">Votre nom complet</label><input type="text" id="l-name" autocomplete="name"></div>
-                  <div class="field field-wide"><label for="l-role">Votre fonction</label><input type="text" id="l-role" placeholder="Ex. Comptable"></div>
-                  <div class="field field-wide"><label for="l-employer">Nom de l'employeur</label><input type="text" id="l-employer" placeholder="Ex. Société Exemple SA"></div>
-                  <div class="field field-wide"><label for="l-city">Ville</label><input type="text" id="l-city"></div>
+                  <div class="field field-wide"><label for="l-role">Votre fonction</label><input type="text" id="l-role" autocomplete="organization-title" placeholder="Ex. Comptable"></div>
+                  <div class="field field-wide"><label for="l-employer">Nom de l'employeur</label><input type="text" id="l-employer" autocomplete="organization" placeholder="Ex. Société Exemple SA"></div>
+                  <div class="field field-wide"><label for="l-city">Ville</label><input type="text" id="l-city" autocomplete="address-level2"></div>
                   <div class="field field-wide">
                     <label for="l-motive">Motif de votre démission</label>
                     <textarea id="l-motive" placeholder="Le motif est obligatoire"></textarea>
@@ -1194,7 +1192,7 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.d0d8d1318a.js"></script>
+<script src="/assets/app.e0ff45fb10.js"></script>
 <script src="/register-sw.js"></script>
 </body>
 </html>
