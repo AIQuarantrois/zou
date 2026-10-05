@@ -9,8 +9,11 @@ process.env.CRON_SECRET = "c".repeat(24);
 process.env.RESEND_API_KEY = "re_test";
 process.env.MAIL_FROM = "ZOU <no-reply@example.com>";
 process.env.AUTH_DEV_ECHO = "1";
-process.env.TEST_DB = "zou_e2e";
-process.env.BLOB_READ_WRITE_TOKEN = "vercel_blob_rw_test";
+const OIDC = process.argv.includes("--blob-oidc");
+process.env.TEST_DB = OIDC ? "zou_e2e_oidc" : "zou_e2e";
+// --blob-oidc : magasin relié par identifiant (BLOB_STORE_ID), sans clé read-write.
+if (OIDC) process.env.BLOB_STORE_ID = "store_test";
+else process.env.BLOB_READ_WRITE_TOKEN = "vercel_blob_rw_test";
 
 const mails = []; const aiCalls = [];
 const realFetch = globalThis.fetch;

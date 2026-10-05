@@ -12,7 +12,10 @@ export const env = {
   get cronSecret() { return process.env.CRON_SECRET || ""; },
   // En développement uniquement : renvoie le code de connexion dans la réponse au lieu de l'envoyer.
   get devEcho() { return process.env.AUTH_DEV_ECHO === "1" && process.env.NODE_ENV !== "production"; },
+  // Vercel Blob : clé « read-write » (magasins reliés à l'ancienne) ou identifiant du magasin + jeton OIDC fourni
+  // par Vercel à chaque requête (magasins récents : seule BLOB_STORE_ID est ajoutée au projet).
   get blobToken() { return process.env.BLOB_READ_WRITE_TOKEN || ""; },
+  get blobStoreId() { return process.env.BLOB_STORE_ID || ""; },
   get supportEmail() { return process.env.SUPPORT_EMAIL || ""; },
   get siteUrl() { return process.env.SITE_URL || ""; },
 };
@@ -23,7 +26,7 @@ export function capabilities() {
     auth: Boolean(env.databaseUrl && env.authSecret.length >= 32),
     ai: Boolean(env.anthropicKey && env.databaseUrl),
     mail: Boolean(env.resendKey && env.mailFrom),
-    files: Boolean(env.blobToken && env.databaseUrl),
+    files: Boolean((env.blobToken || env.blobStoreId) && env.databaseUrl),
     admin: env.adminToken.length >= 24,
     cron: env.cronSecret.length >= 16,
   };

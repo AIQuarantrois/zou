@@ -27,13 +27,13 @@ Assistant d'information juridique sur le droit malgache. Next.js (App Router) su
 | `RESEND_API_KEY`, `MAIL_FROM` | e-mails (codes, rappels, contacts) | codes non envoyés, rappels non partis |
 | `ADMIN_TOKEN` (≥ 24 car.) | migrations, ingestion, vérification des pros | routes admin refusées |
 | `CRON_SECRET` (≥ 16 car.) | protège la tâche de rappels | tâche refusée |
-| `BLOB_READ_WRITE_TOKEN` | fichiers du coffre (créé par Vercel en reliant un magasin Blob) | seules les informations des documents sont sauvegardées |
+| `BLOB_STORE_ID` ou `BLOB_READ_WRITE_TOKEN` | fichiers du coffre : ajoutée par Vercel en reliant un magasin Blob (les magasins récents n'ajoutent que `BLOB_STORE_ID`, l'accès passant par le jeton OIDC que Vercel fournit à chaque requête) | seules les informations des documents sont sauvegardées |
 | `SUPPORT_EMAIL` | destinataire du formulaire de contact | message enregistré, non transmis |
 | `ZOU_DB_SETUP` | `auto` (défaut), `always` ou `off` : préparation de la base au déploiement | `auto` : production seulement |
 
 ## Mise en route
 
-1. Créer le projet Vercel lié au dépôt, ajouter la base Neon (Marketplace Vercel → Neon : `DATABASE_URL` est renseignée automatiquement), créer un magasin Blob **en accès privé** (Storage → Blob) et le relier au projet (`BLOB_READ_WRITE_TOKEN` est renseigné automatiquement), puis ajouter les autres variables ci-dessus.
+1. Créer le projet Vercel lié au dépôt, ajouter la base Neon (Marketplace Vercel → Neon : `DATABASE_URL` est renseignée automatiquement), créer un magasin Blob **en accès privé** (Storage → Blob) et le relier au projet (`BLOB_STORE_ID` ou `BLOB_READ_WRITE_TOKEN` est renseigné automatiquement), puis ajouter les autres variables ci-dessus.
 2. Le schéma est appliqué automatiquement au déploiement (étape 3). Pour l'appliquer à la main, au choix :
    - depuis un poste : `npm install` puis `DATABASE_URL=… npm run db:migrate` (lit aussi `.env.local` / `.env`) ;
    - sur le site déployé : `curl -X POST https://<domaine>/api/admin/migrate -H "Authorization: Bearer $ADMIN_TOKEN"`.
@@ -55,7 +55,7 @@ Admin (jeton) : `/api/admin/migrate`, `/api/admin/ingest`, `/api/admin/pros`.
 
 ## Tests
 
-`npm test` (tests unitaires puis `tests/e2e.mjs`, 59 vérifications, sur une base vide).
+`npm test` (tests unitaires puis `tests/e2e.mjs`, 59 vérifications, jouées deux fois : Blob par clé read-write, puis par identifiant de magasin (OIDC) ; sur des bases vides).
 
 `npm run serve:local` lance l'interface et les vraies routes sur http://localhost:3999, sur ce même Postgres local, avec les en-têtes de sécurité (CSP comprise). Le code de connexion est prérempli (`AUTH_DEV_ECHO`) ; `ZOU_FAKE_AI=1` simule la réponse de Claude. Contre ce serveur (base vide, `ZOU_FAKE_AI=1`), `tests/ui.mjs` déroule 14 parcours dans Chromium (invité, assistant, connexion, synchronisation entre deux appareils, annuaire, espace pro, contact, déconnexion) ; il demande `playwright-core`, non installé par défaut. Ils tournent sur un Postgres local via un double du pilote Neon (`tests/stubs/neon.mjs`) .
 

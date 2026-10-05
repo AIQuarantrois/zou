@@ -13,7 +13,7 @@
     "db:setup": "node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/setup-db.mjs",
     "db:sql": "node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/emit-sql.ts",
     "pack:app": "node scripts/pack-app.mjs",
-    "test": "node --import ./tests/register.mjs tests/unit.mjs && node --import ./tests/register.mjs tests/e2e.mjs",
+    "test": "node --import ./tests/register.mjs tests/unit.mjs && node --import ./tests/register.mjs tests/e2e.mjs && node --import ./tests/register.mjs tests/e2e.mjs --blob-oidc",
     "serve:local": "node --import ./tests/register.mjs tests/server.mjs"
   },
   "dependencies": {

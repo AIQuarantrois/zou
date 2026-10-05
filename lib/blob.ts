@@ -19,24 +19,25 @@ export const ALLOWED_TYPES: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
 };
 
-export function hasBlob() { return Boolean(env.blobToken); }
+export function hasBlob() { return Boolean(env.blobToken || env.blobStoreId); }
 
-function token() {
-  if (!env.blobToken) throw new ApiError(503, "files_not_configured", "Le stockage des fichiers n'est pas encore activé.");
-  return env.blobToken;
+/** Identifiants Blob : la clé read-write si elle existe, sinon rien (le SDK utilise BLOB_STORE_ID et le jeton OIDC de Vercel). */
+function auth(): { token?: string } {
+  if (!hasBlob()) throw new ApiError(503, "files_not_configured", "Le stockage des fichiers n'est pas encore activé.");
+  return env.blobToken ? { token: env.blobToken } : {};
 }
 
 export async function putFile(pathname: string, body: ArrayBuffer, contentType: string) {
-  const r = await put(pathname, body, { access: "private", contentType, addRandomSuffix: true, token: token() });
+  const r = await put(pathname, body, { access: "private", contentType, addRandomSuffix: true, ...auth() });
   return r.url;
 }
 
 export async function getFile(key: string) {
-  return get(key, { access: "private", token: token(), useCache: false });
+  return get(key, { access: "private", useCache: false, ...auth() });
 }
 
 /** Suppression sans échec bloquant : un fichier orphelin vaut mieux qu'une suppression de document refusée. */
 export async function deleteFile(key: string | null | undefined) {
-  if (!key || !env.blobToken) return;
-  try { await del(key, { token: env.blobToken }); } catch (e) { console.error("blob_delete_failed", e); }
+  if (!key || !hasBlob()) return;
+  try { await del(key, auth()); } catch (e) { console.error("blob_delete_failed", e); }
 }

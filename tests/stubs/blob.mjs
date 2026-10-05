@@ -4,7 +4,7 @@ let n = 0;
 
 export async function put(pathname, body, opts) {
   if (opts?.access !== "private") throw new Error("accès privé attendu");
-  if (!opts?.token) throw new Error("jeton manquant");
+  if (!opts?.token && !process.env.BLOB_STORE_ID) throw new Error("identifiants Blob manquants");
   const url = `https://stub.private.blob.vercel-storage.com/${pathname.replace(/(\.[a-z0-9]+)$/, `-${++n}$1`)}`;
   store.set(url, { data: new Uint8Array(body.slice ? body.slice(0) : body), contentType: opts.contentType });
   return { url, pathname, contentType: opts.contentType };
