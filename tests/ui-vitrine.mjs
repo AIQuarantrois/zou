@@ -113,6 +113,32 @@ for (const y of [60, 120, 200, 300]) {
 await ctx.close();
 ok("le titre et les pastilles qui défilent ne passent jamais sous un en-tête encore transparent");
 
+// ---- 3 ter. Pas d'aplat uni entre les taches de couleur et le fondu vers le blanc : les taches (dégradé
+// radial, flou) s'éteignent avant le bord de leur boîte, et un fondu trop court (en pixels fixes) laissait
+// voir cet écart comme une bande plate et nette plutôt qu'une transition continue.
+for (const theme of ["light", "dark"]) {
+  ({ ctx, page } = await open({ theme, reduced: true, viewport: { width: 390, height: 844 } }));
+  const box = await page.locator("#heroAura").boundingBox();
+  const auraH = Math.round(box.y + box.height);
+  // La bande vue par l'utilisateur vivait dans le dernier tiers (sous les taches, avant le fondu vers le
+  // blanc) : on ne regarde que cette zone. Colonne étroite près du bord droit (hors pastilles et texte,
+  // qui fausseraient une moyenne sur toute la largeur en y mêlant leurs propres couleurs).
+  const zoneTop = Math.round(auraH * 0.55);
+  const shot = await page.screenshot({ clip: { x: Math.max(0, box.width - 20), y: zoneTop, width: 16, height: auraH - zoneTop } });
+  const { PNG } = await import("pngjs");
+  const png = PNG.sync.read(shot);
+  const rowAvg = (y) => { let r = 0, g = 0, b = 0, c = 0; for (let x = 0; x < png.width; x++) { const i = (y * png.width + x) * 4; r += png.data[i]; g += png.data[i + 1]; b += png.data[i + 2]; c++; } return [r / c, g / c, b / c]; };
+  let flat = 0, best = 0, prev = null;
+  for (let y = 0; y < png.height; y++) {
+    const px = rowAvg(y);
+    if (prev && px.every((v, k) => Math.abs(v - prev[k]) <= 0.6)) { flat++; best = Math.max(best, flat); } else flat = 0;
+    prev = px;
+  }
+  assert.ok(best < 25, theme + " : pas d'aplat uni ≥ 25 px entre les taches de couleur et le fondu vers le blanc (trouvé : " + best + "px)");
+  await ctx.close();
+}
+ok("transition continue entre les taches de couleur et le fondu vers le blanc, sans bande plate, en clair et en sombre");
+
 // ---- 4. « Moins de mouvement » : le dégradé ne s'anime pas
 ({ ctx, page } = await open({ reduced: true }));
 const anim = await page.locator("#heroAura .b1").evaluate((e) => getComputedStyle(e).animationName);

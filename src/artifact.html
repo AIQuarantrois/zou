@@ -1300,7 +1300,13 @@ input[type=checkbox]:checked { animation: zou-pop 0.18s ease; }
 .hero-aura .b4 { width: 60%; height: 70%; left: 6%; top: 18%; background: radial-gradient(circle, var(--aura-4, #FF7FB6) 0%, transparent 60%); animation: aura4 24s ease-in-out infinite alternate; }
 /* voile sombre en haut (texte blanc lisible) + fondu vers le fond en bas */
 .hero-aura::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5, 8, 30, 0.6) 0%, rgba(5, 8, 30, 0.34) 44%, rgba(5, 8, 30, 0.08) 66%, transparent 78%); }
-.hero-aura::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 72px; z-index: 1; background: linear-gradient(to bottom, transparent, var(--bg)); }
+/* En proportion de la hauteur du dégradé (pas en pixels fixes) : les taches colorées s'estompent avant
+   d'atteindre le bas de leur propre boîte (le dégradé radial devient transparent avant son bord, puis le
+   flou adoucit encore), laissant un aplat de --aura-base uni avant que ce fondu ne commence. Un fondu trop
+   court laissait voir cet aplat comme une bande plate, nette, entre les taches et le blanc. Un fondu plus
+   long en pourcentage commence avant la fin des taches, quelle que soit la hauteur du dégradé (texte plus
+   long, réglage « Grand » de la taille du texte, écran plus ou moins haut). */
+.hero-aura::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 38%; z-index: 1; background: linear-gradient(to bottom, transparent, var(--bg)); }
 /* tout le contenu de l'accueil passe au-dessus du dégradé */
 [data-view="home"] > :not(.hero-aura) { position: relative; z-index: 1; }
 @keyframes aura1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(9%, 7%) scale(1.14); } }
