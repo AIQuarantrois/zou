@@ -1469,7 +1469,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   // Dégradé d'accueil : taille, en-tête translucide en haut, couleur de la barre d'état, pause hors écran
   function sizeAura() {
     var a = $("#heroAura"), h = a && a.parentNode.querySelector(".hero");
-    if (a && h) a.style.height = Math.round(h.offsetTop + h.offsetHeight + 96) + "px";
+    if (!a || !h) return;
+    if (window.innerWidth >= 768) { a.style.top = h.offsetTop + "px"; a.style.height = h.offsetHeight + "px"; }
+    else { a.style.top = ""; a.style.height = Math.round(h.offsetTop + h.offsetHeight - a.offsetTop + 64) + "px"; }
   }
   function auraBottom() { var a = $("#heroAura"); return a ? a.offsetTop + a.offsetHeight : 0; }
   function onHomeScroll() {

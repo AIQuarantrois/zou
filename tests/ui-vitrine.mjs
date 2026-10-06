@@ -59,6 +59,26 @@ for (const theme of ["light", "dark"]) {
 }
 ok("texte blanc du héros lisible sur le dégradé (AA) en clair et en sombre");
 
+// ---- 2 bis. Mise en page : bord à bord sur téléphone ; carte avec marges sur ordinateur ; titre de section jamais masqué ; pastilles lisibles
+for (const [viewport, label] of [[{ width: 390, height: 844 }, "téléphone"], [{ width: 1440, height: 900 }, "ordinateur"]]) {
+  ({ ctx, page } = await open({ viewport, reduced: true }));
+  const m = await page.evaluate(() => {
+    const a = document.getElementById("heroAura").getBoundingClientRect(), h1 = document.querySelector(".hero h1").getBoundingClientRect();
+    const h2 = document.querySelector('[data-view="home"] .life h2').getBoundingClientRect();
+    const hit = document.elementFromPoint(h2.left + 8, h2.top + h2.height / 2);
+    return { l: a.left, r: a.right, vw: innerWidth, pad: h1.left - a.left, h2: !!(hit && hit.closest("h2")) };
+  });
+  assert.ok(m.h2, `titre « Qu'est-ce qui vous arrive ? » visible (${label})`);
+  if (label === "téléphone") assert.ok(m.l <= 0.5 && m.r >= m.vw - 0.5, "dégradé bord à bord sur téléphone");
+  else assert.ok(m.pad >= 28, `marge intérieure de la carte sur ordinateur : ${m.pad}px`);
+  const cChip = await whiteContrastOver(page, ".hero .suggest button");
+  assert.ok(cChip >= 4.5, `pastille lisible sur le dégradé (${label}) : ${cChip.toFixed(2)}`);
+  const cTitle = await whiteContrastOver(page, ".hero h1");
+  assert.ok(cTitle >= 4.5, `titre lisible (${label}) : ${cTitle.toFixed(2)}`);
+  await ctx.close();
+}
+ok("téléphone bord à bord, carte avec marges sur ordinateur, titre de section visible, pastilles et titre lisibles");
+
 // ---- 3. En-tête translucide en haut de l'accueil (téléphone), opaque après défilement et hors accueil
 ({ ctx, page } = await open({ theme: "light" }));
 assert.equal(await page.evaluate(() => document.body.classList.contains("at-top")), true);

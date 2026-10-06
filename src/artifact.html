@@ -1298,7 +1298,9 @@ input[type=checkbox]:checked { animation: zou-pop 0.18s ease; }
 .hero-aura .b4 { width: 60%; height: 70%; left: 6%; top: 18%; background: radial-gradient(circle, var(--aura-4, #FF7FB6) 0%, transparent 60%); animation: aura4 24s ease-in-out infinite alternate; }
 /* voile sombre en haut (texte blanc lisible) + fondu vers le fond en bas */
 .hero-aura::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5, 8, 30, 0.6) 0%, rgba(5, 8, 30, 0.34) 44%, rgba(5, 8, 30, 0.08) 66%, transparent 78%); }
-.hero-aura::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 140px; z-index: 1; background: linear-gradient(to bottom, transparent, var(--bg)); }
+.hero-aura::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 72px; z-index: 1; background: linear-gradient(to bottom, transparent, var(--bg)); }
+/* tout le contenu de l'accueil passe au-dessus du dégradé */
+[data-view="home"] > :not(.hero-aura) { position: relative; z-index: 1; }
 @keyframes aura1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(9%, 7%) scale(1.14); } }
 @keyframes aura2 { from { transform: translate(0, 0) scale(1.05); } to { transform: translate(-8%, 9%) scale(0.92); } }
 @keyframes aura3 { from { transform: translate(0, 0) scale(1); } to { transform: translate(6%, -8%) scale(1.12); } }
@@ -1314,8 +1316,8 @@ body.home .hero .lede { color: rgba(255, 255, 255, 0.92); }
 body.home .hero .ask { background: #FFFFFF; border-color: transparent; box-shadow: 0 18px 40px -14px rgba(5, 10, 40, 0.5), 0 2px 6px rgba(5, 10, 40, 0.18); }
 body.home .hero .ask textarea { color: #0B1220; }
 body.home .hero .ask textarea::placeholder { color: #5B6476; }
-body.home .hero .suggest button { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; border: 0; }
-body.home .hero .suggest button:hover { background: rgba(255, 255, 255, 0.3); }
+body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFFFFF; border: 1px solid rgba(255, 255, 255, 0.22); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+body.home .hero .suggest button:hover { background: rgba(6, 10, 34, 0.58); }
 /* en-tête translucide par-dessus le dégradé (téléphone, en haut de l'accueil) */
 @media (max-width: 767px) {
   body.home.at-top .site-head { background: transparent; border-bottom-color: transparent; }
@@ -1323,7 +1325,15 @@ body.home .hero .suggest button:hover { background: rgba(255, 255, 255, 0.3); }
   body.home.at-top .head-icon { color: #FFFFFF; }
   body.home.at-top .site-head { transition: background 0.2s ease; }
 }
-@media (min-width: 768px) { .hero-aura { top: 0; border-radius: 0 0 20px 20px; } }
+@media (max-width: 767px) { .hero-aura { left: calc(-1 * var(--gutter)); right: calc(-1 * var(--gutter)); } }
+@media (min-width: 768px) {
+  .hero-aura { top: 0; border-radius: 24px; box-shadow: 0 24px 48px -28px rgba(5, 10, 40, 0.45); }
+  .hero-aura::before { display: none; }
+  .hero-aura::after { background: linear-gradient(180deg, rgba(5, 8, 30, 0.55) 0%, rgba(5, 8, 30, 0.38) 55%, rgba(5, 8, 30, 0.3) 100%); }
+  body.home .hero { padding: clamp(36px, 4vw, 56px) clamp(28px, 4.5vw, 64px); max-width: none; }
+  body.home .hero > * { max-width: 760px; }
+  body.home .hero h1.h-display { max-width: 16ch; }
+}
 @media (min-width: 1200px) { .wrap.split .hero-aura { display: none; } }
 @media print { .hero-aura { display: none !important; } }
 </style>
@@ -3948,7 +3958,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   // Dégradé d'accueil : taille, en-tête translucide en haut, couleur de la barre d'état, pause hors écran
   function sizeAura() {
     var a = $("#heroAura"), h = a && a.parentNode.querySelector(".hero");
-    if (a && h) a.style.height = Math.round(h.offsetTop + h.offsetHeight + 96) + "px";
+    if (!a || !h) return;
+    if (window.innerWidth >= 768) { a.style.top = h.offsetTop + "px"; a.style.height = h.offsetHeight + "px"; }
+    else { a.style.top = ""; a.style.height = Math.round(h.offsetTop + h.offsetHeight - a.offsetTop + 64) + "px"; }
   }
   function auraBottom() { var a = $("#heroAura"); return a ? a.offsetTop + a.offsetHeight : 0; }
   function onHomeScroll() {
