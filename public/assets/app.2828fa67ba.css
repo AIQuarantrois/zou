@@ -1150,8 +1150,8 @@ a, button, input, select, textarea, summary, [role="button"], .tab, .btn, .link-
 @keyframes nav-push { from { opacity: 0; transform: translateX(32px); } }
 @keyframes nav-pop { from { opacity: 0; transform: translateX(-32px); } }
 @media (max-width: 999px) {
-  .nav-push { animation: nav-push 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
-  .nav-pop { animation: nav-pop 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .nav-push { animation: nav-push 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .nav-pop { animation: nav-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
 }
 @media (prefers-reduced-motion: reduce) { .nav-push, .nav-pop { animation: none; } }
 /* En-tête d'écran : retour en haut à gauche, titre qui apparaît quand le grand titre passe sous l'en-tête */
