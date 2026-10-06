@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hors ligne · ZOU</title>
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+@font-face { font-family: "Inter"; font-weight: 100 900; font-display: swap; src: url("/assets/fonts/inter-4-latin.woff2") format("woff2"); }
+@font-face { font-family: "Bricolage"; font-weight: 400 800; font-display: swap; src: url("/assets/fonts/bricolage-latin.woff2") format("woff2"); }
+:root { --bg: #FFFFFF; --ink: #111827; --ink-2: #374151; --accent: #0B63E8; --on-accent: #FFFFFF; --soft: #E8F0FD; --smile: #0A6CFF; }
+@media (prefers-color-scheme: dark) { :root { --bg: #161616; --ink: #F3F3F3; --ink-2: #D0D0D0; --accent: #4D9BFF; --on-accent: #0A0A0A; --soft: #1C2A40; --smile: #4D9BFF; } }
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100dvh; background: var(--bg); color: var(--ink); }
+body { display: flex; align-items: center; font: 16px/1.55 "Inter", system-ui, sans-serif; -webkit-tap-highlight-color: transparent;
+  padding: calc(32px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px)) calc(32px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px)); }
+main { width: 100%; max-width: 480px; margin: 0 auto; }
+.logo { display: block; width: 84px; height: 39px; margin: 0 0 40px; }
+svg:not(.logo) { display: block; width: 148px; height: 111px; margin: 0 0 20px; }
+h1 { font: 700 30px/1.15 "Bricolage", "Inter", sans-serif; letter-spacing: -0.02em; margin: 0 0 12px; }
+p { margin: 0 0 28px; color: var(--ink-2); max-width: 40ch; }
+a.btn { display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 600; text-decoration: none; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+a.btn:active { transform: scale(0.98); }
+a.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+</style>
+</head>
+<body>
+<main>
+  <svg class="logo" viewBox="68 62 406 186" role="img" aria-label="ZOU"><g style="fill: var(--ink)"><path d="M115 0H1248V253H778C677 253 577 253 476 248C539 321 599 395 652 468L1245 1306V1490H112V1237H599C694 1237 789 1237 884 1241C825 1173 768 1104 719 1036L115 183Z" transform="translate(60.000,205.000) scale(0.092773,-0.092773)"/><path d="M789 -20C1184 -20 1484 259 1484 744C1484 1231 1184 1510 789 1510C394 1510 94 1231 94 744C94 260 394 -20 789 -20ZM789 251C558 251 404 425 404 744C404 1064 558 1239 789 1239C1020 1239 1174 1065 1174 744C1174 425 1020 251 789 251Z" transform="translate(192.172,205.000) scale(0.092773,-0.092773)"/><path d="M750 -21C1118 -21 1365 197 1365 523V1490H1059V548C1059 374 937 249 750 249C563 249 440 374 440 548V1490H135V523C135 197 379 -21 750 -21Z" transform="translate(344.568,205.000) scale(0.092773,-0.092773)"/></g><path d="M 224.37 224.00 Q 265.37 249.00 306.37 224.00" fill="none" style="stroke: var(--smile)" stroke-width="15" stroke-linecap="round"/></svg>
+  <svg viewBox="0 0 160 120" aria-hidden="true">
+    <ellipse cx="80" cy="104" rx="58" ry="7" fill="var(--soft)"/>
+    <path d="M30 62a50 50 0 0 1 100 0" fill="none" stroke="var(--ink-2)" stroke-width="2.4" stroke-linecap="round" opacity=".45"/>
+    <path d="M46 74a34 34 0 0 1 68 0" fill="none" stroke="var(--ink-2)" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>
+    <path d="M62 86a18 18 0 0 1 36 0" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="80" cy="94" r="5" fill="var(--accent)"/>
+    <path d="M38 30l84 70" stroke="var(--ink-2)" stroke-width="2.4" stroke-linecap="round"/>
+  </svg>
+  <h1>Pas de connexion</h1>
+  <p>Cette page n'est pas encore disponible hors ligne. Vos plans, dossiers et dates restent dans l'application.</p>
+  <a class="btn" href="/">Ouvrir ZOU</a>
+</main>
+</body>
+</html>

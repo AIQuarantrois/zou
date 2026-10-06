@@ -35,7 +35,8 @@ const html = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>${title}</title>
 <meta name="description" content="${desc}">
-<meta name="theme-color" content="#FFFFFF">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
 <script src="/assets/${themeName}"></script>
 <meta name="robots" content="noindex, nofollow">
@@ -65,3 +66,20 @@ ${body}
 `;
 writeFileSync(new URL("../public/app.html", import.meta.url), html);
 console.log("app.html", html.length, "octets;", cssName, jsName);
+
+// Service worker : la liste des fichiers à garder hors ligne et la version du cache sont calculées ici,
+// pour que tout soit en cache dès l'installation (premier lancement compris) et que chaque version purge la précédente.
+const pub = (f) => new URL(`../public/${f}`, import.meta.url);
+const fonts = readdirSync(pub("assets/fonts/")).filter((f) => f.endsWith(".woff2")).sort().map((f) => `/assets/fonts/${f}`);
+const precache = [
+  "/app.html", "/offline.html", "/manifest.webmanifest", "/favicon.svg", "/register-sw.js",
+  `/assets/${cssName}`, `/assets/${jsName}`, `/assets/${themeName}`, ...fonts,
+  "/icons/icon-192.png", "/icons/icon-512.png", "/icons/maskable-512.png", "/icons/apple-touch-icon.png",
+];
+const swSrc = readFileSync(new URL("./sw.src.js", import.meta.url), "utf8");
+const swHash = createHash("sha256");
+for (const f of precache) swHash.update(f + "\0").update(f === "/app.html" ? html : readFileSync(pub(f.slice(1))));
+swHash.update(swSrc);
+const sw = swSrc.replace("__VERSION__", `zou-${swHash.digest("hex").slice(0, 10)}`).replace("__PRECACHE__", JSON.stringify(precache, null, 2));
+writeFileSync(pub("sw.js"), sw);
+console.log("sw.js", precache.length, "fichiers en cache");

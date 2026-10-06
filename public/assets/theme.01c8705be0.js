@@ -8,7 +8,7 @@
     if (p.size === "large" || p.size === "xlarge") r.setAttribute("data-size", p.size);
     if (p.contrast) r.setAttribute("data-contrast", "high");
     var dark = p.theme === "dark" || (p.theme !== "light" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.setAttribute("content", dark ? "#161616" : "#FFFFFF");
+    var ms = document.querySelectorAll('meta[name="theme-color"]');
+    for (var i = 0; i < ms.length; i++) ms[i].setAttribute("content", dark ? "#161616" : "#FFFFFF");
   } catch (e) { /* réglages ignorés */ }
 })();

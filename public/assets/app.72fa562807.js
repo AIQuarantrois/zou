@@ -1506,9 +1506,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     document.body.classList.toggle("at-top", window.pageYOffset < Math.max(40, auraBottom() - 80));
   }
   function setHeroThemeColor(on) {
-    var m = $('meta[name="theme-color"]'); if (!m) return;
-    if (on) m.setAttribute("content", darkNow() ? "#0A1024" : "#1E7BFF");
-    else m.setAttribute("content", darkNow() ? "#161616" : "#FFFFFF");
+    setThemeColor(on ? (darkNow() ? "#0A1024" : "#1E7BFF") : (darkNow() ? "#161616" : "#FFFFFF"));
   }
   window.addEventListener("scroll", onHomeScroll, { passive: true });
   window.addEventListener("resize", function () { sizeAura(); onHomeScroll(); });
@@ -1802,7 +1800,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     Array.prototype.forEach.call(files, function (f) {
       var nid = uid();
       state.docs.unshift({ id: nid, name: f.name, type: type || detect(f.name), added: iso(today()), size: fmtSize(f.size), bytes: f.size, mime: f.type || "", dossier: dossier || "" });
-      if (CAPS.files) { var pb = queueFile(nid, f); if (pb) warn = pb; }
+      // Mis en attente même si les capacités du serveur ne sont pas encore connues (fichier choisi juste après le chargement) :
+      // uploadPending() n'envoie rien tant que CAPS.files est faux.
+      var pb = queueFile(nid, f); if (pb && CAPS.files) warn = pb;
       n++;
     });
     if (!n) return;
@@ -3483,6 +3483,21 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       if (txt) txt.textContent = ios ? "Pour retrouver vos rappels d'un geste : dans Safari, touchez Partager puis « Sur l'écran d'accueil »." : "Installez ZOU sur votre téléphone : vos rappels et vos dossiers à un geste, même sans connexion.";
       var ib = $("#agendaInstallBtn"); if (ib) ib.hidden = ios;
     }
+    document.querySelectorAll(".plan-install").forEach(function (c) {
+      c.hidden = !(can && !installDismissed());
+      c.querySelector(".plan-inst-txt").textContent = ios ? "Gardez ce plan sous la main : dans Safari, touchez Partager puis «\u00a0Sur l'écran d'accueil\u00a0»." : "Gardez ce plan sous la main : installez ZOU, il s'ouvre même sans connexion.";
+      c.querySelector(".btn").hidden = ios;
+    });
+  }
+  function planInstall() {
+    var c = el("div", "install-card plan-install"); c.hidden = true;
+    c.appendChild(el("p", "plan-inst-txt"));
+    var a = el("div", "install-actions");
+    var ib = el("button", "btn btn-sm", "Installer"); ib.type = "button"; ib.setAttribute("data-act", "install");
+    var lb = el("button", "link-btn small", "Plus tard"); lb.type = "button"; lb.setAttribute("data-act", "install-later");
+    a.appendChild(ib); a.appendChild(lb); c.appendChild(a);
+    setTimeout(renderInstall, 0);
+    return c;
   }
   function doInstall() {
     if (installEvt) {
@@ -3492,6 +3507,16 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     } else if (isIos()) toast("Dans Safari, touchez Partager puis « Sur l'écran d'accueil ».");
     renderInstall();
   }
+  /* ----- Hors ligne : un bandeau fin le dit, il disparaît au retour du réseau ----- */
+  function renderNet() {
+    var b = $("#netBar"); if (!b) return;
+    var off = navigator.onLine === false;
+    if (!off && !b.hidden) toast("Connexion rétablie.");
+    b.hidden = !off; document.body.classList.toggle("is-offline", off);
+  }
+  window.addEventListener("online", renderNet);
+  window.addEventListener("offline", renderNet);
+  renderNet();
   window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); installEvt = e; renderInstall(); });
   window.addEventListener("appinstalled", function () { installEvt = null; renderInstall(); toast("ZOU est installé sur votre appareil."); });
 
@@ -4707,6 +4732,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     });
     acts.appendChild(askB); acts.appendChild(proB); acts.appendChild(edB); acts.appendChild(rsB);
     box.appendChild(acts);
+    box.appendChild(planInstall());
     renderVieFeedback(v, box);
     if (v.sources && v.sources.length) {
       var det = el("details", "vie-sources");
@@ -4739,9 +4765,10 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (prefs.theme === "light" || prefs.theme === "dark") r.setAttribute("data-theme", prefs.theme); else r.removeAttribute("data-theme");
     if (prefs.size === "large" || prefs.size === "xlarge") r.setAttribute("data-size", prefs.size); else r.removeAttribute("data-size");
     if (prefs.contrast) r.setAttribute("data-contrast", "high"); else r.removeAttribute("data-contrast");
-    var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.setAttribute("content", darkNow() ? "#161616" : "#FFFFFF");
+    setThemeColor(darkNow() ? "#161616" : "#FFFFFF");
   }
+  // Deux balises theme-color (clair, sombre) servent avant le script ; ensuite elles suivent le thème choisi.
+  function setThemeColor(c) { document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) { m.setAttribute("content", c); }); }
   function setPref(k, v) {
     prefs[k] = v;
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) { /* ignore */ }

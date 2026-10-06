@@ -1,24 +1,7 @@
 /* ZOU : service worker (généré par scripts/pack-app.mjs depuis scripts/sw.src.js : ne pas modifier public/sw.js à la main).
    Toute l'application est mise en cache dès l'installation ; elle s'ouvre hors ligne. Les appels /api ne sont jamais mis en cache. */
-const VERSION = "zou-e527f2fdef";
-const PRECACHE = [
-  "/app.html",
-  "/offline.html",
-  "/manifest.webmanifest",
-  "/favicon.svg",
-  "/register-sw.js",
-  "/assets/app.b9f2039250.css",
-  "/assets/app.72fa562807.js",
-  "/assets/theme.01c8705be0.js",
-  "/assets/fonts/bricolage-latin-ext.woff2",
-  "/assets/fonts/bricolage-latin.woff2",
-  "/assets/fonts/inter-4-latin-ext.woff2",
-  "/assets/fonts/inter-4-latin.woff2",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/maskable-512.png",
-  "/icons/apple-touch-icon.png"
-];
+const VERSION = "__VERSION__";
+const PRECACHE = __PRECACHE__;
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(PRECACHE.map((u) => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));

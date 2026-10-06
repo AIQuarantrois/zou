@@ -61,7 +61,7 @@ assert.equal(await bodyBg(page), "rgb(255, 255, 255)");
 await choose(page, "theme", "Sombre");
 assert.equal(await attr(page, "data-theme"), "dark");
 assert.equal(await bodyBg(page), "rgb(22, 22, 22)");
-assert.equal(await page.locator('meta[name="theme-color"]').getAttribute("content"), "#161616");
+assert.equal(await page.locator('meta[name="theme-color"]').first().getAttribute("content"), "#161616");
 assert.equal(await page.locator('#prefsBox .pref-opt[data-val="dark"]').getAttribute("aria-checked"), "true");
 await page.reload(); await page.waitForSelector("#prefsBox .pref-opt");
 assert.equal(await attr(page, "data-theme"), "dark");
@@ -96,9 +96,9 @@ await page.close();
 assert.equal(await page.evaluate(() => window.__themeSetBeforeCss), true);
 assert.equal(await attr(page, "data-size"), "large"); assert.equal(await attr(page, "data-contrast"), "high");
 // Sur l'accueil (dégradé), la barre d'état prend la couleur du haut du dégradé ; ailleurs elle revient au fond du thème.
-assert.equal(await page.locator('meta[name="theme-color"]').getAttribute("content"), "#0A1024");
+assert.equal(await page.locator('meta[name="theme-color"]').first().getAttribute("content"), "#0A1024");
 await page.goto(BASE + "/#display"); await page.waitForSelector("#prefsBox .pref-opt");
-assert.equal(await page.locator('meta[name="theme-color"]').getAttribute("content"), "#161616");
+assert.equal(await page.locator('meta[name="theme-color"]').first().getAttribute("content"), "#161616");
 ok("au chargement, thème, taille et contraste mémorisés sont posés avant la feuille de style (pas d'éclair clair)");
 await page.close();
 

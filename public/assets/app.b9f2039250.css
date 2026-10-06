@@ -1373,3 +1373,9 @@ body.home .hero .suggest button:hover { background: rgba(6, 10, 34, 0.58); }
 }
 @media (prefers-reduced-motion: reduce) { .burst { display: none; } .vie-done.pop .ck, .vie-done.pop .ck path { animation: none; } }
 @media print { .vie-frise, .vie-done { display: none !important; } }
+/* ----- Hors ligne et installation ----- */
+.net-bar { position: sticky; top: calc(var(--head-h) + env(safe-area-inset-top, 0px)); z-index: 39; padding: 8px var(--gutter); background: var(--ink); color: var(--surface); font-size: calc(14px * var(--fs, 1)); line-height: 1.4; text-align: center; }
+.net-bar[hidden] { display: none; }
+.plan-install { margin: 24px 0 0; }
+.plan-install[hidden] { display: none; }
+@media print { .net-bar, .plan-install { display: none !important; } }
