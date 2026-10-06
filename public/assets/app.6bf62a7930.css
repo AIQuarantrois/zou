@@ -1381,3 +1381,12 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
 .plan-install { margin: 24px 0 0; }
 .plan-install[hidden] { display: none; }
 @media print { .net-bar, .plan-install { display: none !important; } }
+/* ----- Tirer pour actualiser (Dossiers, Coffre, Agenda) : hauteur pilotée au doigt, pousse le contenu, pas de transform ----- */
+.ptr { height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--ink-3); }
+.ptr-in { display: flex; align-items: center; gap: 8px; padding: 14px 0; font-size: calc(14px * var(--fs, 1)); font-weight: 500; white-space: nowrap; }
+.ptr-ico { width: 20px; height: 20px; transition: transform 0.2s ease; }
+.ptr.ready .ptr-ico { transform: rotate(180deg); }
+.ptr.load .ptr-ico { animation: zou-ptr-spin 0.7s linear infinite; }
+.ptr.snap { transition: height 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes zou-ptr-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ptr.load .ptr-ico { animation: none; } .ptr.snap { transition: none; } }

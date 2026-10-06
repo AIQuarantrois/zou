@@ -1423,6 +1423,47 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     sh.addEventListener("touchend", end);
     sh.addEventListener("touchcancel", end);
   })();
+  /* ----- Tirer pour actualiser : Dossiers, Coffre, Agenda (même geste que le drag de la feuille ci-dessus) ----- */
+  (function () {
+    var MAP = { cases: "ptrCases", vault: "ptrVault", agenda: "ptrAgenda" };
+    var THRESHOLD = 64, MAX = 96;
+    var node = null, y0 = null, dy = 0, busy = false, crossed = false;
+    document.addEventListener("touchstart", function (e) {
+      node = null;
+      if (busy || e.touches.length > 1 || window.pageYOffset > 0 || !CAPS.database || !USER) return;
+      var sc = $("#scrim"); if (sc && !sc.hidden) return; // une feuille est ouverte par-dessus : pas de double geste
+      var id = MAP[cur.name], n = id && $("#" + id);
+      if (!n) return;
+      node = n; y0 = e.touches[0].clientY; dy = 0; crossed = false;
+    }, { passive: true });
+    document.addEventListener("touchmove", function (e) {
+      if (!node || y0 == null) return;
+      dy = e.touches[0].clientY - y0;
+      if (dy <= 0 || window.pageYOffset > 0) { y0 = null; node.classList.add("snap"); node.style.height = ""; node.classList.remove("ready"); return; }
+      e.preventDefault();
+      node.classList.remove("snap");
+      node.style.height = Math.min(MAX, dy * 0.5) + "px";
+      var ready = dy * 0.5 >= THRESHOLD;
+      if (ready !== crossed) { crossed = ready; node.classList.toggle("ready", ready); if (ready && navigator.vibrate) navigator.vibrate(10); }
+    }, { passive: false });
+    function end() {
+      if (!node || y0 == null) { node = null; return; }
+      var n = node, go = crossed;
+      y0 = null; node = null;
+      n.classList.add("snap");
+      if (!go) { n.style.height = ""; n.classList.remove("ready"); return; }
+      n.style.height = "56px";
+      n.classList.add("load");
+      busy = true;
+      runSync(true).then(undefined, function () { /* déjà annoncé par setSyncStatus */ }).then(function () {
+        busy = false;
+        n.classList.remove("load", "ready");
+        n.style.height = "";
+      });
+    }
+    document.addEventListener("touchend", end);
+    document.addEventListener("touchcancel", end);
+  })();
   function toggleMenu(kind) {
     var isMega = kind === "mega";
     var panel = isMega ? $("#mega") : $("#moreSheet");
@@ -4649,6 +4690,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         var cb = el("input"); cb.type = "checkbox"; cb.checked = !!s.checks[ck];
         cb.addEventListener("change", function () {
           s.checks[ck] = cb.checked; li.classList.toggle("done", cb.checked); save();
+          if (cb.checked && navigator.vibrate) navigator.vibrate(10);
           if (key === "steps") stepsDone(true);
         });
         var body = el("span", "vie-item-b");
@@ -4680,7 +4722,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         var all = items.every(function (it2) { return !!s.checks[key + ":" + (it2.k || it2.t)]; });
         var was = !fin.hidden;
         fin.hidden = !all;
-        if (all && live && !was) { fin.classList.remove("pop"); void fin.offsetWidth; fin.classList.add("pop"); burst(fin); }
+        if (all && live && !was) { fin.classList.remove("pop"); void fin.offsetWidth; fin.classList.add("pop"); burst(fin); if (navigator.vibrate) navigator.vibrate(10); }
       }
       stepsDone(false);
     }

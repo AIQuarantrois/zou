@@ -1384,6 +1384,15 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
 .plan-install { margin: 24px 0 0; }
 .plan-install[hidden] { display: none; }
 @media print { .net-bar, .plan-install { display: none !important; } }
+/* ----- Tirer pour actualiser (Dossiers, Coffre, Agenda) : hauteur pilotée au doigt, pousse le contenu, pas de transform ----- */
+.ptr { height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--ink-3); }
+.ptr-in { display: flex; align-items: center; gap: 8px; padding: 14px 0; font-size: calc(14px * var(--fs, 1)); font-weight: 500; white-space: nowrap; }
+.ptr-ico { width: 20px; height: 20px; transition: transform 0.2s ease; }
+.ptr.ready .ptr-ico { transform: rotate(180deg); }
+.ptr.load .ptr-ico { animation: zou-ptr-spin 0.7s linear infinite; }
+.ptr.snap { transition: height 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes zou-ptr-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ptr.load .ptr-ico { animation: none; } .ptr.snap { transition: none; } }
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="zou-wordmark" viewBox="68 62 406 186"><g style="fill: var(--trust)"><path d="M115 0H1248V253H778C677 253 577 253 476 248C539 321 599 395 652 468L1245 1306V1490H112V1237H599C694 1237 789 1237 884 1241C825 1173 768 1104 719 1036L115 183Z" transform="translate(60.000,205.000) scale(0.092773,-0.092773)"/><path d="M789 -20C1184 -20 1484 259 1484 744C1484 1231 1184 1510 789 1510C394 1510 94 1231 94 744C94 260 394 -20 789 -20ZM789 251C558 251 404 425 404 744C404 1064 558 1239 789 1239C1020 1239 1174 1065 1174 744C1174 425 1020 251 789 251Z" transform="translate(192.172,205.000) scale(0.092773,-0.092773)"/><path d="M750 -21C1118 -21 1365 197 1365 523V1490H1059V548C1059 374 937 249 750 249C563 249 440 374 440 548V1490H135V523C135 197 379 -21 750 -21Z" transform="translate(344.568,205.000) scale(0.092773,-0.092773)"/></g><path d="M 224.37 224.00 Q 265.37 249.00 306.37 224.00" fill="none" style="stroke: var(--smile)" stroke-width="15" stroke-linecap="round"/></symbol>
@@ -1983,6 +1992,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
 <!-- DOSSIERS -->
         <section data-view="cases" aria-labelledby="h-cases" hidden>
           <nav class="subnav" data-subnav aria-label="Mon espace"><button data-go="cases">Dossiers</button><button data-go="vault">Coffre</button><button data-go="agenda">Agenda</button></nav>
+          <div class="ptr" id="ptrCases" aria-hidden="true"><div class="ptr-in"><svg class="ico ptr-ico" aria-hidden="true"><use href="#i-down"/></svg><span class="ptr-t">Tirer pour actualiser</span></div></div>
           <div class="page-head">
             <h1 id="h-cases" class="h-display">Dossiers</h1>
             <p class="lede">Chaque démarche garde ses documents, ses dates et son avancement.</p>
@@ -1998,6 +2008,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
         <!-- COFFRE -->
         <section data-view="vault" aria-labelledby="h-vault" hidden>
           <nav class="subnav" data-subnav aria-label="Mon espace"><button data-go="cases">Dossiers</button><button data-go="vault">Coffre</button><button data-go="agenda">Agenda</button></nav>
+          <div class="ptr" id="ptrVault" aria-hidden="true"><div class="ptr-in"><svg class="ico ptr-ico" aria-hidden="true"><use href="#i-down"/></svg><span class="ptr-t">Tirer pour actualiser</span></div></div>
           <div class="page-top">
             <div class="page-head">
               <h1 id="h-vault" class="h-display">Coffre</h1>
@@ -2027,6 +2038,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
         <!-- AGENDA -->
         <section data-view="agenda" aria-labelledby="h-agenda" hidden>
           <nav class="subnav" data-subnav aria-label="Mon espace"><button data-go="cases">Dossiers</button><button data-go="vault">Coffre</button><button data-go="agenda">Agenda</button></nav>
+          <div class="ptr" id="ptrAgenda" aria-hidden="true"><div class="ptr-in"><svg class="ico ptr-ico" aria-hidden="true"><use href="#i-down"/></svg><span class="ptr-t">Tirer pour actualiser</span></div></div>
           <div class="page-head">
             <h1 id="h-agenda" class="h-display">Agenda</h1>
             <p class="lede">Les dates qui comptent, avec un rappel avant chacune.</p>
@@ -3961,6 +3973,47 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     }
     sh.addEventListener("touchend", end);
     sh.addEventListener("touchcancel", end);
+  })();
+  /* ----- Tirer pour actualiser : Dossiers, Coffre, Agenda (même geste que le drag de la feuille ci-dessus) ----- */
+  (function () {
+    var MAP = { cases: "ptrCases", vault: "ptrVault", agenda: "ptrAgenda" };
+    var THRESHOLD = 64, MAX = 96;
+    var node = null, y0 = null, dy = 0, busy = false, crossed = false;
+    document.addEventListener("touchstart", function (e) {
+      node = null;
+      if (busy || e.touches.length > 1 || window.pageYOffset > 0 || !CAPS.database || !USER) return;
+      var sc = $("#scrim"); if (sc && !sc.hidden) return; // une feuille est ouverte par-dessus : pas de double geste
+      var id = MAP[cur.name], n = id && $("#" + id);
+      if (!n) return;
+      node = n; y0 = e.touches[0].clientY; dy = 0; crossed = false;
+    }, { passive: true });
+    document.addEventListener("touchmove", function (e) {
+      if (!node || y0 == null) return;
+      dy = e.touches[0].clientY - y0;
+      if (dy <= 0 || window.pageYOffset > 0) { y0 = null; node.classList.add("snap"); node.style.height = ""; node.classList.remove("ready"); return; }
+      e.preventDefault();
+      node.classList.remove("snap");
+      node.style.height = Math.min(MAX, dy * 0.5) + "px";
+      var ready = dy * 0.5 >= THRESHOLD;
+      if (ready !== crossed) { crossed = ready; node.classList.toggle("ready", ready); if (ready && navigator.vibrate) navigator.vibrate(10); }
+    }, { passive: false });
+    function end() {
+      if (!node || y0 == null) { node = null; return; }
+      var n = node, go = crossed;
+      y0 = null; node = null;
+      n.classList.add("snap");
+      if (!go) { n.style.height = ""; n.classList.remove("ready"); return; }
+      n.style.height = "56px";
+      n.classList.add("load");
+      busy = true;
+      runSync(true).then(undefined, function () { /* déjà annoncé par setSyncStatus */ }).then(function () {
+        busy = false;
+        n.classList.remove("load", "ready");
+        n.style.height = "";
+      });
+    }
+    document.addEventListener("touchend", end);
+    document.addEventListener("touchcancel", end);
   })();
   function toggleMenu(kind) {
     var isMega = kind === "mega";
@@ -7188,6 +7241,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         var cb = el("input"); cb.type = "checkbox"; cb.checked = !!s.checks[ck];
         cb.addEventListener("change", function () {
           s.checks[ck] = cb.checked; li.classList.toggle("done", cb.checked); save();
+          if (cb.checked && navigator.vibrate) navigator.vibrate(10);
           if (key === "steps") stepsDone(true);
         });
         var body = el("span", "vie-item-b");
@@ -7219,7 +7273,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         var all = items.every(function (it2) { return !!s.checks[key + ":" + (it2.k || it2.t)]; });
         var was = !fin.hidden;
         fin.hidden = !all;
-        if (all && live && !was) { fin.classList.remove("pop"); void fin.offsetWidth; fin.classList.add("pop"); burst(fin); }
+        if (all && live && !was) { fin.classList.remove("pop"); void fin.offsetWidth; fin.classList.add("pop"); burst(fin); if (navigator.vibrate) navigator.vibrate(10); }
       }
       stepsDone(false);
     }

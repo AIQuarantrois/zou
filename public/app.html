@@ -44,7 +44,7 @@
 <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" href="/icons/splash/dark-750x1334.png">
 <link rel="preload" href="/assets/fonts/inter-4-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/app.2828fa67ba.css">
+<link rel="stylesheet" href="/assets/app.6bf62a7930.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -645,6 +645,7 @@
 <!-- DOSSIERS -->
         <section data-view="cases" aria-labelledby="h-cases" hidden>
           <nav class="subnav" data-subnav aria-label="Mon espace"><button data-go="cases">Dossiers</button><button data-go="vault">Coffre</button><button data-go="agenda">Agenda</button></nav>
+          <div class="ptr" id="ptrCases" aria-hidden="true"><div class="ptr-in"><svg class="ico ptr-ico" aria-hidden="true"><use href="#i-down"/></svg><span class="ptr-t">Tirer pour actualiser</span></div></div>
           <div class="page-head">
             <h1 id="h-cases" class="h-display">Dossiers</h1>
             <p class="lede">Chaque démarche garde ses documents, ses dates et son avancement.</p>
@@ -660,6 +661,7 @@
         <!-- COFFRE -->
         <section data-view="vault" aria-labelledby="h-vault" hidden>
           <nav class="subnav" data-subnav aria-label="Mon espace"><button data-go="cases">Dossiers</button><button data-go="vault">Coffre</button><button data-go="agenda">Agenda</button></nav>
+          <div class="ptr" id="ptrVault" aria-hidden="true"><div class="ptr-in"><svg class="ico ptr-ico" aria-hidden="true"><use href="#i-down"/></svg><span class="ptr-t">Tirer pour actualiser</span></div></div>
           <div class="page-top">
             <div class="page-head">
               <h1 id="h-vault" class="h-display">Coffre</h1>
@@ -689,6 +691,7 @@
         <!-- AGENDA -->
         <section data-view="agenda" aria-labelledby="h-agenda" hidden>
           <nav class="subnav" data-subnav aria-label="Mon espace"><button data-go="cases">Dossiers</button><button data-go="vault">Coffre</button><button data-go="agenda">Agenda</button></nav>
+          <div class="ptr" id="ptrAgenda" aria-hidden="true"><div class="ptr-in"><svg class="ico ptr-ico" aria-hidden="true"><use href="#i-down"/></svg><span class="ptr-t">Tirer pour actualiser</span></div></div>
           <div class="page-head">
             <h1 id="h-agenda" class="h-display">Agenda</h1>
             <p class="lede">Les dates qui comptent, avec un rappel avant chacune.</p>
@@ -1197,7 +1200,7 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.72fa562807.js"></script>
+<script src="/assets/app.533d332206.js"></script>
 <script src="/register-sw.js"></script>
 </body>
 </html>
