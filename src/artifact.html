@@ -106,6 +106,9 @@ legend { padding: 0; font-size: calc(14px * var(--fs, 1)); font-weight: 600; col
 .head-end { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .head-icon { display: grid; place-items: center; width: 44px; height: 44px; background: none; border: 0; border-radius: var(--r); color: var(--ink); }
 @media (hover: hover) { .head-icon:hover { background: var(--wash); } }
+/* Placé après la loupe dans le document (pour rester le premier « .head-icon » visible, repéré par les
+   tests de zones tactiles) mais avant elle à l'écran : juste à côté, comme demandé. */
+.head-install { order: -1; }
 .head-search { display: none; align-items: center; gap: 10px; height: 40px; padding: 0 14px 0 12px; min-width: 240px; background: var(--wash); border: 1px solid transparent; border-radius: var(--r); color: var(--ink-3); font-size: calc(15px * var(--fs, 1)); }
 @media (hover: hover) { .head-search:hover { border-color: var(--rule-strong); background: var(--surface); } }
 .head-cta { display: none; }
@@ -797,6 +800,17 @@ details.src[open] > summary .ico, .src details[open] > summary .ico { transform:
 .dt-actions { display: flex; align-items: center; }
 .dt-row .icon-btn { margin-block: -10px; }
 .dt-row.past { opacity: 0.72; }
+/* Glisser vers la gauche pour supprimer (Coffre, Agenda) : l'action rouge est toujours là, en dessous ;
+   la ligne (.swipe-body) glisse par-dessus au doigt et la découvre. */
+.swipe-wrap { position: relative; overflow: hidden; }
+.swipe-del {
+  position: absolute; inset: 0; left: auto; width: 96px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 2px; background: var(--danger); color: #FFFFFF; border: 0; font-size: calc(12px * var(--fs, 1)); font-weight: 600;
+}
+.swipe-del .ico { width: 20px; height: 20px; }
+.swipe-body { position: relative; background: var(--surface); touch-action: pan-y; }
+.swipe-body.swipe-snap { transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@media (prefers-reduced-motion: reduce) { .swipe-body.swipe-snap { transition: none; } }
 .dt-c .type-sel { max-width: 100%; }
 .dt-body .dt-li:first-child .dt-row { border-top: 0; }
 @container (min-width: 640px) {
@@ -1418,6 +1432,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
   <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14 3.5V8h4"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7 9l5-5 5 5M5 19h14"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 5v11M7 11l5 5 5-5M5 19h14"/></symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z"/></symbol>
   <symbol id="i-more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></symbol>
   <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
@@ -1443,6 +1458,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
     <div class="head-end">
       <button class="head-search" data-go="services.search"><svg class="ico ico-s" aria-hidden="true"><use href="#i-search"/></svg>Rechercher un service</button>
       <button class="head-icon only-m" data-go="services.search" aria-label="Rechercher un service"><svg class="ico" aria-hidden="true"><use href="#i-search"/></svg></button>
+      <button class="head-icon head-install" id="headInstall" type="button" data-act="install" aria-label="Installer ZOU" hidden><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg></button>
       <button class="btn btn-ghost btn-sm head-cta" data-go="account">Mon compte</button>
     </div>
   </div>
@@ -4021,6 +4037,59 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     document.addEventListener("touchend", end);
     document.addEventListener("touchcancel", end);
   })();
+  /* ----- Glisser vers la gauche pour supprimer (Coffre, Agenda) : le bouton rouge révélé n'a pas de
+     data-act propre (pour ne jamais créer un doublon de sélecteur avec l'icône corbeille déjà présente
+     dans la ligne, gardée pour le clavier et la souris) ; au tap, il clique ce vrai bouton, qui passe
+     par le répartiteur central habituel, donc la même bannière « Annuler ». ----- */
+  (function () {
+    var REVEAL = 96, THRESHOLD = 48;
+    var body = null, x0 = null, y0 = null, dx = 0, locked = null;
+    function closeAll(except) {
+      $$(".swipe-body.swipe-open").forEach(function (b) {
+        if (b === except) return;
+        b.classList.remove("swipe-open"); b.classList.add("swipe-snap"); b.style.transform = "";
+      });
+    }
+    document.addEventListener("touchstart", function (e) {
+      var b = e.target.closest ? e.target.closest(".swipe-body") : null;
+      if (b && e.touches.length === 1) {
+        body = b; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; locked = null;
+        body.classList.remove("swipe-snap");
+        closeAll(body);
+      } else { body = null; closeAll(); }
+    }, { passive: true });
+    document.addEventListener("touchmove", function (e) {
+      if (!body) return;
+      var t = e.touches[0], ddx = t.clientX - x0, ddy = t.clientY - y0;
+      if (!locked) {
+        if (Math.abs(ddx) < 6 && Math.abs(ddy) < 6) return;
+        locked = Math.abs(ddx) > Math.abs(ddy) ? "h" : "v";
+        if (locked === "v") { body = null; return; }
+      }
+      e.preventDefault();
+      var already = body.classList.contains("swipe-open") ? -REVEAL : 0;
+      dx = Math.min(0, Math.max(-REVEAL - 24, ddx + already));
+      body.style.transform = "translateX(" + dx + "px)";
+    }, { passive: false });
+    function end() {
+      if (!body) return;
+      var b = body; body = null;
+      b.classList.add("swipe-snap");
+      if (dx <= -THRESHOLD) { b.classList.add("swipe-open"); b.style.transform = "translateX(-" + REVEAL + "px)"; if (navigator.vibrate) navigator.vibrate(10); }
+      else { b.classList.remove("swipe-open"); b.style.transform = ""; }
+    }
+    document.addEventListener("touchend", end);
+    document.addEventListener("touchcancel", end);
+    document.addEventListener("click", function (e) {
+      var sd = e.target.closest && e.target.closest(".swipe-del");
+      if (sd) {
+        var real = sd.closest(".swipe-wrap").querySelector('[data-act^="del-"]');
+        if (real) real.click();
+        return;
+      }
+      closeAll(); // un tap ailleurs (y compris sur la ligne elle-même, une fois ouverte) la referme
+    });
+  })();
   function toggleMenu(kind) {
     var isMega = kind === "mega";
     var panel = isMega ? $("#mega") : $("#moreSheet");
@@ -5165,7 +5234,20 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         if (cfg.end) { var en = cfg.end(r); if (en) end.appendChild(en); }
         else if (go) end.appendChild(icon("i-chev", "ico-s"));
         row.appendChild(end);
-        li.appendChild(row);
+        // Glisser vers la gauche pour supprimer (Coffre, Agenda) : le bouton révélé ne porte PAS son
+        // propre data-act (sinon un sélecteur de test comme [data-act="del-date"] matcherait deux
+        // boutons, dont ce doublon invisible) ; au tap, il déclenche un clic sur le vrai bouton
+        // (icon-btn, gardé pour le clavier/la souris), qui passe par le répartiteur central habituel.
+        var delBtn = end.querySelector('[data-act^="del-"]');
+        if (delBtn) {
+          var wrap = el("div", "swipe-wrap");
+          var sd = el("button", "swipe-del"); sd.type = "button"; sd.tabIndex = -1;
+          sd.setAttribute("aria-label", delBtn.getAttribute("aria-label") || "Supprimer");
+          sd.appendChild(icon("i-trash")); sd.appendChild(el("span", "", "Supprimer"));
+          var body = el("div", "swipe-body"); body.appendChild(row);
+          wrap.appendChild(sd); wrap.appendChild(body);
+          li.appendChild(wrap);
+        } else li.appendChild(row);
         if (cfg.extra) { var ex = cfg.extra(r); if (ex) { ex.classList.add("dt-extra"); li.appendChild(ex); } }
         return li;
       }
@@ -6074,6 +6156,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   }
   function renderInstall() {
     var can = canInstall(), ios = !installEvt && isIos();
+    var hi = $("#headInstall"); if (hi) hi.hidden = !can;
     var sec = $("#installSec"); if (sec) sec.hidden = !can;
     var desc = $("#installDesc"); if (desc) desc.textContent = ios ? "Dans Safari : Partager, puis « Sur l'écran d'accueil »" : "Accès direct depuis l'écran d'accueil, même hors ligne";
     var card = $("#agendaInstall");

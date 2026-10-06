@@ -44,6 +44,24 @@ async function dragDown(page, totalDy, steps = 6) {
 async function release(page) {
   await page.evaluate(() => document.dispatchEvent(new TouchEvent("touchend", { touches: [], bubbles: true, cancelable: true })));
 }
+// Glisse vers la gauche la ligne (Coffre, Agenda) qui porte ce bouton de suppression (identifié par son aria-label).
+async function swipeLeft(page, ariaLabel, totalDx, steps = 6) {
+  const body = page.locator(`.swipe-wrap:has(button[aria-label="${ariaLabel}"]) .swipe-body`);
+  const box = await body.boundingBox();
+  const y = box.y + box.height / 2, x0 = box.x + box.width - 10;
+  await body.evaluate((el, pt) => {
+    const t = new Touch({ identifier: 7, target: el, clientX: pt.x, clientY: pt.y });
+    el.dispatchEvent(new TouchEvent("touchstart", { touches: [t], bubbles: true, cancelable: true }));
+  }, { x: x0, y });
+  for (let i = 1; i <= steps; i++) {
+    await page.evaluate((pt) => {
+      const t = new Touch({ identifier: 7, target: document.body, clientX: pt.x, clientY: pt.y });
+      document.dispatchEvent(new TouchEvent("touchmove", { touches: [t], bubbles: true, cancelable: true }));
+    }, { x: x0 - Math.round((totalDx * i) / steps), y });
+    await page.waitForTimeout(16);
+  }
+  return body;
+}
 
 // ---- 1. Tirer pour actualiser, connecté : relâché après le seuil → actualisation, puis état remis à plat
 let { ctx, page } = await open();
@@ -100,6 +118,42 @@ const vibEnd = await page.evaluate(() => window.__vib.slice());
 assert.deepEqual(vibEnd, new Array(count + 1).fill(10), "une vibration par étape, plus une à la toute dernière (plan terminé)");
 await ctx.close();
 ok("une vibration discrète (10 ms) à chaque étape cochée et au plan terminé");
+
+// ---- 5. Glisser vers la gauche pour supprimer (Agenda) : seuil franchi -> rouge révélé, vibration,
+// le tap sur « Supprimer » déclenche la même bannière « Annuler » que l'icône corbeille ; sous le seuil,
+// la ligne revient en place ; une seule ligne ouverte à la fois.
+({ ctx, page } = await open());
+await page.goto(BASE + "/#agenda"); await page.waitForTimeout(200);
+await page.fill("#a-title", "Toit à réparer"); await page.fill("#a-date", "2031-05-20");
+await page.click('#agendaForm button[type="submit"]'); await page.waitForTimeout(250);
+await page.fill("#a-title", "Impôts"); await page.fill("#a-date", "2031-06-01");
+await page.click('#agendaForm button[type="submit"]'); await page.waitForTimeout(250);
+// sous le seuil (48px) : revient en place, rien ne se passe
+let body = await swipeLeft(page, "Supprimer Toit à réparer", 20);
+assert.equal(await body.evaluate((e) => e.classList.contains("swipe-open")), false, "sous le seuil : pas encore ouverte");
+await release(page); await page.waitForTimeout(300);
+assert.equal(await body.evaluate((e) => getComputedStyle(e).transform), "none", "revenue en place, rien de supprimé");
+ok("glissement trop court : la ligne revient en place sans rien supprimer");
+// seuil franchi : rouge révélé, vibration
+body = await swipeLeft(page, "Supprimer Toit à réparer", 70);
+await release(page); await page.waitForTimeout(300);
+assert.equal(await body.evaluate((e) => e.classList.contains("swipe-open")), true, "seuil franchi : la ligne reste ouverte sur le bouton rouge");
+assert.deepEqual(await page.evaluate(() => window.__vib.slice()), [10], "une vibration courte à l'ouverture");
+// ouvrir l'autre ligne referme la première (une seule ouverte à la fois)
+const body2 = await swipeLeft(page, "Supprimer Impôts", 70);
+await release(page); await page.waitForTimeout(300);
+assert.equal(await body2.evaluate((e) => e.classList.contains("swipe-open")), true, "la deuxième ligne s'ouvre");
+assert.equal(await body.evaluate((e) => e.classList.contains("swipe-open")), false, "la première s'est refermée");
+ok("glissement au-delà du seuil : rouge révélé avec une vibration, une seule ligne ouverte à la fois");
+// le tap sur le rouge déclenche la même suppression (avec annulation) que l'icône corbeille
+await page.locator('.swipe-wrap:has(button[aria-label="Supprimer Impôts"]) .swipe-del').click();
+await page.waitForTimeout(100);
+assert.equal(await page.locator('[data-view="agenda"]').getByText("Impôts").count(), 0, "la ligne disparaît tout de suite (suppression optimiste)");
+assert.match(await page.locator("#toast").textContent(), /Date supprimée\.\s*Annuler/, "la bannière « Annuler » du répartiteur central s'affiche, comme pour l'icône corbeille");
+await page.locator("#toast .toast-act").click(); await page.waitForTimeout(100);
+assert.equal(await page.locator('[data-view="agenda"]').getByText("Impôts").count(), 1, "« Annuler » la restaure");
+await ctx.close();
+ok("le bouton rouge révélé passe par le même répartiteur et la même bannière « Annuler » que l'icône corbeille");
 
 await browser.close();
 if (problems.length) { console.log("PROBLÈMES :"); for (const p of problems) console.log(p); process.exit(1); }

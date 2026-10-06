@@ -44,7 +44,7 @@
 <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" href="/icons/splash/dark-750x1334.png">
 <link rel="preload" href="/assets/fonts/inter-4-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/app.e5c83ed44f.css">
+<link rel="stylesheet" href="/assets/app.a7dfc12567.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -65,6 +65,7 @@
   <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14 3.5V8h4"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7 9l5-5 5 5M5 19h14"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 5v11M7 11l5 5 5-5M5 19h14"/></symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z"/></symbol>
   <symbol id="i-more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></symbol>
   <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
@@ -90,6 +91,7 @@
     <div class="head-end">
       <button class="head-search" data-go="services.search"><svg class="ico ico-s" aria-hidden="true"><use href="#i-search"/></svg>Rechercher un service</button>
       <button class="head-icon only-m" data-go="services.search" aria-label="Rechercher un service"><svg class="ico" aria-hidden="true"><use href="#i-search"/></svg></button>
+      <button class="head-icon head-install" id="headInstall" type="button" data-act="install" aria-label="Installer ZOU" hidden><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg></button>
       <button class="btn btn-ghost btn-sm head-cta" data-go="account">Mon compte</button>
     </div>
   </div>
@@ -1200,7 +1202,7 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.fed7a5ac80.js"></script>
+<script src="/assets/app.0a99bde8dd.js"></script>
 <script src="/register-sw.js"></script>
 </body>
 </html>

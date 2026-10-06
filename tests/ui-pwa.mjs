@@ -135,6 +135,34 @@ assert.equal(await page.locator(".plan-install").isVisible(), false, "et s'en so
 await ctx.close();
 ok("invitation à installer au bas d'un plan (instructions Safari sur iPhone), refermable et mémorisée 30 jours");
 
+// ---- 5 bis. Bouton Installer dans l'en-tête, à côté de la loupe : cachée par défaut, apparaît quand
+// le navigateur propose l'installation (beforeinstallprompt simulé, comme ferait Chrome Android/bureau),
+// déclenche la vraie invite au clic, disparaît après « appinstalled ».
+({ ctx, page } = await open());
+const headInst = page.locator("#headInstall");
+assert.equal(await headInst.isHidden(), true, "cachée par défaut (navigateur qui ne propose pas l'installation)");
+await page.evaluate(() => {
+  window.__promptCalled = 0;
+  const e = new Event("beforeinstallprompt", { cancelable: true });
+  e.prompt = () => { window.__promptCalled++; };
+  e.userChoice = Promise.resolve({ outcome: "accepted" });
+  window.dispatchEvent(e);
+});
+await page.waitForTimeout(100);
+assert.equal(await headInst.isVisible(), true, "apparaît dès que le navigateur propose l'installation");
+assert.equal(await headInst.getAttribute("aria-label"), "Installer ZOU");
+const hb2 = await headInst.boundingBox();
+assert.ok(hb2.height >= 44 && hb2.width >= 44, "zone tactile d'au moins 44 px, comme les autres icônes de l'en-tête");
+const searchBox = await page.locator(".head-icon.only-m").boundingBox();
+assert.ok(Math.abs(hb2.y - searchBox.y) < 2, "alignée avec la loupe, juste à côté");
+await headInst.click();
+assert.equal(await page.evaluate(() => window.__promptCalled), 1, "le clic déclenche la vraie invite d'installation du navigateur");
+await page.evaluate(() => window.dispatchEvent(new Event("appinstalled")));
+await page.waitForTimeout(100);
+assert.equal(await headInst.isHidden(), true, "disparaît une fois l'application installée");
+await ctx.close();
+ok("bouton Installer dans l'en-tête : caché par défaut, apparaît avec l'invite du navigateur, lance l'installation, disparaît une fois installée");
+
 // ---- 6. Manifeste et page introuvable
 const mf = await (await fetch(BASE + "/manifest.webmanifest")).json();
 assert.equal(mf.display, "standalone");
