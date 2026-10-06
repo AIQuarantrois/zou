@@ -1259,6 +1259,31 @@ html { -webkit-tap-highlight-color: transparent; }
   *::-webkit-scrollbar-thumb:hover { background: var(--control); }
   *::-webkit-scrollbar-corner { background: transparent; }
 }
+/* ---------- Animations (légères, GPU, coupées si « moins de mouvement ») ---------- */
+.reveal { opacity: 0; transform: translateY(12px); }
+.reveal.in { opacity: 1; transform: none; transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+/* la flèche des listes glisse de 2 px au survol */
+.life-b::after, .vie-next-b > svg, .q-row .ico, .topic .ico { transition: transform 0.15s ease; }
+@media (hover: hover) {
+  .life-b:hover::after { transform: translateY(-50%) rotate(45deg) translate(2px, -2px); }
+  .q-row:hover .ico, .topic:hover .ico, .vie-next-b:hover > svg { transform: translateX(2px); }
+}
+/* la case cochée fait un petit ressort */
+@keyframes zou-pop { 0% { transform: scale(0.8); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+input[type=checkbox]:checked { animation: zou-pop 0.18s ease; }
+/* l'assistant : points qui pulsent pendant la recherche, réponse en fondu */
+.dots { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: zou-dot 1s ease-in-out infinite; }
+.dots i:nth-child(2) { animation-delay: 0.16s; } .dots i:nth-child(3) { animation-delay: 0.32s; }
+@keyframes zou-dot { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+.ans-in { animation: zou-fade 0.35s ease; }
+@keyframes zou-fade { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal.in { opacity: 1 !important; transform: none !important; transition: none !important; }
+  input[type=checkbox]:checked, .ans-in { animation: none !important; }
+  .dots i { animation: none !important; opacity: 0.6; }
+  .life-b::after, .vie-next-b > svg, .q-row .ico, .topic .ico { transition: none; }
+}
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="zou-wordmark" viewBox="68 62 406 186"><g style="fill: var(--trust)"><path d="M115 0H1248V253H778C677 253 577 253 476 248C539 321 599 395 652 468L1245 1306V1490H112V1237H599C694 1237 789 1237 884 1241C825 1173 768 1104 719 1036L115 183Z" transform="translate(60.000,205.000) scale(0.092773,-0.092773)"/><path d="M789 -20C1184 -20 1484 259 1484 744C1484 1231 1184 1510 789 1510C394 1510 94 1231 94 744C94 260 394 -20 789 -20ZM789 251C558 251 404 425 404 744C404 1064 558 1239 789 1239C1020 1239 1174 1065 1174 744C1174 425 1020 251 789 251Z" transform="translate(192.172,205.000) scale(0.092773,-0.092773)"/><path d="M750 -21C1118 -21 1365 197 1365 523V1490H1059V548C1059 374 937 249 750 249C563 249 440 374 440 548V1490H135V523C135 197 379 -21 750 -21Z" transform="translate(344.568,205.000) scale(0.092773,-0.092773)"/></g><path d="M 224.37 224.00 Q 265.37 249.00 306.37 224.00" fill="none" style="stroke: var(--smile)" stroke-width="15" stroke-linecap="round"/></symbol>
@@ -3610,6 +3635,34 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   function depthOf(n) { return ROOTS[n] ? 0 : 1; }
   var navDir = "", navCount = 0, titleObs = null;
   var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  // Révélation : les blocs apparaissent en fondu quand ils entrent dans l'écran (une fois).
+  var revealObs = (!reduceMotion && "IntersectionObserver" in window) ? new IntersectionObserver(function (es) {
+    var k = 0;
+    es.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var node = e.target;
+      node.style.transitionDelay = (k++ * 60) + "ms";
+      node.classList.add("in");
+      revealObs.unobserve(node);
+      node.addEventListener("transitionend", function () { node.style.transitionDelay = ""; }, { once: true });
+    });
+  }, { rootMargin: "0px 0px -6% 0px" }) : null;
+  function reveal(node) {
+    if (!revealObs || !node || node.classList.contains("reveal") || node.classList.contains("in")) return;
+    node.classList.add("reveal"); revealObs.observe(node);
+  }
+  function revealAll(nodes) { Array.prototype.forEach.call(nodes || [], reveal); }
+  // Décompte : le nombre de jours monte jusqu'à sa valeur (sinon il est posé directement).
+  function countUp(node, to) {
+    if (reduceMotion || !node || to <= 2 || typeof requestAnimationFrame !== "function") { if (node) node.textContent = String(to); return; }
+    var t0 = 0, dur = 420;
+    requestAnimationFrame(function step(t) {
+      if (!t0) t0 = t;
+      var p = Math.min(1, (t - t0) / dur);
+      node.textContent = String(Math.round(p * to));
+      if (p < 1) requestAnimationFrame(step);
+    });
+  }
   function slideIn(node, dir) {
     if (!node || !dir || reduceMotion) return;
     node.classList.remove("nav-push", "nav-pop");
@@ -3881,6 +3934,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     renderAll();
     applySplit(prev);
     setNav(name, arg); // la liste des thèmes de la barre latérale vient d'être reconstruite
+    if (name === "home") { var hv = $('[data-view="home"]'); reveal(hv.querySelector(".hero")); revealAll(hv.querySelectorAll(".section")); }
     var title = TITLES[name] || "";
     if (name === "guide") title = GUIDE_BY_ID[arg].title;
     if (name === "tool") title = TOOLREG[arg].title;
@@ -6855,6 +6909,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     var sec = el("section", "vie-sec" + (cls ? " " + cls : ""));
     sec.appendChild(el("h2", "", title));
     box.appendChild(sec);
+    if (box.id === "vieBody") reveal(sec);
     return sec;
   }
 
@@ -6887,6 +6942,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         vd.appendChild(vb);
       }
       box.appendChild(vd);
+      reveal(vd);
     }
 
     if (p.deadlines && p.deadlines.length) {
@@ -6897,7 +6953,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         var card = el("div", "vie-dl " + c.tone);
         card.appendChild(el("span", "vie-dl-t", d.title));
         card.appendChild(el("span", "vie-dl-date", fmtLong(parse(d.date))));
-        card.appendChild(el("span", "vie-dl-cd", c.t));
+        var cd = el("span", "vie-dl-cd", c.t);
+        card.appendChild(cd);
+        if (c.n > 2) { var m = /^(Il reste )(\d+)( .*)$/.exec(c.t); if (m) { cd.textContent = m[1]; var num = el("span", "", "0"); cd.appendChild(num); cd.appendChild(document.createTextNode(m[3])); countUp(num, c.n); } }
         if (d.why) { var w = el("p", "vie-dl-why", d.why + " "); if (d.cite) w.appendChild(cite(d.cite)); card.appendChild(w); }
         if (c.n >= 0) {
           var inAg = state.dates.some(function (x) { return x.dossier === "vie-" + v.id && x.title === d.title && x.date === d.date; });
@@ -9636,7 +9694,10 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     $("#askMeta").textContent = "Réponse rédigée à partir des textes de loi chargés dans ZOU.";
     var body = $("#askBody"), brief = $("#askBrief");
     body.textContent = "";
-    body.appendChild(el("p", "hint", "Recherche dans les textes de loi…"));
+    var loading = el("p", "hint", "Recherche dans les textes de loi");
+    var dots = el("span", "dots"); dots.appendChild(el("i")); dots.appendChild(el("i")); dots.appendChild(el("i"));
+    loading.appendChild(dots);
+    body.appendChild(loading);
     $("#askSources").textContent = ""; $("#askSrcLabel").textContent = "Sources";
     var vf = vieFor(q), box2 = $("#askVie");
     box2.textContent = "";
@@ -9651,6 +9712,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     request("POST", "/api/ask", { question: q }).then(function (r) {
       if (askQ !== q) return;
       renderAnswerText(body, r.answer);
+      if (!reduceMotion) { body.classList.remove("ans-in"); void body.offsetWidth; body.classList.add("ans-in"); }
       renderSources(r.citations || []);
       if (r.disclaimer) $("#askDisclaimer").textContent = r.disclaimer;
       if (!r.grounded) $("#askMeta").textContent = "Aucun texte chargé ne répond à cette question.";

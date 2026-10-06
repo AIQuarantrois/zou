@@ -1256,3 +1256,28 @@ html { -webkit-tap-highlight-color: transparent; }
   *::-webkit-scrollbar-thumb:hover { background: var(--control); }
   *::-webkit-scrollbar-corner { background: transparent; }
 }
+/* ---------- Animations (légères, GPU, coupées si « moins de mouvement ») ---------- */
+.reveal { opacity: 0; transform: translateY(12px); }
+.reveal.in { opacity: 1; transform: none; transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+/* la flèche des listes glisse de 2 px au survol */
+.life-b::after, .vie-next-b > svg, .q-row .ico, .topic .ico { transition: transform 0.15s ease; }
+@media (hover: hover) {
+  .life-b:hover::after { transform: translateY(-50%) rotate(45deg) translate(2px, -2px); }
+  .q-row:hover .ico, .topic:hover .ico, .vie-next-b:hover > svg { transform: translateX(2px); }
+}
+/* la case cochée fait un petit ressort */
+@keyframes zou-pop { 0% { transform: scale(0.8); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+input[type=checkbox]:checked { animation: zou-pop 0.18s ease; }
+/* l'assistant : points qui pulsent pendant la recherche, réponse en fondu */
+.dots { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: zou-dot 1s ease-in-out infinite; }
+.dots i:nth-child(2) { animation-delay: 0.16s; } .dots i:nth-child(3) { animation-delay: 0.32s; }
+@keyframes zou-dot { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+.ans-in { animation: zou-fade 0.35s ease; }
+@keyframes zou-fade { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal.in { opacity: 1 !important; transform: none !important; transition: none !important; }
+  input[type=checkbox]:checked, .ans-in { animation: none !important; }
+  .dots i { animation: none !important; opacity: 0.6; }
+  .life-b::after, .vie-next-b > svg, .q-row .ico, .topic .ico { transition: none; }
+}

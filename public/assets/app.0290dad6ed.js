@@ -1199,6 +1199,34 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   function depthOf(n) { return ROOTS[n] ? 0 : 1; }
   var navDir = "", navCount = 0, titleObs = null;
   var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  // Révélation : les blocs apparaissent en fondu quand ils entrent dans l'écran (une fois).
+  var revealObs = (!reduceMotion && "IntersectionObserver" in window) ? new IntersectionObserver(function (es) {
+    var k = 0;
+    es.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var node = e.target;
+      node.style.transitionDelay = (k++ * 60) + "ms";
+      node.classList.add("in");
+      revealObs.unobserve(node);
+      node.addEventListener("transitionend", function () { node.style.transitionDelay = ""; }, { once: true });
+    });
+  }, { rootMargin: "0px 0px -6% 0px" }) : null;
+  function reveal(node) {
+    if (!revealObs || !node || node.classList.contains("reveal") || node.classList.contains("in")) return;
+    node.classList.add("reveal"); revealObs.observe(node);
+  }
+  function revealAll(nodes) { Array.prototype.forEach.call(nodes || [], reveal); }
+  // Décompte : le nombre de jours monte jusqu'à sa valeur (sinon il est posé directement).
+  function countUp(node, to) {
+    if (reduceMotion || !node || to <= 2 || typeof requestAnimationFrame !== "function") { if (node) node.textContent = String(to); return; }
+    var t0 = 0, dur = 420;
+    requestAnimationFrame(function step(t) {
+      if (!t0) t0 = t;
+      var p = Math.min(1, (t - t0) / dur);
+      node.textContent = String(Math.round(p * to));
+      if (p < 1) requestAnimationFrame(step);
+    });
+  }
   function slideIn(node, dir) {
     if (!node || !dir || reduceMotion) return;
     node.classList.remove("nav-push", "nav-pop");
@@ -1470,6 +1498,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     renderAll();
     applySplit(prev);
     setNav(name, arg); // la liste des thèmes de la barre latérale vient d'être reconstruite
+    if (name === "home") { var hv = $('[data-view="home"]'); reveal(hv.querySelector(".hero")); revealAll(hv.querySelectorAll(".section")); }
     var title = TITLES[name] || "";
     if (name === "guide") title = GUIDE_BY_ID[arg].title;
     if (name === "tool") title = TOOLREG[arg].title;
@@ -4444,6 +4473,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     var sec = el("section", "vie-sec" + (cls ? " " + cls : ""));
     sec.appendChild(el("h2", "", title));
     box.appendChild(sec);
+    if (box.id === "vieBody") reveal(sec);
     return sec;
   }
 
@@ -4476,6 +4506,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         vd.appendChild(vb);
       }
       box.appendChild(vd);
+      reveal(vd);
     }
 
     if (p.deadlines && p.deadlines.length) {
@@ -4486,7 +4517,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         var card = el("div", "vie-dl " + c.tone);
         card.appendChild(el("span", "vie-dl-t", d.title));
         card.appendChild(el("span", "vie-dl-date", fmtLong(parse(d.date))));
-        card.appendChild(el("span", "vie-dl-cd", c.t));
+        var cd = el("span", "vie-dl-cd", c.t);
+        card.appendChild(cd);
+        if (c.n > 2) { var m = /^(Il reste )(\d+)( .*)$/.exec(c.t); if (m) { cd.textContent = m[1]; var num = el("span", "", "0"); cd.appendChild(num); cd.appendChild(document.createTextNode(m[3])); countUp(num, c.n); } }
         if (d.why) { var w = el("p", "vie-dl-why", d.why + " "); if (d.cite) w.appendChild(cite(d.cite)); card.appendChild(w); }
         if (c.n >= 0) {
           var inAg = state.dates.some(function (x) { return x.dossier === "vie-" + v.id && x.title === d.title && x.date === d.date; });
@@ -7225,7 +7258,10 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     $("#askMeta").textContent = "Réponse rédigée à partir des textes de loi chargés dans ZOU.";
     var body = $("#askBody"), brief = $("#askBrief");
     body.textContent = "";
-    body.appendChild(el("p", "hint", "Recherche dans les textes de loi…"));
+    var loading = el("p", "hint", "Recherche dans les textes de loi");
+    var dots = el("span", "dots"); dots.appendChild(el("i")); dots.appendChild(el("i")); dots.appendChild(el("i"));
+    loading.appendChild(dots);
+    body.appendChild(loading);
     $("#askSources").textContent = ""; $("#askSrcLabel").textContent = "Sources";
     var vf = vieFor(q), box2 = $("#askVie");
     box2.textContent = "";
@@ -7240,6 +7276,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     request("POST", "/api/ask", { question: q }).then(function (r) {
       if (askQ !== q) return;
       renderAnswerText(body, r.answer);
+      if (!reduceMotion) { body.classList.remove("ans-in"); void body.offsetWidth; body.classList.add("ans-in"); }
       renderSources(r.citations || []);
       if (r.disclaimer) $("#askDisclaimer").textContent = r.disclaimer;
       if (!r.grounded) $("#askMeta").textContent = "Aucun texte chargé ne répond à cette question.";
