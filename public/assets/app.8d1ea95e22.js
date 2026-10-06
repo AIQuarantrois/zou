@@ -1217,6 +1217,33 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   }
   function revealAll(nodes) { Array.prototype.forEach.call(nodes || [], reveal); }
   // Décompte : le nombre de jours monte jusqu'à sa valeur (sinon il est posé directement).
+  // Illustrations des écrans vides : dessins au trait, couleurs prises dans les jetons du thème (clair/sombre).
+  var ART = {
+    dossiers: '<ellipse class="gr" cx="80" cy="104" rx="56" ry="6"/><path class="sf" d="M26 34h34l8 9h66v53H26z"/><rect class="pp" x="44" y="22" width="62" height="50" rx="4"/><path class="ln" d="M44 26a4 4 0 0 1 4-4h54a4 4 0 0 1 4 4v42"/><path class="ln" d="M54 36h34M54 46h26"/><path class="ln" d="M26 34h34l8 9h66v53H26z"/><circle class="ac" cx="120" cy="30" r="7"/>',
+    coffre: '<ellipse class="gr" cx="80" cy="104" rx="54" ry="6"/><rect class="sf" x="34" y="30" width="58" height="68" rx="5" transform="rotate(-6 63 64)"/><rect class="pp" x="52" y="18" width="62" height="78" rx="5"/><path class="ln" d="M57 18h52a5 5 0 0 1 5 5v68a5 5 0 0 1-5 5H57a5 5 0 0 1-5-5V23a5 5 0 0 1 5-5z"/><path class="ln" d="M64 36h38M64 47h38M64 58h24"/><circle class="ac" cx="112" cy="84" r="13"/><path d="M112 78v12M106 84h12" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round"/>',
+    agenda: '<ellipse class="gr" cx="80" cy="104" rx="54" ry="6"/><rect class="pp" x="34" y="22" width="92" height="74" rx="8"/><path class="sf" d="M34 30a8 8 0 0 1 8-8h76a8 8 0 0 1 8 8v12H34z"/><path class="ln" d="M42 22h76a8 8 0 0 1 8 8v58a8 8 0 0 1-8 8H42a8 8 0 0 1-8-8V30a8 8 0 0 1 8-8zM34 42h92M56 14v14M104 14v14"/><g class="ln"><circle cx="54" cy="58" r="1"/><circle cx="72" cy="58" r="1"/><circle cx="90" cy="58" r="1"/><circle cx="54" cy="76" r="1"/><circle cx="72" cy="76" r="1"/></g><rect class="ac" x="96" y="68" width="18" height="16" rx="4"/><path d="M100 76l3 3 6-6" fill="none" stroke="var(--accent-ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+    recherche: '<ellipse class="gr" cx="80" cy="104" rx="50" ry="6"/><rect class="pp" x="30" y="26" width="70" height="62" rx="6"/><path class="ln" d="M36 26h58a6 6 0 0 1 6 6v50a6 6 0 0 1-6 6H36a6 6 0 0 1-6-6V32a6 6 0 0 1 6-6zM42 42h44M42 54h30M42 66h38"/><circle class="sf" cx="104" cy="62" r="20"/><circle class="acl" cx="104" cy="62" r="20"/><path class="acl" d="M118 77l14 14"/>'
+  };
+  function art(name) {
+    var w = document.createElement("div");
+    w.innerHTML = '<svg class="art" viewBox="0 0 160 120" aria-hidden="true" focusable="false">' + (ART[name] || "") + "</svg>";
+    return w.firstChild;
+  }
+  // Gerbe de réussite : quelques confettis aux couleurs du dégradé d'accueil (rien si « moins de mouvement »)
+  function burst(host) {
+    if (reduceMotion || !host) return;
+    var b = el("span", "burst"), cols = ["var(--accent)", "#27D3EE", "#8B6CFF", "#FF7FB6", "var(--ok)"];
+    for (var i = 0; i < 16; i++) {
+      var p = el("i");
+      p.style.setProperty("--a", (i * 22.5 + Math.random() * 10) + "deg");
+      p.style.setProperty("--d", (44 + Math.random() * 46) + "px");
+      p.style.background = cols[i % cols.length];
+      p.style.animationDelay = (Math.random() * 0.08) + "s";
+      b.appendChild(p);
+    }
+    host.appendChild(b);
+    setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); }, 1200);
+  }
   function countUp(node, to) {
     if (reduceMotion || !node || to <= 2 || typeof requestAnimationFrame !== "function") { if (node) node.textContent = String(to); return; }
     var t0 = 0, dur = 420;
@@ -2627,6 +2654,8 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         if (!total) {
           var e = el(layout === "table" ? "li" : "div", "dt-empty");
           var msg = totalAll ? (st.q.trim() ? "Aucun résultat pour « " + st.q.trim() + " »." : "Aucun résultat avec ces filtres.") : (cfg.empty || "Rien à afficher pour l'instant.");
+          var artName = totalAll ? "recherche" : cfg.art;
+          if (artName) e.appendChild(art(artName));
           e.appendChild(el("p", "", msg));
           if (totalAll && anyActive()) {
             var rb = el("button", "btn btn-ghost btn-sm", "Réinitialiser la recherche et les filtres");
@@ -3609,7 +3638,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     vaultDT = DT.create({
       name: "coffre", host: $("#vaultTable"), layout: "table", noun: ["document", "documents"], endW: "140px",
       rows: function () { return state.docs; },
-      empty: "Votre coffre est vide. Ajoutez une photo, un scan ou un fichier.",
+      empty: "Votre coffre est vide. Ajoutez une photo, un scan ou un fichier.", art: "coffre",
       search: { label: "Rechercher un document", placeholder: "Rechercher un document", text: function (d) { return d.name + " " + d.type; } },
       defaultSort: { key: "added", dir: "desc" },
       rowClass: function () { return ""; },
@@ -3698,7 +3727,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     agendaDT = DT.create({
       name: "agenda", host: $("#agendaTable"), layout: "table", noun: ["date", "dates"], endW: "44px",
       rows: function () { return state.dates; },
-      empty: "Aucune date enregistrée. Ajoutez une échéance ci-dessous.",
+      empty: "Aucune date enregistrée. Ajoutez une échéance ci-dessous.", art: "agenda",
       search: { label: "Rechercher une date", placeholder: "Rechercher une date", text: function (d) { return d.title + " " + d.channel; } },
       defaultSort: { key: "date", dir: "asc" },
       rowClass: function (d) { return daysTo(d) < 0 ? "past" : ""; },
@@ -3822,6 +3851,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     var any = caseRows().length > 0;
     $("#casesTable").hidden = !any;
     $("#casesEmpty").hidden = any;
+    var ca = $('#casesEmpty [data-art]'); if (ca && !ca.firstChild) ca.innerHTML = ART.dossiers;
     casesDT.refresh();
   }
 
@@ -4536,6 +4566,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
 
     if (p.deadlines && p.deadlines.length) {
       var dl = section(box, p.deadlines.length > 1 ? "Vos dates limites" : "Votre date limite");
+      dl.appendChild(frise(p.deadlines));
       var grid = el("div", "vie-dl-grid");
       p.deadlines.forEach(function (d) {
         var c = countdown(d.date);
@@ -4560,6 +4591,28 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       dl.appendChild(grid);
     }
 
+    // Frise : aujourd'hui, puis chaque date limite à sa place (en jours) ; couleurs = urgence
+    function frise(dls) {
+      var pts = dls.map(function (d) { var c = countdown(d.date); return { n: c.n, tone: c.tone, d: parse(d.date), t: d.title }; });
+      var lo = Math.min(0, Math.min.apply(null, pts.map(function (x) { return x.n; })));
+      var hi = Math.max(7, Math.max.apply(null, pts.map(function (x) { return x.n; })));
+      var pos = function (n) { return ((n - lo) / (hi - lo)) * 100; };
+      var f = el("div", "vie-frise"); f.setAttribute("role", "img");
+      f.setAttribute("aria-label", "Frise : aujourd'hui, puis " + pts.map(function (x) { return x.t + " le " + fmtLong(x.d); }).join(", "));
+      f.appendChild(el("span", "tl"));
+      var done = el("span", "tl-done"); done.style.width = pos(0) + "%"; f.appendChild(done);
+      var marks = [{ n: 0, cls: "now", lab: "Aujourd'hui" }].concat(pts.map(function (x) { return { n: x.n, cls: x.tone, lab: x.d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }).replace(".", "") }; }));
+      marks.sort(function (a, b) { return a.n - b.n; });
+      marks.forEach(function (m, i) {
+        var dot = el("span", "pt " + m.cls); dot.style.left = pos(m.n) + "%"; f.appendChild(dot);
+        var lb = el("span", "lb " + (m.cls === "now" ? "now " : "") + (pos(m.n) < 12 ? "first" : pos(m.n) > 88 ? "last" : ""), m.lab);
+        lb.style.left = pos(m.n) + "%";
+        if (i > 0 && Math.abs(pos(m.n) - pos(marks[i - 1].n)) < 18) lb.style.top = "52px";
+        f.appendChild(lb);
+      });
+      return f;
+    }
+
     function checklist(title, items, key, cls) {
       if (!items || !items.length) return;
       var sec = section(box, title, cls);
@@ -4571,6 +4624,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         var cb = el("input"); cb.type = "checkbox"; cb.checked = !!s.checks[ck];
         cb.addEventListener("change", function () {
           s.checks[ck] = cb.checked; li.classList.toggle("done", cb.checked); save();
+          if (key === "steps") stepsDone(true);
         });
         var body = el("span", "vie-item-b");
         if (key === "steps") body.appendChild(el("span", "vie-n", "Étape " + (i + 1)));
@@ -4587,6 +4641,23 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         ol.appendChild(li);
       });
       sec.appendChild(ol);
+      if (key !== "steps") return;
+      var fin = el("div", "vie-done"); fin.setAttribute("role", "status");
+      var ckSvg = document.createElement("div");
+      ckSvg.innerHTML = '<svg class="ck" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="22"/><path d="M13 22.5l6 6 12-13"/></svg>';
+      fin.appendChild(ckSvg.firstChild);
+      var ft = el("div"); ft.appendChild(el("strong", "", "Toutes les étapes sont faites"));
+      ft.appendChild(el("p", "", "Bravo. Gardez vos papiers et vos preuves de dépôt dans le coffre, ils peuvent vous être demandés."));
+      var vb = el("button", "link-btn small", "Ouvrir le coffre"); vb.type = "button"; vb.setAttribute("data-go", "vault"); ft.appendChild(vb);
+      fin.appendChild(ft);
+      sec.appendChild(fin);
+      function stepsDone(live) {
+        var all = items.every(function (it2) { return !!s.checks[key + ":" + (it2.k || it2.t)]; });
+        var was = !fin.hidden;
+        fin.hidden = !all;
+        if (all && live && !was) { fin.classList.remove("pop"); void fin.offsetWidth; fin.classList.add("pop"); burst(fin); }
+      }
+      stepsDone(false);
     }
     if (p.result) {
       var rs = section(box, p.result.title, "vie-result");

@@ -1333,3 +1333,43 @@ body.home .hero .suggest button:hover { background: rgba(6, 10, 34, 0.58); }
 }
 @media (min-width: 1200px) { .wrap.split .hero-aura { display: none; } }
 @media print { .hero-aura { display: none !important; } }
+/* ---------- Moments de plaisir : illustrations des écrans vides, frise des dates, fin de plan ---------- */
+.art { display: block; width: 148px; height: 111px; margin: 0 0 4px; }
+.art .ln { fill: none; stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.art .sf { fill: var(--accent-soft); }
+.art .pp { fill: var(--surface); }
+.art .ac { fill: var(--accent); }
+.art .acl { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.art .gr { fill: var(--wash); }
+.empty-art { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 28px 0 8px; }
+.empty-art .empty-line { padding: 0; }
+/* frise : aujourd'hui à gauche, chaque date limite placée selon le nombre de jours */
+.vie-frise { position: relative; height: 66px; margin: 6px 0 4px; }
+.vie-frise .tl { position: absolute; left: 0; right: 0; top: 20px; height: 4px; border-radius: 4px; background: var(--rule); }
+.vie-frise .tl-done { position: absolute; left: 0; top: 20px; height: 4px; border-radius: 4px; background: var(--accent); }
+.vie-frise .pt { position: absolute; top: 12px; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: var(--surface); border: 4px solid var(--ok); }
+.vie-frise .pt.soon { border-color: var(--warn); } .vie-frise .pt.late { border-color: var(--danger); }
+.vie-frise .pt.now { width: 14px; height: 14px; margin-left: -7px; top: 15px; border: 0; background: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); }
+.vie-frise .lb { position: absolute; top: 40px; transform: translateX(-50%); white-space: nowrap; font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--ink-2); }
+.vie-frise .lb.first { transform: none; } .vie-frise .lb.last { transform: translateX(-100%); }
+.vie-frise .lb.now { color: var(--accent); }
+/* fin de plan : carte de réussite et petite gerbe */
+.vie-done { position: relative; display: flex; align-items: center; gap: 16px; margin: 18px 0 4px; padding: 18px 20px; border-radius: var(--r-lg); background: var(--accent-soft); }
+.vie-done[hidden] { display: none; }
+.vie-done svg.ck { flex: none; width: 44px; height: 44px; }
+.vie-done .ck circle { fill: var(--accent); }
+.vie-done .ck path { fill: none; stroke: var(--accent-ink); stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 30; stroke-dashoffset: 0; }
+.vie-done.pop .ck path { animation: zou-draw 0.5s 0.15s ease both; }
+.vie-done.pop .ck { animation: zou-pop 0.35s ease; }
+@keyframes zou-draw { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
+.vie-done strong { display: block; font-family: var(--font-disp); font-size: calc(18px * var(--fs, 1)); color: var(--ink); letter-spacing: -0.01em; }
+.vie-done p { color: var(--ink-2); font-size: calc(15px * var(--fs, 1)); margin-top: 2px; }
+.vie-done .link-btn { margin-top: 2px; }
+.burst { position: absolute; left: 42px; top: 40px; width: 0; height: 0; pointer-events: none; }
+.burst i { position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 2px; opacity: 0; animation: zou-burst 0.9s cubic-bezier(0.15, 0.7, 0.3, 1) forwards; }
+@keyframes zou-burst {
+  0% { opacity: 1; transform: rotate(var(--a)) translateX(0) scale(1); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) rotate(160deg) scale(0.6); }
+}
+@media (prefers-reduced-motion: reduce) { .burst { display: none; } .vie-done.pop .ck, .vie-done.pop .ck path { animation: none; } }
+@media print { .vie-frise, .vie-done { display: none !important; } }
