@@ -7,7 +7,7 @@ const css = `
 html, body { margin: 0; min-height: 100dvh; background: var(--bg); color: var(--ink); }
 body { font: 16px/1.55 "Inter", system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
 .nf { max-width: 480px; margin: 0 auto; padding: calc(20vh + env(safe-area-inset-top, 0px)) 20px 40px; }
-.nf h1 { font: 700 30px/1.15 "Bricolage", "Inter", sans-serif; letter-spacing: -0.02em; margin: 0 0 12px; }
+.nf h1 { font: 700 30px/1.15 "Bricolage", "Inter", system-ui, sans-serif; letter-spacing: -0.02em; margin: 0 0 12px; }
 .nf p { margin: 0 0 28px; color: var(--ink-2); }
 .nf a { display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 600; text-decoration: none; }
 .nf a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }

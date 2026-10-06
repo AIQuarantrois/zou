@@ -1,8 +1,10 @@
 // Transforme la page publiée en artefact (fragment HTML) en vrai document servi par Vercel :
 // <head> complet, CSS et JS extraits en fichiers (CSP sans 'unsafe-inline' pour les scripts), manifeste PWA, service worker.
+// CSS et JS sont minifiés par esbuild (devDependency, utilisée seulement ici : rien de nouveau dans ce que le navigateur charge).
 import { splashLinks } from "./splash-sizes.mjs";
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { transform } from "esbuild";
 
 const src = readFileSync(new URL("../src/artifact.html", import.meta.url), "utf8");
 
@@ -14,16 +16,19 @@ if (!style || !script) throw new Error("style ou script introuvable dans src/art
 let body = src.slice(src.indexOf("</style>") + "</style>".length, src.indexOf("<script>"));
 body = body.trim();
 
+const minify = (code, loader) => transform(code, { loader, minify: true, target: "es2020" }).then((r) => r.code);
+const [cssMin, jsMin] = await Promise.all([minify(style[1], "css"), minify(script[1], "js")]);
+
 const hash = (s) => createHash("sha256").update(s).digest("hex").slice(0, 10);
-const cssName = `app.${hash(style[1])}.css`;
-const jsName = `app.${hash(script[1])}.js`;
-const themeSrc = readFileSync(new URL("./theme-init.js", import.meta.url), "utf8");
+const cssName = `app.${hash(cssMin)}.css`;
+const jsName = `app.${hash(jsMin)}.js`;
+const themeSrc = await minify(readFileSync(new URL("./theme-init.js", import.meta.url), "utf8"), "js");
 const themeName = `theme.${hash(themeSrc)}.js`;
 mkdirSync(new URL("../public/assets/", import.meta.url), { recursive: true });
 for (const f of readdirSync(new URL("../public/assets/", import.meta.url))) if (/^(app|theme)\..*\.(css|js)$/.test(f)) rmSync(new URL(`../public/assets/${f}`, import.meta.url));
-writeFileSync(new URL(`../public/assets/${cssName}`, import.meta.url), style[1].trim() + "\n");
-writeFileSync(new URL(`../public/assets/${jsName}`, import.meta.url), script[1].trim() + "\n");
-writeFileSync(new URL(`../public/assets/${themeName}`, import.meta.url), themeSrc.trim() + "\n");
+writeFileSync(new URL(`../public/assets/${cssName}`, import.meta.url), cssMin);
+writeFileSync(new URL(`../public/assets/${jsName}`, import.meta.url), jsMin);
+writeFileSync(new URL(`../public/assets/${themeName}`, import.meta.url), themeSrc);
 
 const title = (src.match(/<title>([^<]*)<\/title>/) || [, "ZOU"])[1];
 const desc = (src.match(/<meta name="description" content="([^"]*)"/) || [, ""])[1];

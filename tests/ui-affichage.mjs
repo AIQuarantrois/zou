@@ -35,7 +35,8 @@ const PAIRS = [
   ["ink", "bg", 7], ["ink", "surface", 7], ["ink", "wash", 7], ["ink-2", "bg", 4.5], ["ink-2", "surface", 4.5], ["ink-3", "bg", 4.5], ["ink-3", "surface", 4.5], ["ink-3", "wash", 4.5],
   ["trust", "bg", 4.5], ["accent", "bg", 4.5], ["accent", "surface", 4.5], ["accent-ink", "accent", 4.5], ["on-trust", "trust", 4.5],
   ["danger", "bg", 4.5], ["danger", "danger-bg", 4.5], ["danger-strong", "danger-bg", 4.5], ["warn-text", "warn-bg", 4.5], ["warn", "bg", 4.5], ["ok", "bg", 4.5],
-  ["placeholder", "surface", 4.5], ["control", "bg", 3], ["control", "surface", 3]
+  ["placeholder", "surface", 4.5], ["control", "bg", 3], ["control", "surface", 3],
+  ["ink-2", "wash", 4.5], ["accent", "accent-soft", 4.5]
 ];
 async function tokens(page) {
   return page.evaluate((names) => Object.fromEntries(names.map((k) => [k, getComputedStyle(document.documentElement).getPropertyValue("--" + k).trim()])), [...new Set(PAIRS.flat().filter((x) => typeof x === "string"))]);
