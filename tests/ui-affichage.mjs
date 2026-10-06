@@ -95,6 +95,9 @@ await page.close();
 }));
 assert.equal(await page.evaluate(() => window.__themeSetBeforeCss), true);
 assert.equal(await attr(page, "data-size"), "large"); assert.equal(await attr(page, "data-contrast"), "high");
+// Sur l'accueil (dégradé), la barre d'état prend la couleur du haut du dégradé ; ailleurs elle revient au fond du thème.
+assert.equal(await page.locator('meta[name="theme-color"]').getAttribute("content"), "#0A1024");
+await page.goto(BASE + "/#display"); await page.waitForSelector("#prefsBox .pref-opt");
 assert.equal(await page.locator('meta[name="theme-color"]').getAttribute("content"), "#161616");
 ok("au chargement, thème, taille et contraste mémorisés sont posés avant la feuille de style (pas d'éclair clair)");
 await page.close();
@@ -143,7 +146,7 @@ for (const h of ROUTES) {
     const out = [];
     const DARK_TEXT = new Set(["rgb(7, 27, 51)", "rgb(11, 45, 91)", "rgb(51, 68, 92)", "rgb(85, 102, 125)", "rgb(20, 23, 28)"]);
     for (const e of document.querySelectorAll("body *")) {
-      if (e.closest(".sheet, #printDoc, svg, .badge, script, style")) continue;
+      if (e.closest(".sheet, #printDoc, svg, .badge, script, style, .hero")) continue; // .hero (accueil) est sur le dégradé : couleurs gérées à part
       const r = e.getBoundingClientRect();
       if (!r.width || !r.height) continue;
       const cs = getComputedStyle(e);

@@ -53,6 +53,7 @@ const html = `<!doctype html>
 <meta name="apple-mobile-web-app-title" content="ZOU">
 ${splashLinks()}
 <link rel="preload" href="/assets/fonts/inter-4-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/${cssName}">
 </head>
 <body>

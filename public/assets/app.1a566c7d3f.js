@@ -1466,6 +1466,26 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     });
   }
 
+  // Dégradé d'accueil : taille, en-tête translucide en haut, couleur de la barre d'état, pause hors écran
+  function sizeAura() {
+    var a = $("#heroAura"), h = a && a.parentNode.querySelector(".hero");
+    if (a && h) a.style.height = Math.round(h.offsetTop + h.offsetHeight + 96) + "px";
+  }
+  function auraBottom() { var a = $("#heroAura"); return a ? a.offsetTop + a.offsetHeight : 0; }
+  function onHomeScroll() {
+    if (!document.body.classList.contains("home")) return;
+    document.body.classList.toggle("at-top", window.pageYOffset < Math.max(40, auraBottom() - 80));
+  }
+  function setHeroThemeColor(on) {
+    var m = $('meta[name="theme-color"]'); if (!m) return;
+    if (on) m.setAttribute("content", darkNow() ? "#0A1024" : "#1E7BFF");
+    else m.setAttribute("content", darkNow() ? "#161616" : "#FFFFFF");
+  }
+  window.addEventListener("scroll", onHomeScroll, { passive: true });
+  window.addEventListener("resize", function () { sizeAura(); onHomeScroll(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(sizeAura);
+  document.addEventListener("visibilitychange", function () { document.body.classList.toggle("aura-paused", document.hidden); });
+
   var booted = false;
   function show(name, arg, opts) {
     opts = opts || {};
@@ -1499,6 +1519,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     applySplit(prev);
     setNav(name, arg); // la liste des thèmes de la barre latérale vient d'être reconstruite
     if (name === "home") { var hv = $('[data-view="home"]'); reveal(hv.querySelector(".hero")); revealAll(hv.querySelectorAll(".section")); }
+    document.body.classList.toggle("home", name === "home");
+    if (name === "home") { sizeAura(); onHomeScroll(); } else document.body.classList.remove("at-top");
+    setHeroThemeColor(name === "home");
     var title = TITLES[name] || "";
     if (name === "guide") title = GUIDE_BY_ID[arg].title;
     if (name === "tool") title = TOOLREG[arg].title;

@@ -4,6 +4,9 @@
 /* Inter 4 (axes graisse et taille optique), hébergée avec l'application : licence SIL OFL 1.1, /assets/fonts/OFL-Inter.txt */
 @font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("/assets/fonts/inter-4-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("/assets/fonts/inter-4-latin-ext.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+/* Bricolage Grotesque (titres), licence SIL OFL : /assets/fonts/OFL-Bricolage.txt */
+@font-face { font-family: "Bricolage"; font-style: normal; font-weight: 400 800; font-display: swap; src: url("/assets/fonts/bricolage-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Bricolage"; font-style: normal; font-weight: 400 800; font-display: swap; src: url("/assets/fonts/bricolage-latin-ext.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 /* ZOU. Direction « institutionnel sobre » (GOV.UK, DSFR) : neutres sans teinte, titres en encre,
    bleu marine réservé à ce qui se touche (boutons, liens, onglet actif). Inter.
    Scale: 4-point spacing; radii 4 (controls) / 6 (containers); type steps 13/14/16/17/22/28-40/32-52. */
@@ -41,6 +44,7 @@
   --sheet-ink: #14171C;
   --sheet-mark: #0B2D5B;
   --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-disp: "Bricolage", "Inter", system-ui, sans-serif;
   --font-doc: "Times New Roman", Times, "Liberation Serif", serif;
   --gutter: 20px;
   --r: 4px;
@@ -64,7 +68,7 @@ button { cursor: pointer; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--clarity); outline-offset: 2px; border-radius: 4px; }
 h1, h2, h3, h4, p, ul, ol, dl, dd, figure { margin: 0; padding: 0; }
-h1, h2, h3, h4 { color: var(--trust); }
+h1, h2, h3, h4 { color: var(--trust); font-family: var(--font-disp); letter-spacing: -0.015em; }
 ul, ol { list-style: none; }
 [hidden] { display: none !important; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -1284,6 +1288,44 @@ input[type=checkbox]:checked { animation: zou-pop 0.18s ease; }
   .dots i { animation: none !important; opacity: 0.6; }
   .life-b::after, .vie-next-b > svg, .q-row .ico, .topic .ico { transition: none; }
 }
+/* ---------- Accueil « vitrine » : dégradé animé derrière le héros ---------- */
+[data-view="home"] { position: relative; }
+.hero-aura { position: absolute; left: 0; right: 0; top: calc(-1 * (var(--head-h) + 22px)); height: 520px; z-index: 0; overflow: hidden; pointer-events: none; background: var(--aura-base, #0B63E8); }
+.hero-aura b { position: absolute; display: block; border-radius: 50%; filter: blur(44px); opacity: 0.92; will-change: transform; }
+.hero-aura .b1 { width: 80%; height: 90%; left: -12%; top: -24%; background: radial-gradient(circle, var(--aura-1, #4D9BFF) 0%, transparent 68%); animation: aura1 22s ease-in-out infinite alternate; }
+.hero-aura .b2 { width: 70%; height: 80%; right: -16%; top: -30%; background: radial-gradient(circle, var(--aura-2, #8B6CFF) 0%, transparent 66%); animation: aura2 26s ease-in-out infinite alternate; }
+.hero-aura .b3 { width: 85%; height: 85%; left: 18%; top: 2%; background: radial-gradient(circle, var(--aura-3, #27D3EE) 0%, transparent 62%); animation: aura3 19s ease-in-out infinite alternate; }
+.hero-aura .b4 { width: 60%; height: 70%; left: 6%; top: 18%; background: radial-gradient(circle, var(--aura-4, #FF7FB6) 0%, transparent 60%); animation: aura4 24s ease-in-out infinite alternate; }
+/* voile sombre en haut (texte blanc lisible) + fondu vers le fond en bas */
+.hero-aura::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5, 8, 30, 0.6) 0%, rgba(5, 8, 30, 0.34) 44%, rgba(5, 8, 30, 0.08) 66%, transparent 78%); }
+.hero-aura::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 140px; z-index: 1; background: linear-gradient(to bottom, transparent, var(--bg)); }
+@keyframes aura1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(9%, 7%) scale(1.14); } }
+@keyframes aura2 { from { transform: translate(0, 0) scale(1.05); } to { transform: translate(-8%, 9%) scale(0.92); } }
+@keyframes aura3 { from { transform: translate(0, 0) scale(1); } to { transform: translate(6%, -8%) scale(1.12); } }
+@keyframes aura4 { from { transform: translate(0, 0) scale(1); } to { transform: translate(-7%, -6%) scale(1.1); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hero-aura { --aura-base: #0A1024; --aura-1: #1E6BFF; --aura-2: #7A4CFF; --aura-3: #0FB5D6; --aura-4: #E24FA0; } }
+:root[data-theme="dark"] .hero-aura { --aura-base: #0A1024; --aura-1: #1E6BFF; --aura-2: #7A4CFF; --aura-3: #0FB5D6; --aura-4: #E24FA0; }
+body.aura-paused .hero-aura b { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .hero-aura b { animation: none !important; } }
+/* héros sur le dégradé : texte blanc, carte de question posée, pastilles translucides */
+body.home .hero { position: relative; z-index: 1; padding-top: 16px; }
+body.home .hero h1.h-display { color: #FFFFFF; font-weight: 700; font-size: clamp(2.3rem, 1.6rem + 3.3vw, 3.4rem); letter-spacing: -0.02em; line-height: 1.05; }
+body.home .hero .lede { color: rgba(255, 255, 255, 0.92); }
+body.home .hero .ask { background: #FFFFFF; border-color: transparent; box-shadow: 0 18px 40px -14px rgba(5, 10, 40, 0.5), 0 2px 6px rgba(5, 10, 40, 0.18); }
+body.home .hero .ask textarea { color: #0B1220; }
+body.home .hero .ask textarea::placeholder { color: #5B6476; }
+body.home .hero .suggest button { background: rgba(255, 255, 255, 0.18); color: #FFFFFF; border: 0; }
+body.home .hero .suggest button:hover { background: rgba(255, 255, 255, 0.3); }
+/* en-tête translucide par-dessus le dégradé (téléphone, en haut de l'accueil) */
+@media (max-width: 767px) {
+  body.home.at-top .site-head { background: transparent; border-bottom-color: transparent; }
+  body.home.at-top .site-head .logo { --trust: #FFFFFF; --smile: #FFFFFF; }
+  body.home.at-top .head-icon { color: #FFFFFF; }
+  body.home.at-top .site-head { transition: background 0.2s ease; }
+}
+@media (min-width: 768px) { .hero-aura { top: 0; border-radius: 0 0 20px 20px; } }
+@media (min-width: 1200px) { .wrap.split .hero-aura { display: none; } }
+@media print { .hero-aura { display: none !important; } }
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="zou-wordmark" viewBox="68 62 406 186"><g style="fill: var(--trust)"><path d="M115 0H1248V253H778C677 253 577 253 476 248C539 321 599 395 652 468L1245 1306V1490H112V1237H599C694 1237 789 1237 884 1241C825 1173 768 1104 719 1036L115 183Z" transform="translate(60.000,205.000) scale(0.092773,-0.092773)"/><path d="M789 -20C1184 -20 1484 259 1484 744C1484 1231 1184 1510 789 1510C394 1510 94 1231 94 744C94 260 394 -20 789 -20ZM789 251C558 251 404 425 404 744C404 1064 558 1239 789 1239C1020 1239 1174 1065 1174 744C1174 425 1020 251 789 251Z" transform="translate(192.172,205.000) scale(0.092773,-0.092773)"/><path d="M750 -21C1118 -21 1365 197 1365 523V1490H1059V548C1059 374 937 249 750 249C563 249 440 374 440 548V1490H135V523C135 197 379 -21 750 -21Z" transform="translate(344.568,205.000) scale(0.092773,-0.092773)"/></g><path d="M 224.37 224.00 Q 265.37 249.00 306.37 224.00" fill="none" style="stroke: var(--smile)" stroke-width="15" stroke-linecap="round"/></symbol>
@@ -1370,6 +1412,7 @@ input[type=checkbox]:checked { animation: zou-pop 0.18s ease; }
 
         <!-- HOME -->
         <section data-view="home" aria-labelledby="h-home">
+          <div class="hero-aura" id="heroAura" aria-hidden="true"><b class="b1"></b><b class="b2"></b><b class="b3"></b><b class="b4"></b></div>
           <div class="hero">
             <h1 id="h-home" class="h-display" tabindex="-1">Posez votre question de droit.</h1>
             <p class="lede">Des réponses fondées sur les textes de loi malgaches. Chaque réponse cite l'article dont elle vient.</p>
@@ -3902,6 +3945,26 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     });
   }
 
+  // Dégradé d'accueil : taille, en-tête translucide en haut, couleur de la barre d'état, pause hors écran
+  function sizeAura() {
+    var a = $("#heroAura"), h = a && a.parentNode.querySelector(".hero");
+    if (a && h) a.style.height = Math.round(h.offsetTop + h.offsetHeight + 96) + "px";
+  }
+  function auraBottom() { var a = $("#heroAura"); return a ? a.offsetTop + a.offsetHeight : 0; }
+  function onHomeScroll() {
+    if (!document.body.classList.contains("home")) return;
+    document.body.classList.toggle("at-top", window.pageYOffset < Math.max(40, auraBottom() - 80));
+  }
+  function setHeroThemeColor(on) {
+    var m = $('meta[name="theme-color"]'); if (!m) return;
+    if (on) m.setAttribute("content", darkNow() ? "#0A1024" : "#1E7BFF");
+    else m.setAttribute("content", darkNow() ? "#161616" : "#FFFFFF");
+  }
+  window.addEventListener("scroll", onHomeScroll, { passive: true });
+  window.addEventListener("resize", function () { sizeAura(); onHomeScroll(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(sizeAura);
+  document.addEventListener("visibilitychange", function () { document.body.classList.toggle("aura-paused", document.hidden); });
+
   var booted = false;
   function show(name, arg, opts) {
     opts = opts || {};
@@ -3935,6 +3998,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     applySplit(prev);
     setNav(name, arg); // la liste des thèmes de la barre latérale vient d'être reconstruite
     if (name === "home") { var hv = $('[data-view="home"]'); reveal(hv.querySelector(".hero")); revealAll(hv.querySelectorAll(".section")); }
+    document.body.classList.toggle("home", name === "home");
+    if (name === "home") { sizeAura(); onHomeScroll(); } else document.body.classList.remove("at-top");
+    setHeroThemeColor(name === "home");
     var title = TITLES[name] || "";
     if (name === "guide") title = GUIDE_BY_ID[arg].title;
     if (name === "tool") title = TOOLREG[arg].title;
