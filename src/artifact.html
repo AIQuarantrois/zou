@@ -18,14 +18,14 @@
   --rule-strong: #C9CED6;
   --control: #6B7280;
   --trust: #111827;
-  --clarity: #1D4ED8;
+  --clarity: #0B63E8;
   --neutral: #F3F4F6;
-  --accent: #0B2D5B;
-  --accent-hover: #071B33;
+  --accent: #0B63E8;
+  --accent-hover: #0A4FC4;
   --accent-ink: #FFFFFF;
-  --accent-soft: #EEF2F7;
-  --ring: rgba(29, 78, 216, 0.35);
-  --smile: #2563EB;
+  --accent-soft: #E4EEFF;
+  --ring: rgba(11, 99, 232, 0.35);
+  --smile: #0A6CFF;
   --surface: #FFFFFF;
   --on-trust: #FFFFFF;
   --danger: #B42318;
@@ -46,11 +46,11 @@
   --r: 4px;
   --r-lg: 6px;
   --r-xl: 6px;
-  --head-h: 60px;
+  --head-h: 56px;
   --shadow-pop: 0 1px 2px rgba(17, 24, 39, 0.06), 0 12px 32px -8px rgba(17, 24, 39, 0.2);
 }
 @media (min-width: 720px) { :root { --gutter: 32px; } }
-@media (min-width: 1100px) { :root { --gutter: 48px; --head-h: 68px; } }
+@media (min-width: 1100px) { :root { --gutter: 48px; --head-h: 60px; } }
 
 * { box-sizing: border-box; }
 html { font-size: calc(100% * var(--fs, 1)); -webkit-text-size-adjust: 100%; scroll-padding-top: calc(var(--head-h) + 16px); }
@@ -85,8 +85,8 @@ legend { padding: 0; font-size: calc(14px * var(--fs, 1)); font-weight: 600; col
 .site-head { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; background: var(--surface); border-bottom: 1px solid var(--rule); }
 .head-in { display: flex; align-items: center; gap: 24px; height: var(--head-h); padding-inline: var(--gutter); max-width: 1280px; margin-inline: auto; }
 .brand { display: inline-flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; text-decoration: none; color: var(--ink); min-height: 44px; }
-.logo { display: block; width: 96px; height: 44px; flex: none; }
-@media (min-width: 1100px) { .logo { width: 104px; height: 48px; } }
+.logo { display: block; width: 76px; height: 35px; flex: none; }
+@media (min-width: 1100px) { .logo { width: 84px; height: 39px; } }
 .foot-about .logo { width: 104px; height: 48px; }
 .foot-about .foot-tag { margin-top: 8px; color: var(--trust); font-size: calc(16px * var(--fs, 1)); font-weight: 600; color: var(--trust); letter-spacing: -0.01em; }
 .head-nav { display: none; align-items: stretch; gap: 2px; margin-left: 16px; height: 100%; }
@@ -886,8 +886,8 @@ h1.h-display { font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem); font-weight: 700; l
 .vie-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
 .vie-backstep { align-self: flex-start; margin-top: 12px; }
 .vie-plan-head { max-width: 760px; margin-top: 8px; display: flex; flex-direction: column; gap: 10px; }
-.vie-verdict { max-width: 760px; margin-top: 24px; padding: 18px 20px; border-radius: var(--r-lg); background: var(--wash); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
-.vie-verdict-l { font-size: calc(12px * var(--fs, 1)); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.vie-verdict { max-width: 760px; margin-top: 24px; padding: 18px 20px; border-radius: var(--r-lg); background: var(--accent-soft); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.vie-verdict-l { font-size: calc(12px * var(--fs, 1)); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
 .vie-verdict strong { font-size: calc(18px * var(--fs, 1)); color: var(--trust); letter-spacing: -0.01em; line-height: 1.35; }
 .vie-verdict p { color: var(--ink-2); max-width: 64ch; }
 .vie-verdict.warn { background: var(--warn-bg); }
@@ -1055,14 +1055,14 @@ h1.h-display { font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem); font-weight: 700; l
     --rule-strong: #484848;
     --control: #8C8C8C;
     --trust: #F3F3F3;
-    --clarity: #9DBBF5;
+    --clarity: #4D9BFF;
     --neutral: #262626;
-    --accent: #9DBBF5;
-    --accent-hover: #BFD3FA;
+    --accent: #4D9BFF;
+    --accent-hover: #6FB0FF;
     --accent-ink: #0B1220;
-    --accent-soft: #262A31;
-    --ring: rgba(157, 187, 245, 0.45);
-    --smile: #7EA6F2;
+    --accent-soft: #15233B;
+    --ring: rgba(77, 155, 255, 0.45);
+    --smile: #4D9BFF;
     --on-trust: #161616;
     --danger: #FF9A8F;
     --danger-strong: #FFB4AC;
@@ -1088,14 +1088,14 @@ h1.h-display { font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem); font-weight: 700; l
   --rule-strong: #484848;
   --control: #8C8C8C;
   --trust: #F3F3F3;
-  --clarity: #9DBBF5;
+  --clarity: #4D9BFF;
   --neutral: #262626;
-  --accent: #9DBBF5;
-  --accent-hover: #BFD3FA;
+  --accent: #4D9BFF;
+  --accent-hover: #6FB0FF;
   --accent-ink: #0B1220;
-  --accent-soft: #262A31;
-  --ring: rgba(157, 187, 245, 0.45);
-  --smile: #7EA6F2;
+  --accent-soft: #15233B;
+  --ring: rgba(77, 155, 255, 0.45);
+  --smile: #4D9BFF;
   --on-trust: #161616;
   --danger: #FF9A8F;
   --danger-strong: #FFB4AC;
@@ -1250,6 +1250,15 @@ html { -webkit-tap-highlight-color: transparent; }
 .toast.has-act { display: flex; align-items: center; gap: 4px 16px; padding: 4px 6px 4px 16px; pointer-events: auto; }
 .toast-act { flex: none; min-height: 44px; padding: 0 12px; background: none; border: 0; border-radius: var(--r); color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .toast-act:hover { text-decoration-thickness: 2px; }
+/* Barre de défilement fine sur ordinateur (le téléphone garde celle du système) */
+@media (min-width: 1000px) {
+  * { scrollbar-width: thin; scrollbar-color: var(--rule-strong) transparent; }
+  *::-webkit-scrollbar { width: 11px; height: 11px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: var(--rule-strong); border-radius: 999px; border: 3px solid var(--bg); background-clip: padding-box; }
+  *::-webkit-scrollbar-thumb:hover { background: var(--control); }
+  *::-webkit-scrollbar-corner { background: transparent; }
+}
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="zou-wordmark" viewBox="68 62 406 186"><g style="fill: var(--trust)"><path d="M115 0H1248V253H778C677 253 577 253 476 248C539 321 599 395 652 468L1245 1306V1490H112V1237H599C694 1237 789 1237 884 1241C825 1173 768 1104 719 1036L115 183Z" transform="translate(60.000,205.000) scale(0.092773,-0.092773)"/><path d="M789 -20C1184 -20 1484 259 1484 744C1484 1231 1184 1510 789 1510C394 1510 94 1231 94 744C94 260 394 -20 789 -20ZM789 251C558 251 404 425 404 744C404 1064 558 1239 789 1239C1020 1239 1174 1065 1174 744C1174 425 1020 251 789 251Z" transform="translate(192.172,205.000) scale(0.092773,-0.092773)"/><path d="M750 -21C1118 -21 1365 197 1365 523V1490H1059V548C1059 374 937 249 750 249C563 249 440 374 440 548V1490H135V523C135 197 379 -21 750 -21Z" transform="translate(344.568,205.000) scale(0.092773,-0.092773)"/></g><path d="M 224.37 224.00 Q 265.37 249.00 306.37 224.00" fill="none" style="stroke: var(--smile)" stroke-width="15" stroke-linecap="round"/></symbol>
