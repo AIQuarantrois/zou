@@ -4092,10 +4092,12 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (window.innerWidth >= 768) { a.style.top = h.offsetTop + "px"; a.style.height = h.offsetHeight + "px"; }
     else { a.style.top = ""; a.style.height = Math.round(h.offsetTop + h.offsetHeight - a.offsetTop + 64) + "px"; }
   }
-  function auraBottom() { var a = $("#heroAura"); return a ? a.offsetTop + a.offsetHeight : 0; }
   function onHomeScroll() {
     if (!document.body.classList.contains("home")) return;
-    document.body.classList.toggle("at-top", window.pageYOffset < Math.max(40, auraBottom() - 80));
+    // Seuil volontairement petit (un peu de marge pour le rebond élastique iOS) : l'en-tête ne reste
+    // translucide que tant qu'il n'y a vraiment que le dégradé derrière lui. Un seuil plus large laissait
+    // le titre et les pastilles défiler sous un en-tête transparent, doublant visuellement leur texte.
+    document.body.classList.toggle("at-top", window.pageYOffset < 24);
   }
   function setHeroThemeColor(on) {
     setThemeColor(on ? (darkNow() ? "#0A1024" : "#1E7BFF") : (darkNow() ? "#161616" : "#FFFFFF"));

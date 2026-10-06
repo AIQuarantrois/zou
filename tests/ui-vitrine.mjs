@@ -93,6 +93,26 @@ assert.doesNotMatch(headBgDown, /rgba\(0, 0, 0, 0\)/, "après défilement, l'en-
 await ctx.close();
 ok("en-tête translucide en haut de l'accueil (téléphone), opaque dès qu'on défile");
 
+// ---- 3 bis. Le passage du translucide à l'opaque se fait tôt : le titre et les pastilles qui défilent
+// ne se retrouvent jamais à moitié sous un en-tête encore transparent (ça les double visuellement)
+({ ctx, page } = await open({ theme: "light" }));
+for (const y of [60, 120, 200, 300]) {
+  await page.evaluate((y) => window.scrollTo(0, y), y);
+  await page.waitForTimeout(150);
+  assert.equal(await page.evaluate(() => document.body.classList.contains("at-top")), false, "défilé de " + y + "px : l'en-tête n'est plus translucide");
+  const headBottom = await page.locator("#siteHead").evaluate((e) => e.getBoundingClientRect().bottom);
+  const underHead = await page.evaluate((hb) => {
+    const h1 = document.querySelector(".hero h1"), r = h1 && h1.getBoundingClientRect();
+    return r && r.top < hb; // une partie du titre est sous la bande de l'en-tête
+  }, headBottom);
+  if (underHead) {
+    const bg = await page.locator("#siteHead").evaluate((e) => getComputedStyle(e).backgroundColor);
+    assert.doesNotMatch(bg, /rgba\(0, 0, 0, 0\)/, "le titre passe sous l'en-tête à " + y + "px : l'en-tête doit déjà être opaque");
+  }
+}
+await ctx.close();
+ok("le titre et les pastilles qui défilent ne passent jamais sous un en-tête encore transparent");
+
 // ---- 4. « Moins de mouvement » : le dégradé ne s'anime pas
 ({ ctx, page } = await open({ reduced: true }));
 const anim = await page.locator("#heroAura .b1").evaluate((e) => getComputedStyle(e).animationName);
