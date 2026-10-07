@@ -6311,6 +6311,13 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     setBadge($$(".tab[data-tab='space'], .side-i[data-side='space']"), n);
     setBadge($$(".subnav button[data-go='agenda']"), n);
     setBadge($$(".head-link[data-nav='space']"), n);
+    // Badge sur l'icône de l'application installée (même compte que la pastille de l'onglet Espace ci-dessus) :
+    // silencieux si l'appareil ou le navigateur ne proposent pas l'API (navigator.setAppBadge absente,
+    // ou application non installée sur certains navigateurs).
+    if (navigator.setAppBadge) {
+      if (n) navigator.setAppBadge(n).catch(function () {});
+      else if (navigator.clearAppBadge) navigator.clearAppBadge().catch(function () {});
+    }
   }
 
   /* ----- Installation : le bandeau du navigateur est intercepté, ZOU propose l'installation là où c'est utile ----- */

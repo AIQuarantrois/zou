@@ -13,6 +13,11 @@ const ISO = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, 
 const plusDays = (k) => { const d = new Date(); d.setDate(d.getDate() + k); return ISO(d); };
 async function open(viewport = { width: 390, height: 844 }) {
   const ctx = await browser.newContext({ viewport });
+  await ctx.addInitScript(() => {
+    window.__badge = [];
+    window.navigator.setAppBadge = (n) => { window.__badge.push(["set", n]); return Promise.resolve(); };
+    window.navigator.clearAppBadge = () => { window.__badge.push(["clear"]); return Promise.resolve(); };
+  });
   const page = await ctx.newPage();
   page.on("pageerror", (e) => problems.push("pageerror: " + e.message));
   page.on("console", (m) => { if (m.type() === "error" && !/ERR_CERT_AUTHORITY_INVALID/.test(m.text())) problems.push("console: " + m.text()); });
@@ -91,6 +96,18 @@ await page.goto(BASE + "/#agenda"); await page.waitForTimeout(300);
 assert.equal(await page.locator('[data-view="agenda"] .subnav button[data-go="agenda"] .badge').innerText(), "2");
 await noHScroll(page, "agenda avec pastilles");
 ok("pastille « 2 » sur l'onglet Espace et sur Agenda, annoncée aux lecteurs d'écran");
+assert.deepEqual(await page.evaluate(() => window.__badge.at(-1)), ["set", 2], "même compte posé sur l'icône de l'application (Badging API)");
+
+// ---- 4 bis. Badge de l'icône : suit le compte (suppression optimiste, sans attendre le délai d'annulation), effacé à zéro
+// (ligne ciblée par titre ET « pas un exemple » : « Rendez-vous chez le notaire » est aussi le nom d'une date d'exemple)
+const addedRow = (title) => page.locator('[data-view="agenda"] .dt-row', { hasText: title }).filter({ hasNotText: "Exemple" });
+await addedRow("Dépôt du dossier").locator('[data-act="del-date"]').click();
+await page.waitForTimeout(150);
+assert.deepEqual(await page.evaluate(() => window.__badge.at(-1)), ["set", 1], "une date de moins cette semaine : le badge suit tout de suite");
+await addedRow("Rendez-vous chez le notaire").locator('[data-act="del-date"]').click();
+await page.waitForTimeout(150);
+assert.deepEqual(await page.evaluate(() => window.__badge.at(-1)), ["clear"], "plus aucune date cette semaine (reste la lointaine, hors fenêtre) : l'icône s'efface");
+ok("badge de l'icône : même compte que la pastille, à jour tout de suite, effacé à zéro");
 
 // ---- 5. Installation : bandeau du navigateur intercepté, proposition au bon endroit
 assert.equal(await page.locator("#agendaInstall").isHidden(), true);
