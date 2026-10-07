@@ -30,7 +30,7 @@ async function open(viewport = { width: 390, height: 844 }) {
   await page.waitForSelector(".life-b");
   return { ctx, page };
 }
-const start = async (page, label) => { await page.locator("#lifeMore").evaluate((d) => { d.open = true; }); await page.locator(".life-b", { hasText: label }).click(); };
+const start = async (page, label) => { await page.locator("#lifeMore").evaluate((d) => { d.open = true; }); await page.locator("#lifeGrid .life-b, #lifeAll .life-b", { hasText: label }).click(); };
 const pick = async (page, text, exact = false) => {
   await page.locator(".vie-opt", { hasText: exact ? new RegExp("^\\s*" + text + "\\s*$") : text }).first().click();
   await page.waitForTimeout(220);

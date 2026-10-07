@@ -111,7 +111,7 @@ ok("deux panneaux : liste à gauche, détail à droite, ligne ouverte marquée, 
 
 // ---- 4. Un parcours ouvert depuis l'accueil reste en pleine page ; depuis Dossiers, en deux panneaux
 await page.goto(BASE + "/#home"); await page.waitForTimeout(250);
-await page.locator(".life-b", { hasText: "Un enfant vient de naître" }).click(); await page.waitForTimeout(250);
+await page.locator("#lifeGrid .life-b, #lifeAll .life-b", { hasText: "Un enfant vient de naître" }).click(); await page.waitForTimeout(250);
 assert.equal(await wrapSplit(), false, "depuis l'accueil : pleine page");
 await page.locator(".vie-chips .chip-btn", { hasText: "Aujourd'hui" }).click();
 await page.locator(".vie-opt", { hasText: "hôpital" }).click(); await page.waitForTimeout(250);

@@ -94,7 +94,13 @@ for (const [h, sel] of [["vault", '[data-view="vault"] .dt-empty .art'], ["agend
   assert.ok(await artOf(sel), "illustration de l'écran vide : " + h);
 }
 await page.goto(BASE + "/#cases"); await page.waitForTimeout(300);
-if (await page.locator("#casesEmpty").isVisible()) assert.ok(await artOf("#casesEmpty .art"), "illustration des dossiers vides");
+if (await page.locator("#casesEmpty").isVisible()) {
+  assert.ok(await artOf("#casesEmpty .art"), "illustration des dossiers vides");
+  assert.equal(await page.locator("#casesEmptyLife .life-b").count(), 3, "dossiers vides : 3 situations fréquentes suggérées");
+  const firstGo = await page.locator("#casesEmptyLife .life-b").first().getAttribute("data-go");
+  await page.locator("#casesEmptyLife .life-b").first().click(); await page.waitForTimeout(300);
+  assert.equal(await page.evaluate(() => location.hash), "#" + firstGo, "une suggestion mène bien au parcours");
+}
 await ctx.close();
 ({ ctx, page } = await open(true, "/#agenda"));
 await page.locator('[data-view="agenda"] input[type="search"]').pressSequentially("zzzzqqq", { delay: 10 }); await page.waitForTimeout(300);
@@ -103,7 +109,7 @@ assert.ok(await artOf('[data-view="agenda"] .dt-empty .art'), "illustration de l
 const strokes = await page.locator('[data-view="agenda"] .dt-empty .art .ln').first().evaluate((e) => getComputedStyle(e).stroke);
 assert.notEqual(strokes, "none", "l'illustration prend les couleurs du thème");
 await ctx.close();
-ok("écrans vides illustrés (coffre, agenda, dossiers, recherche sans résultat), aux couleurs du thème");
+ok("écrans vides illustrés (coffre, agenda, dossiers, recherche sans résultat), aux couleurs du thème ; dossiers vides : 3 suggestions de situations fréquentes, cliquables");
 
 await browser.close();
 if (problems.length) { console.log("\nPROBLÈMES :\n" + problems.join("\n")); process.exit(1); }

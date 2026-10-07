@@ -198,6 +198,10 @@ assert.match(await page.locator("#toast").textContent(), /Date supprimée\.\s*An
 await ctx.close();
 ({ ctx, page } = await open());
 await page.goto(BASE + "/#vault"); await page.waitForTimeout(200);
+const addW = await page.locator('[data-act="vault-add"]').evaluate((e) => e.getBoundingClientRect().width);
+const camW = await page.locator('[data-act="vault-cam"]').evaluate((e) => e.getBoundingClientRect().width);
+assert.ok(Math.abs(addW - camW) <= 1, `Coffre : « Ajouter un document » et « Photographier » de même largeur (${addW} vs ${camW})`);
+ok("Coffre : les deux boutons d'action ont la même largeur");
 const docRow = page.locator('[data-view="vault"] .dt-row').first();
 await longPress(page, docRow);
 await page.waitForTimeout(150);
