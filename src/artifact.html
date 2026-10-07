@@ -1190,6 +1190,30 @@ a, button, input, select, textarea, summary, [role="button"], .tab, .btn, .link-
   .nav-pop { animation: nav-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
 }
 @media (prefers-reduced-motion: reduce) { .nav-push, .nav-pop { animation: none; } }
+/* View Transitions : l'écran entier (en-tête compris) qui part glisse dans un sens pendant que celui qui
+   arrive glisse dans l'autre (au lieu de disparaître d'un coup comme avec la seule classe nav-push/nav-pop
+   ci-dessus, qui ne touche que le contenu). Sur :root (pas un nom posé sur l'écran affiché, de hauteur
+   variable selon son contenu) : la capture reste toujours de la taille de la fenêtre, donc sans le
+   redimensionnement en cours de route qu'un élément de contenu imposerait (essayé, et visible : zone noire
+   nue en bas, barre d'onglets mal placée pendant la transition — l'écran de départ et celui d'arrivée n'ont
+   presque jamais la même hauteur de contenu). Posée par JS via « useVT », seulement si le navigateur la
+   propose, sur téléphone, sans « moins de mouvement » (show() ne l'utilise pas sinon : rien ici ne joue). */
+::view-transition-group(root) { animation-duration: 0.22s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+::view-transition-old(root), ::view-transition-new(root) {
+  animation-duration: 0.22s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); animation-fill-mode: both;
+  /* mix-blend-mode: plus-lighter (posé par défaut par le navigateur, pensé pour un fondu photo) éclaircit tout
+     à blanc tant que les deux images se superposent en fondu : un écran d'application, opaque, a besoin d'un
+     fondu classique. */
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) { animation-name: vt-out; }
+::view-transition-new(root) { animation-name: vt-in; }
+@keyframes vt-in { from { opacity: 0; transform: translateX(32px); } }
+@keyframes vt-out { to { opacity: 0; transform: translateX(-32px); } }
+html.vt-pop::view-transition-old(root) { animation-name: vt-out-pop; }
+html.vt-pop::view-transition-new(root) { animation-name: vt-in-pop; }
+@keyframes vt-in-pop { from { opacity: 0; transform: translateX(-32px); } }
+@keyframes vt-out-pop { to { opacity: 0; transform: translateX(32px); } }
 /* Geste de retour au bord gauche (comme iOS) : l'écran courant suit le doigt depuis le tout bord, une
    ombre portée à gauche donne la sensation qu'il se soulève, puis il revient en place ou complète le
    retour (--headBack prend le relais, avec sa propre entrée .nav-pop pour l'écran précédent). */
@@ -4361,46 +4385,59 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (name === "ask" && !askQ) { name = "home"; arg = ""; }
     if (name === "vie" && !VIES[arg]) { name = "services"; arg = "famille"; }
     var prev = cur.name;
-    cur = { name: name, arg: arg };
-    views.forEach(function (v) { v.hidden = v.getAttribute("data-view") !== name; });
-    setNav(name, arg);
-    if (name === "services") servicesEnter(arg);
-    if (name === "guide") renderGuide(arg);
-    if (name === "tool") renderTool(arg);
-    if (name === "model") renderModel(arg);
-    if (name === "page") renderPage(arg);
-    if (name === "flow") { flowFill(); flowRender(); }
-    if (name === "vie") renderVie(arg);
-    if (name === "pros") renderPros();
-    if (name === "texts") initTexts();
-    if (name === "urgent") initUrgent();
-    if (name === "where") initWhere();
-    if (name === "prospace") { renderPreview(); loadPro(); }
-    if (name === "account") renderAccount();
-    if (name === "display") renderDisplay();
-    renderAll();
-    applySplit(prev);
-    setNav(name, arg); // la liste des thèmes de la barre latérale vient d'être reconstruite
-    if (name === "home") { var hv = $('[data-view="home"]'); reveal(hv.querySelector(".hero")); revealAll(hv.querySelectorAll(".section")); }
-    document.body.classList.toggle("home", name === "home");
-    if (name === "home") { sizeAura(); onHomeScroll(); } else document.body.classList.remove("at-top");
-    setHeroThemeColor(name === "home");
-    var title = TITLES[name] || "";
-    if (name === "guide") title = GUIDE_BY_ID[arg].title;
-    if (name === "tool") title = TOOLREG[arg].title;
-    if (name === "model") title = MODELREG[arg].title;
-    if (name === "page") title = PAGES[arg].title;
-    if (name === "vie") title = VIES[arg].title;
-    document.title = (title && name !== "home" ? title + " | " : "") + "ZOU";
-    window.scrollTo(0, 0);
-    updateHead(name, title);
     var dir = opts.dir || navDir;
     navDir = "";
     if (!dir) {
       var d0 = depthOf(prev), d1 = depthOf(name);
       dir = d1 > d0 ? "push" : d1 < d0 ? "pop" : opts.fromHash ? "pop" : d1 === 1 && (prev !== name || name === "vie") ? "push" : "none";
     }
-    if (booted && dir !== "none") slideIn($('[data-view="' + name + '"]'), dir);
+    function paint() {
+      cur = { name: name, arg: arg };
+      views.forEach(function (v) { v.hidden = v.getAttribute("data-view") !== name; });
+      setNav(name, arg);
+      if (name === "services") servicesEnter(arg);
+      if (name === "guide") renderGuide(arg);
+      if (name === "tool") renderTool(arg);
+      if (name === "model") renderModel(arg);
+      if (name === "page") renderPage(arg);
+      if (name === "flow") { flowFill(); flowRender(); }
+      if (name === "vie") renderVie(arg);
+      if (name === "pros") renderPros();
+      if (name === "texts") initTexts();
+      if (name === "urgent") initUrgent();
+      if (name === "where") initWhere();
+      if (name === "prospace") { renderPreview(); loadPro(); }
+      if (name === "account") renderAccount();
+      if (name === "display") renderDisplay();
+      renderAll();
+      applySplit(prev);
+      setNav(name, arg); // la liste des thèmes de la barre latérale vient d'être reconstruite
+      if (name === "home") { var hv = $('[data-view="home"]'); reveal(hv.querySelector(".hero")); revealAll(hv.querySelectorAll(".section")); }
+      document.body.classList.toggle("home", name === "home");
+      if (name === "home") { sizeAura(); onHomeScroll(); } else document.body.classList.remove("at-top");
+      setHeroThemeColor(name === "home");
+      var title = TITLES[name] || "";
+      if (name === "guide") title = GUIDE_BY_ID[arg].title;
+      if (name === "tool") title = TOOLREG[arg].title;
+      if (name === "model") title = MODELREG[arg].title;
+      if (name === "page") title = PAGES[arg].title;
+      if (name === "vie") title = VIES[arg].title;
+      document.title = (title && name !== "home" ? title + " | " : "") + "ZOU";
+      window.scrollTo(0, 0);
+      updateHead(name, title);
+    }
+    // Transition d'écran : View Transitions (le contenu part et arrive ensemble, l'écran qui part glissant
+    // dans l'autre sens) quand le navigateur la propose, sur téléphone, sans « moins de mouvement » ; sinon,
+    // comme avant, la classe nav-push/nav-pop posée sur l'écran qui arrive (seul l'arrivée est animée).
+    var useVT = booted && dir !== "none" && !reduceMotion && window.innerWidth < 1000 && typeof document.startViewTransition === "function";
+    if (useVT) {
+      document.documentElement.classList.toggle("vt-pop", dir === "pop");
+      var t = document.startViewTransition(paint);
+      t.finished.catch(function () {}).then(function () { document.documentElement.classList.remove("vt-pop"); });
+    } else {
+      paint();
+      if (booted && dir !== "none") slideIn($('[data-view="' + name + '"]'), dir);
+    }
     if (booted && !opts.noFocus) {
       var h = $('[data-view="' + name + '"] h1');
       if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }

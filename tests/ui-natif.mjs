@@ -62,18 +62,24 @@ assert.equal(await page.locator("#headTitle").evaluate((e) => e.classList.contai
 await noHScroll(page, "guide");
 ok("grand titre replié dans l'en-tête au défilement ; fil d'Ariane remplacé par « ‹ Travail »");
 
-// ---- 3. Animations : l'écran suivant glisse depuis la droite, le retour depuis la gauche, les onglets sans animation
+// ---- 3. Animations : l'écran entier glisse (View Transitions : l'écran qui part dans un sens, celui qui
+// arrive dans l'autre), onglets sans transition ; les questions d'un parcours gardent leur propre
+// glissement (nav-push/nav-pop sur #vieBody, inchangé — une View Transition par question serait too much).
 await page.goto(BASE + "/#home"); await page.waitForTimeout(300);
 const cls = () => page.evaluate(() => document.querySelector("[data-view]:not([hidden])").className);
+await page.evaluate(() => {
+  window.__vt = [];
+  const real = document.startViewTransition.bind(document);
+  document.startViewTransition = (cb) => { window.__vt.push(document.documentElement.classList.contains("vt-pop") ? "pop" : "push"); return real(cb); };
+});
 await page.locator(".life-b", { hasText: "Un proche est décédé" }).click();
-assert.match(await cls(), /nav-push/);
 await page.waitForTimeout(400);
-assert.doesNotMatch(await cls(), /nav-push/, "la classe d'animation est retirée à la fin");
-await page.goBack(); await page.waitForTimeout(30);
-assert.match(await cls(), /nav-pop/);
-await page.waitForTimeout(400);
-await page.locator('.tab[data-tab="pros"]').click();
-assert.doesNotMatch(await cls(), /nav-/);
+assert.deepEqual(await page.evaluate(() => window.__vt), ["push"], "l'écran suivant : View Transition déclenchée, sans la classe de retour");
+assert.doesNotMatch(await cls(), /nav-/, "l'écran lui-même ne porte plus nav-push (l'animation est sur la transition, pas sur lui)");
+await page.goBack(); await page.waitForTimeout(400);
+assert.deepEqual(await page.evaluate(() => window.__vt), ["push", "pop"], "le retour : avec la classe de retour (glisse dans l'autre sens)");
+await page.locator('.tab[data-tab="pros"]').click(); await page.waitForTimeout(100);
+assert.deepEqual(await page.evaluate(() => window.__vt), ["push", "pop"], "changer d'onglet ne déclenche aucune transition");
 await page.goto(BASE + "/#vie.naissance"); await page.waitForTimeout(300);
 await page.locator(".vie-chips .chip-btn", { hasText: "Aujourd'hui" }).click();
 await page.locator(".vie-opt", { hasText: "hôpital" }).click(); await page.waitForTimeout(170);
@@ -83,8 +89,14 @@ await page.locator(".vie-backstep").click();
 assert.match(await page.locator("#vieBody").getAttribute("class"), /nav-pop/, "question précédente : depuis la gauche");
 await ctx.close();
 ({ ctx, page } = await open({ reduced: true }));
+await page.evaluate(() => {
+  window.__vtCalls = 0;
+  const real = document.startViewTransition;
+  if (real) document.startViewTransition = (cb) => { window.__vtCalls++; return real.call(document, cb); };
+});
 await page.locator(".life-b", { hasText: "Un proche est décédé" }).click();
 assert.doesNotMatch(await cls(), /nav-/, "aucune animation si l'appareil demande moins de mouvement");
+assert.equal(await page.evaluate(() => window.__vtCalls || 0), 0, "ni de View Transition");
 await ctx.close();
 ok("animations : poussée à l'aller, retour à l'inverse, onglets instantanés, aucune si « moins de mouvement »");
 
