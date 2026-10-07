@@ -1190,6 +1190,17 @@ a, button, input, select, textarea, summary, [role="button"], .tab, .btn, .link-
   .nav-pop { animation: nav-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
 }
 @media (prefers-reduced-motion: reduce) { .nav-push, .nav-pop { animation: none; } }
+/* Écran fantôme : pendant que l'écran qui arrive glisse (nav-push/nav-pop ci-dessus, inchangé), un clone
+   jetable de l'écran qui part (en-tête compris) glisse dans l'autre sens par-dessus, pour imiter une vraie
+   transition sans l'API View Transitions (voir ghostOut, JS). Sous la barre d'onglets (z-index 60) pour
+   qu'elle reste immobile au-dessus, comme aujourd'hui. */
+.ghost-wrap { position: fixed; inset: 0; z-index: 55; overflow: hidden; pointer-events: none; }
+.ghost-in { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); animation: ghost-out 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.ghost-view-clip { flex: 1 1 auto; overflow: hidden; position: relative; }
+.ghost-wrap.ghost-pop .ghost-in { animation-name: ghost-out-pop; }
+@keyframes ghost-out { to { opacity: 0; transform: translateX(-32px); } }
+@keyframes ghost-out-pop { to { opacity: 0; transform: translateX(32px); } }
+@media (prefers-reduced-motion: reduce) { .ghost-wrap { display: none; } }
 /* Geste de retour au bord gauche (comme iOS) : l'écran courant suit le doigt depuis le tout bord, une
    ombre portée à gauche donne la sensation qu'il se soulève, puis il revient en place ou complète le
    retour (--headBack prend le relais, avec sa propre entrée .nav-pop pour l'écran précédent). */
@@ -3870,6 +3881,40 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       node.removeEventListener("animationend", done);
     });
   }
+  /* Écran fantôme : au lieu de disparaître d'un coup, l'écran qui part glisse dans le sens opposé à celui
+     qui arrive (imite l'effet d'une vraie transition d'écran sans l'API View Transitions, dont le callback
+     asynchrone est incompatible avec show()/go() écrits partout comme synchrones — essayé, abandonné pour
+     cette raison). Un clone jetable (en-tête + écran actuel, identifiants retirés pour ne jamais entrer en
+     collision avec les vrais), posé par-dessus en position fixe, animé puis retiré ; le vrai DOM n'est
+     jamais touché. Le clone de l'écran repart remonté du défilement en cours (translateY), pour repartir
+     d'où l'œil l'a laissé plutôt que de son propre haut — l'en-tête (position: sticky) reste lui collé en
+     haut, inchangé. */
+  function stripIds(node) {
+    if (node.removeAttribute) node.removeAttribute("id");
+    for (var i = 0; i < node.children.length; i++) stripIds(node.children[i]);
+  }
+  function ghostOut(dir) {
+    if (reduceMotion || window.innerWidth >= 1000 || !dir) return;
+    var head = $("#siteHead"), view = $('[data-view="' + cur.name + '"]');
+    if (!head || !view) return;
+    var wrap = el("div", "ghost-wrap" + (dir === "pop" ? " ghost-pop" : ""));
+    wrap.setAttribute("aria-hidden", "true");
+    var inner = el("div", "ghost-in");
+    var hc = head.cloneNode(true); stripIds(hc);
+    // L'en-tête (position: sticky) reste collé en haut quel que soit le défilement ; seul le contenu défile.
+    // Un clone recommence à son propre 0 : on le remonte du même nombre de pixels pour qu'il reparte
+    // exactement d'où l'œil l'a laissé, pas du tout en haut.
+    var clip = el("div", "ghost-view-clip");
+    var vc = view.cloneNode(true); stripIds(vc);
+    vc.style.transform = "translateY(-" + window.pageYOffset + "px)";
+    clip.appendChild(vc);
+    inner.appendChild(hc); inner.appendChild(clip);
+    wrap.appendChild(inner);
+    document.body.appendChild(wrap);
+    var done = function () { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); };
+    inner.addEventListener("animationend", done);
+    setTimeout(done, 400); // filet de sécurité si animationend ne se déclenche pas
+  }
   function backEl() {
     var v = $('[data-view="' + cur.name + '"]');
     if (!v) return null;
@@ -4361,6 +4406,13 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (name === "ask" && !askQ) { name = "home"; arg = ""; }
     if (name === "vie" && !VIES[arg]) { name = "services"; arg = "famille"; }
     var prev = cur.name;
+    var dir = opts.dir || navDir;
+    navDir = "";
+    if (!dir) {
+      var d0 = depthOf(prev), d1 = depthOf(name);
+      dir = d1 > d0 ? "push" : d1 < d0 ? "pop" : opts.fromHash ? "pop" : d1 === 1 && (prev !== name || name === "vie") ? "push" : "none";
+    }
+    if (booted && dir !== "none") ghostOut(dir);
     cur = { name: name, arg: arg };
     views.forEach(function (v) { v.hidden = v.getAttribute("data-view") !== name; });
     setNav(name, arg);
@@ -4394,12 +4446,6 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     document.title = (title && name !== "home" ? title + " | " : "") + "ZOU";
     window.scrollTo(0, 0);
     updateHead(name, title);
-    var dir = opts.dir || navDir;
-    navDir = "";
-    if (!dir) {
-      var d0 = depthOf(prev), d1 = depthOf(name);
-      dir = d1 > d0 ? "push" : d1 < d0 ? "pop" : opts.fromHash ? "pop" : d1 === 1 && (prev !== name || name === "vie") ? "push" : "none";
-    }
     if (booted && dir !== "none") slideIn($('[data-view="' + name + '"]'), dir);
     if (booted && !opts.noFocus) {
       var h = $('[data-view="' + name + '"] h1');

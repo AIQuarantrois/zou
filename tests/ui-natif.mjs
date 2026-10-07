@@ -88,6 +88,40 @@ assert.doesNotMatch(await cls(), /nav-/, "aucune animation si l'appareil demande
 await ctx.close();
 ok("animations : poussée à l'aller, retour à l'inverse, onglets instantanés, aucune si « moins de mouvement »");
 
+// ---- 3 bis. Écran fantôme : l'écran qui part glisse aussi (dans l'autre sens), par un clone jetable —
+// pas la vraie API View Transitions (son callback asynchrone casserait show()/go(), écrits comme synchrones
+// partout — essayé, abandonné pour cette raison, voir ghostOut). Repart d'où l'œil l'a laissé (défilement
+// compensé), pas du haut de l'écran ; rien sur un onglet, en « moins de mouvement » ou sur grand écran.
+({ ctx, page } = await open());
+await page.goto(BASE + "/#home"); await page.waitForTimeout(300);
+await page.mouse.wheel(0, 300); await page.waitForTimeout(150);
+const scrollY = await page.evaluate(() => window.pageYOffset);
+assert.ok(scrollY > 0, "défilé avant de naviguer, pour vérifier la compensation");
+await page.locator(".life-b", { hasText: "Je veux démissionner" }).click();
+const ghost = page.locator(".ghost-wrap");
+assert.equal(await ghost.count(), 1, "un clone jetable apparaît, même en ayant défilé");
+assert.equal(await ghost.evaluate((e) => e.classList.contains("ghost-pop")), false, "aller : pas la classe de retour");
+const vcTransform = await page.locator(".ghost-view-clip > *").evaluate((e, y) => e.style.transform === "translateY(-" + y + "px)", scrollY);
+assert.equal(vcTransform, true, "le clone de l'écran repart décalé du défilement en cours, pas de son propre haut");
+await page.waitForTimeout(500);
+assert.equal(await ghost.count(), 0, "le clone est retiré une fois l'animation finie");
+await page.locator("#headBack").click();
+assert.equal(await page.locator(".ghost-wrap.ghost-pop").count(), 1, "retour : la classe de retour (glisse dans l'autre sens)");
+await page.waitForTimeout(500);
+assert.equal(await page.locator(".ghost-wrap").count(), 0);
+await page.locator('.tab[data-tab="pros"]').click(); await page.waitForTimeout(50);
+assert.equal(await page.locator(".ghost-wrap").count(), 0, "rien sur un changement d'onglet");
+await ctx.close();
+({ ctx, page } = await open({ reduced: true }));
+await page.locator(".life-b", { hasText: "Un proche est décédé" }).click();
+assert.equal(await page.locator(".ghost-wrap").count(), 0, "rien en « moins de mouvement »");
+await ctx.close();
+({ ctx, page } = await open({ viewport: { width: 1280, height: 900 } }));
+await page.locator(".life-b", { hasText: "Un proche est décédé" }).click();
+assert.equal(await page.locator(".ghost-wrap").count(), 0, "rien sur grand écran");
+await ctx.close();
+ok("écran fantôme : l'écran qui part glisse aussi, décalé du défilement en cours, rien sur un onglet, « moins de mouvement » ou grand écran");
+
 // ---- 4. Pied de page rangé dans « Plus » ; feuille : poignée et glisser vers le bas
 ({ ctx, page } = await open({ touch: true }));
 assert.equal(await shown(page, "#siteFoot"), false, "pas de pied de page de site sur téléphone");
