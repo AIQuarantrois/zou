@@ -101,6 +101,17 @@ await page.waitForTimeout(300);
 assert.match(await page.locator('[data-view="services"]').innerText(), /0 service sur \d+/);
 assert.equal(problems.length, 0, "toujours aucune erreur sur une recherche sans résultat : " + problems.join(" | "));
 ok("services : la recherche filtre correctement (y compris un parcours de vie dans les résultats), sans planter");
+
+// ---- Services : la recherche tolère les variantes d'un même mot (racine commune tronquée)
+await svcSearch.fill("copropriété");
+await page.waitForTimeout(300);
+const byCopro = await page.locator('[data-view="services"] [data-go="vie.copro"]').count();
+assert.ok(byCopro > 0, "« copropriété » trouve le parcours copropriété");
+await svcSearch.fill("copropriétaire");
+await page.waitForTimeout(300);
+assert.ok(await page.locator('[data-view="services"] [data-go="vie.copro"]').count() > 0, "« copropriétaire » trouve aussi le parcours copropriété");
+assert.equal(problems.length, 0, "aucune erreur sur les variantes d'un mot : " + problems.join(" | "));
+ok("services : la recherche tolère les variantes d'un même mot (copropriété / copropriétaire)");
 await page.close();
 
 // ---- Écran large : menu et pied de page

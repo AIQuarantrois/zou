@@ -87,7 +87,7 @@ ok("gerbe de confettis à la réussite, retirée ensuite (rien si « moins de mo
 ({ ctx, page } = await open(true));
 await page.evaluate(() => localStorage.removeItem("dm_state_v2"));
 const artOf = (sel) => page.locator(sel).evaluate((e) => !!e && e.getBoundingClientRect().width > 0 && e.innerHTML.length > 100);
-for (const [h, sel] of [["vault", '[data-view="vault"] .dt-empty .art'], ["agenda", '[data-view="agenda"] .dt-empty .art']]) {
+for (const [h, sel] of [["vault", '[data-view="vault"] .dt-empty .art'], ["agenda", '[data-view="agenda"] .dt-empty .art'], ["pros", '[data-view="pros"] .dt-empty .art']]) {
   await page.goto(BASE + "/#" + h); await page.waitForTimeout(300);
   await page.evaluate(() => { const b = document.querySelector('[data-view]:not([hidden]) [data-act="clear-examples"]'); if (b) b.click(); });
   await page.waitForTimeout(250);
@@ -109,7 +109,7 @@ assert.ok(await artOf('[data-view="agenda"] .dt-empty .art'), "illustration de l
 const strokes = await page.locator('[data-view="agenda"] .dt-empty .art .ln').first().evaluate((e) => getComputedStyle(e).stroke);
 assert.notEqual(strokes, "none", "l'illustration prend les couleurs du thème");
 await ctx.close();
-ok("écrans vides illustrés (coffre, agenda, dossiers, recherche sans résultat), aux couleurs du thème ; dossiers vides : 3 suggestions de situations fréquentes, cliquables");
+ok("écrans vides illustrés (coffre, agenda, pros, dossiers, recherche sans résultat), aux couleurs du thème ; dossiers vides : 3 suggestions de situations fréquentes, cliquables");
 
 await browser.close();
 if (problems.length) { console.log("\nPROBLÈMES :\n" + problems.join("\n")); process.exit(1); }
