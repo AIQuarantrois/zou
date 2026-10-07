@@ -1,5 +1,6 @@
 // Mode sombre et réglages de lisibilité dans un vrai navigateur : bascule, mémorisation, absence d'éclair clair, taille du texte,
-// contraste (WCAG) des jetons de couleur, chasse aux restes de blanc en mode sombre, impression toujours claire.
+// contraste (WCAG) des jetons de couleur, chasse aux restes de blanc en mode sombre, impression toujours claire,
+// matériau « verre » (flou) du bandeau/onglets avec replis accessibles (transparence réduite, contraste renforcé).
 // Même prérequis que tests/ui-famille.mjs (serveur local, base vide, playwright-core).
 import { chromium } from "playwright-core";
 import assert from "node:assert/strict";
@@ -180,6 +181,39 @@ const pr = await page.evaluate(() => ({
 assert.equal(pr.bg, "rgb(255, 255, 255)"); assert.equal(pr.scheme, "light"); assert.equal(pr.trust, "#0B2D5B");
 assert.equal(pr.h1, "rgb(11, 45, 91)"); assert.equal(pr.body, "rgb(17, 17, 17)");
 ok("impression en mode sombre : fond blanc, texte foncé, logo bleu ZOU (le PDF ne dépend pas du thème)");
+
+// ---- 9. Matériau « verre » (flou) du bandeau, des onglets et des feuilles : actif, mais avec un repli accessible
+await page.close();
+({ page } = await open({ hash: "/#agenda" }));
+const blurOf = (sel) => page.locator(sel).first().evaluate((e) => getComputedStyle(e).backdropFilter);
+assert.match(await blurOf(".site-head"), /blur/);
+assert.match(await blurOf(".tabs"), /blur/);
+ok("bandeau et onglets : verre dépoli (flou) actif par défaut");
+
+const cdp = await page.context().newCDPSession(page);
+await cdp.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-transparency", value: "reduce" }] });
+await page.waitForTimeout(100);
+assert.equal(await blurOf(".site-head"), "none");
+assert.equal(await blurOf(".tabs"), "none");
+await cdp.send("Emulation.setEmulatedMedia", { features: [] });
+ok("préférence système « réduire la transparence » : repli sur un fond plein, sans flou");
+
+await page.goto(BASE + "/#display"); await page.waitForSelector("#prefsBox .pref-opt");
+await page.locator('#prefsBox .pref-opt[data-pref="contrast"]').click();
+await page.waitForTimeout(100);
+assert.equal(await attr(page, "data-contrast"), "high");
+assert.equal(await blurOf(".site-head"), "none");
+await page.goto(BASE + "/#agenda"); await page.waitForTimeout(250);
+assert.equal(await blurOf(".tabs"), "none");
+await page.goto(BASE + "/#display"); await page.waitForSelector("#prefsBox .pref-opt");
+await page.locator('#prefsBox .pref-opt[data-pref="contrast"]').click();
+await page.waitForTimeout(100);
+ok("contraste renforcé : même repli sur un fond plein, sans flou derrière le texte");
+
+await page.goto(BASE + "/#home"); await page.waitForTimeout(250);
+assert.equal(await blurOf(".site-head"), "none");
+assert.equal(await page.locator(".site-head").first().evaluate((e) => getComputedStyle(e).backgroundColor), "rgba(0, 0, 0, 0)");
+ok("accueil en haut de page : bandeau resté totalement transparent, sans flou (dégradé visible net)");
 
 await browser.close();
 if (problems.length) { console.log("\nPROBLÈMES :\n" + problems.join("\n")); process.exit(1); }

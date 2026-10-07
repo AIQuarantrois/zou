@@ -86,7 +86,7 @@ legend { padding: 0; font-size: calc(14px * var(--fs, 1)); font-weight: 600; col
 .skip:focus { transform: none; }
 
 /* ---------- Site header ---------- */
-.site-head { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; background: var(--surface); border-bottom: 1px solid var(--rule); }
+.site-head { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border-bottom: 1px solid var(--rule); }
 .head-in { display: flex; align-items: center; gap: 24px; height: var(--head-h); padding-inline: var(--gutter); max-width: 1280px; margin-inline: auto; }
 .brand { display: inline-flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; text-decoration: none; color: var(--ink); min-height: 44px; }
 .logo { display: block; width: 76px; height: 35px; flex: none; }
@@ -577,7 +577,8 @@ details.src[open] > summary .ico, .src details[open] > summary .ico { transform:
 /* ---------- Bottom tabs and menu sheet (phone) ---------- */
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: grid; grid-template-columns: repeat(5, 1fr);
-  background: var(--surface); border-top: 1px solid var(--rule); padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid var(--rule); padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
 }
 .tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; background: none; border: 0; border-radius: var(--r); font-size: calc(12px * var(--fs, 1)); font-weight: 500; color: var(--ink-3); white-space: nowrap; }
 .tab .ico { width: 24px; height: 24px; }
@@ -586,7 +587,8 @@ details.src[open] > summary .ico, .src details[open] > summary .ico { transform:
 @media (min-width: 768px) { .tabs { display: none; } }
 .sheet-menu {
   position: fixed; left: 0; right: 0; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); z-index: 55; max-height: 78dvh; overflow-y: auto;
-  background: var(--surface); border-top: 1px solid var(--rule); border-radius: 16px 16px 0 0; padding: 8px var(--gutter) 16px; box-shadow: var(--shadow-pop);
+  background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid var(--rule); border-radius: 16px 16px 0 0; padding: 8px var(--gutter) 16px; box-shadow: var(--shadow-pop);
 }
 .sheet-menu > section, .sheet-legal { width: 100%; max-width: 640px; margin-inline: auto; }
 .sheet-menu ul { width: 100%; }
@@ -603,7 +605,8 @@ details.src[open] > summary .ico, .src details[open] > summary .ico { transform:
    Pas de restriction de largeur comme .sheet-menu : utile à tout écran tactile, pas seulement <1200px. */
 .row-menu {
   position: fixed; left: 0; right: 0; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); z-index: 55; max-height: 60dvh; overflow-y: auto;
-  background: var(--surface); border-top: 1px solid var(--rule); border-radius: 16px 16px 0 0; padding: 0 var(--gutter) 16px; box-shadow: var(--shadow-pop);
+  background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid var(--rule); border-radius: 16px 16px 0 0; padding: 0 var(--gutter) 16px; box-shadow: var(--shadow-pop);
   transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .row-menu.dragging { transition: none; }
@@ -617,6 +620,16 @@ details.src[open] > summary .ico, .src details[open] > summary .ico { transform:
 .row-menu-item.danger .ico { color: var(--danger); }
 @media (hover: hover) { .row-menu-item:hover { background: var(--wash); } }
 @media (prefers-reduced-motion: reduce) { .row-menu { transition: none; } }
+/* Matériau « verre » (comme iOS) : en-tête, barre d'onglets et feuilles laissent deviner, flouté, ce qui
+   défile dessous, au lieu d'un aplat opaque (voir leurs règles ci-dessus). Repli en aplat plein, sans flou,
+   si l'appareil demande moins de transparence, ou si le contraste renforcé de la page Affichage est actif
+   (un fond qui varie en dessous nuit à la lisibilité du texte, justement ce que ce réglage corrige). */
+@media (prefers-reduced-transparency: reduce) {
+  .site-head, .tabs, .sheet-menu, .row-menu { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+:root[data-contrast="high"] .site-head, :root[data-contrast="high"] .tabs, :root[data-contrast="high"] .sheet-menu, :root[data-contrast="high"] .row-menu {
+  background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none;
+}
 
 /* ---------- Toast ---------- */
 .toast {
@@ -1378,7 +1391,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
 @media (hover: hover) { body.home .hero .suggest button:hover { background: rgba(6, 10, 34, 0.58); } }
 /* en-tête translucide par-dessus le dégradé (téléphone, en haut de l'accueil) */
 @media (max-width: 767px) {
-  body.home.at-top .site-head { background: transparent; border-bottom-color: transparent; }
+  body.home.at-top .site-head { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; border-bottom-color: transparent; }
   body.home.at-top .site-head .logo { --trust: #FFFFFF; --smile: #FFFFFF; }
   body.home.at-top .head-icon { color: #FFFFFF; }
   body.home.at-top .site-head { transition: background 0.2s ease; }
