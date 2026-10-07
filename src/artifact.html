@@ -5720,13 +5720,14 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     }
     return "";
   }
-  ITEMS.forEach(function (it) { it._t = norm(it.title); it._d = norm(it.desc); it._b = null; });
   function searchItems(q, pool) {
     var tk = tokens(q);
     if (!tk.length) return pool.slice();
     var out = [];
     pool.forEach(function (it, idx) {
-      if (it._b === null) it._b = norm(bodyOf(it));
+      if (it._t === undefined) it._t = norm(it.title);
+      if (it._d === undefined) it._d = norm(it.desc);
+      if (it._b == null) it._b = norm(bodyOf(it));
       var score = 0;
       for (var i = 0; i < tk.length; i++) {
         var t = tk[i], s = 0;

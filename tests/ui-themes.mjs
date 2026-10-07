@@ -84,6 +84,23 @@ assert.match(await page.locator("#svcGroups .svc-g.on").innerText(), /Logement e
 assert.match(await page.locator('[data-view="services"]').innerText(), /3 services sur \d+/);
 await noHScroll(page, "services");
 ok("services : onglets par thème, un thème ne montre que ses domaines, un domaine active son thème");
+
+// ---- Services : la recherche filtre, y compris quand elle doit trier un parcours de vie parmi les résultats
+// (régression : les parcours sont ajoutés à l'index de recherche après son unique calcul initial — plantage
+// silencieux dès qu'une recherche les atteignait, liste jamais filtrée)
+await page.goto(BASE + "/#services"); await page.waitForTimeout(400);
+const svcSearch = page.locator('[data-view="services"] input[type="search"]');
+await svcSearch.fill("visa");
+await page.waitForTimeout(300);
+assert.equal(problems.length, 0, "aucune erreur pendant la recherche : " + problems.join(" | "));
+const afterSearch = await page.locator('[data-view="services"]').innerText();
+assert.match(afterSearch, /\d+ services? sur \d+/, "la liste est bien filtrée (pas laissée telle quelle sur un plantage silencieux)");
+assert.match(afterSearch, /visa|séjour/i);
+await svcSearch.fill("zzzxxxqqqintrouvable");
+await page.waitForTimeout(300);
+assert.match(await page.locator('[data-view="services"]').innerText(), /0 service sur \d+/);
+assert.equal(problems.length, 0, "toujours aucune erreur sur une recherche sans résultat : " + problems.join(" | "));
+ok("services : la recherche filtre correctement (y compris un parcours de vie dans les résultats), sans planter");
 await page.close();
 
 // ---- Écran large : menu et pied de page
