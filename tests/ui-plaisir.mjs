@@ -111,6 +111,34 @@ assert.notEqual(strokes, "none", "l'illustration prend les couleurs du thème");
 await ctx.close();
 ok("écrans vides illustrés (coffre, agenda, pros, dossiers, recherche sans résultat), aux couleurs du thème ; dossiers vides : 3 suggestions de situations fréquentes, cliquables");
 
+// ---- 5. Code couleur des échéances unifié : même couleur pour « dépassée »/« bientôt » dans l'agenda,
+// « Vos prochaines dates » et « Cette semaine » de l'accueil (plutôt que trois traitements différents)
+({ ctx, page } = await open(true, "/#agenda"));
+async function addDate(title, k) {
+  await page.fill("#a-title", title);
+  await page.fill("#a-date", day(k));
+  await page.locator("#agendaForm button[type=submit]").click();
+  await page.waitForTimeout(200);
+}
+await addDate("Dépassée", -5);
+await addDate("Bientôt", 3);
+await addDate("Plus tard", 20);
+const color = (sel) => page.locator(sel).first().evaluate((e) => getComputedStyle(e).color);
+const agendaLate = await color("#agendaTable .when.late");
+const agendaSoon = await color("#agendaTable .when.soon");
+const agendaOk = await page.locator("#agendaTable .when").evaluateAll((els) => {
+  const e = els.find((x) => !x.classList.contains("soon") && !x.classList.contains("late"));
+  return e ? getComputedStyle(e).color : null;
+});
+assert.notEqual(agendaLate, agendaSoon, "dépassée et bientôt n'ont pas la même couleur");
+assert.notEqual(agendaSoon, agendaOk, "bientôt se distingue d'une date lointaine");
+await page.goto(BASE + "/#home"); await page.waitForTimeout(400);
+assert.equal(await color("#homeSoonList .topic-n.soon"), agendaSoon, "« Cette semaine » de l'accueil : même orange que l'agenda pour une date proche");
+const homeDatesSoon = await page.locator("#homeDates .when.soon").first();
+if (await homeDatesSoon.count()) assert.equal(await homeDatesSoon.evaluate((e) => getComputedStyle(e).color), agendaSoon, "« Vos prochaines dates » : même orange que l'agenda");
+await ctx.close();
+ok("code couleur des échéances unifié (dépassée en rouge, bientôt en orange, identique dans l'agenda et les deux rappels de l'accueil)");
+
 await browser.close();
 if (problems.length) { console.log("\nPROBLÈMES :\n" + problems.join("\n")); process.exit(1); }
 console.log(`\n${n} vérifications réussies, aucune erreur console`);

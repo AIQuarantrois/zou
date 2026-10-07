@@ -283,8 +283,8 @@ input[type=checkbox]:focus-visible, input[type=radio]:focus-visible { outline: 2
 .dateblk b { font-size: calc(20px * var(--fs, 1)); font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .dateblk span { font-size: calc(12px * var(--fs, 1)); font-weight: 500; color: var(--ink-3); }
 .when { font-weight: 600; color: var(--ink-2); }
-.when.soon { color: var(--accent); }
-.when.past { color: var(--ink-3); font-weight: 500; }
+.when.soon { color: var(--warn); }
+.when.late { color: var(--danger); }
 .item.past { opacity: 0.7; }
 .tag { font-size: calc(13px * var(--fs, 1)); font-weight: 500; color: var(--ink-3); }
 .tag.mute { color: var(--ink-3); }
@@ -836,8 +836,8 @@ details.src[open] > summary .ico, .src details[open] > summary .ico { transform:
 .c-strong { display: block; font-weight: 500; color: var(--ink); }
 .c-sub { display: block; font-size: calc(13px * var(--fs, 1)); line-height: 1.45; color: var(--ink-3); }
 .c-sub.when { color: var(--ink-3); }
-.c-sub.when.soon { color: var(--accent); font-weight: 600; }
-.c-sub.when.past { color: var(--ink-3); }
+.c-sub.when.soon { color: var(--warn); font-weight: 600; }
+.c-sub.when.late { color: var(--danger); font-weight: 600; }
 .dt-cta { display: inline-flex; align-items: center; gap: 6px; font-size: calc(14px * var(--fs, 1)); font-weight: 600; color: var(--accent); white-space: nowrap; }
 .dt-actions { display: flex; align-items: center; }
 .dt-row .icon-btn { margin-block: -10px; }
@@ -1049,7 +1049,7 @@ h1.h-display { font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem); font-weight: 700; l
 /* Rappels, installation, retours */
 .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 999px; background: #B42318; color: #fff; font-size: calc(11px * var(--fs, 1)); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 .tab .badge { position: absolute; top: 4px; left: calc(50% + 6px); margin: 0; }
-.topic-n.soon { color: var(--danger); font-weight: 700; }
+.topic-n.soon { color: var(--warn); font-weight: 700; }
 .install-card { max-width: 760px; margin: 0 0 24px; padding: 14px 16px; border-radius: var(--r-lg); background: var(--wash); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
 .install-card p { font-size: calc(15px * var(--fs, 1)); color: var(--ink-2); max-width: 48ch; }
 .install-actions { display: flex; align-items: center; gap: 12px; }
@@ -4565,7 +4565,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       var m = el("div", "item-main");
       m.appendChild(el("div", "item-title", d.title));
       var sub = el("div", "item-sub");
-      sub.appendChild(el("span", n <= 7 ? "when soon" : "when", relText(n)));
+      sub.appendChild(el("span", "when " + toneCls(d.date), relText(n)));
       sub.appendChild(el("span", "", remindText(d.remind, d.channel)));
       m.appendChild(sub);
       it.appendChild(m);
@@ -6390,7 +6390,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         var li = el("li"), b = el("button", "topic");
         b.type = "button"; b.setAttribute("data-go", "agenda");
         b.appendChild(el("span", "topic-t", x.d.title));
-        b.appendChild(el("span", "topic-n" + (x.n <= 1 ? " soon" : ""), whenText(x.n)));
+        b.appendChild(el("span", "topic-n " + toneCls(x.d.date), whenText(x.n)));
         b.appendChild(el("span", "topic-d", fmtLong(parse(x.d.date)) + (x.d.dossier ? " · " + (dossierLabel(x.d.dossier) || "") : "")));
         li.appendChild(b); ul.appendChild(li);
       });
@@ -6739,7 +6739,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
             var n = daysTo(d);
             var f = document.createDocumentFragment();
             f.appendChild(el("span", "c-strong", fmtLong(parse(d.date))));
-            f.appendChild(el("span", "c-sub " + (n < 0 ? "when past" : n <= 7 ? "when soon" : "when"), relText(n)));
+            f.appendChild(el("span", "c-sub when " + toneCls(d.date), relText(n)));
             return f;
           },
           filter: bucketsDays("Période", [
@@ -7384,6 +7384,10 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (n === 0) return { n: n, t: "C'est aujourd'hui", tone: "soon" };
     return { n: n, t: "Dépassé depuis " + dayCount(n), tone: "late" };
   }
+  // Code couleur d'une échéance, partagé par la frise, l'agenda et les rappels d'accueil : « ok » n'ajoute
+  // aucune classe (couleur neutre par défaut), seuls « soon » (orange, ≤ 7 jours) et « late » (rouge, dépassé)
+  // se distinguent — pas de vert partout, réservé au graphique de la frise où chaque point a besoin d'une couleur.
+  function toneCls(dateIso) { var t = countdown(dateIso).tone; return t === "ok" ? "" : t; }
   function cite(s) { return el("span", "cite", s); }
 
   var vieCur = { id: "", plan: null };
