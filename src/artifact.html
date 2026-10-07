@@ -598,6 +598,25 @@ details.src[open] > summary .ico, .src details[open] > summary .ico { transform:
 .sheet-legal button { min-height: 44px; padding: 0; background: none; border: 0; font-size: calc(14px * var(--fs, 1)); color: var(--ink-3); }
 .scrim { position: fixed; inset: 0; z-index: 50; background: rgba(16, 19, 24, 0.4); }
 @media (min-width: 1200px) { .sheet-menu, .scrim.m-only { display: none; } }
+/* Menu contextuel (appui long sur une ligne du Coffre ou de l'Agenda) : les mêmes actions que les
+   icônes déjà dans la ligne (gardées, pour le clavier et la souris), dans une feuille au nom lisible.
+   Pas de restriction de largeur comme .sheet-menu : utile à tout écran tactile, pas seulement <1200px. */
+.row-menu {
+  position: fixed; left: 0; right: 0; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); z-index: 55; max-height: 60dvh; overflow-y: auto;
+  background: var(--surface); border-top: 1px solid var(--rule); border-radius: 16px 16px 0 0; padding: 0 var(--gutter) 16px; box-shadow: var(--shadow-pop);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.row-menu.dragging { transition: none; }
+@starting-style { .row-menu { transform: translateY(100%); } }
+.row-menu-title { max-width: 640px; margin: 0 auto; padding: 8px 4px 4px; font-size: calc(13px * var(--fs, 1)); font-weight: 600; color: var(--ink-3); }
+.row-menu-list { width: 100%; max-width: 640px; margin-inline: auto; }
+.row-menu-item { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 52px; padding: 10px 4px; background: none; border: 0; border-top: 1px solid var(--rule); font-size: calc(16px * var(--fs, 1)); color: var(--ink); text-align: left; }
+.row-menu-list li:first-child .row-menu-item { border-top: 0; }
+.row-menu-item .ico { width: 22px; height: 22px; flex: none; color: var(--ink-3); }
+.row-menu-item.danger { color: var(--danger); }
+.row-menu-item.danger .ico { color: var(--danger); }
+@media (hover: hover) { .row-menu-item:hover { background: var(--wash); } }
+@media (prefers-reduced-motion: reduce) { .row-menu { transition: none; } }
 
 /* ---------- Toast ---------- */
 .toast {
@@ -2566,6 +2585,13 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
   <p class="sheet-about"><strong>Information juridique générale.</strong> ZOU ne remplace pas l'avis d'un avocat, d'un notaire ou d'un autre professionnel du droit. Français ; malagasy et anglais bientôt. © 2026 ZOU, version de démonstration.</p>
 </div>
 
+<div class="scrim" id="rowMenuScrim" hidden></div>
+<div class="row-menu" id="rowMenu" hidden role="menu" aria-label="Actions">
+  <button class="sheet-grab" id="rowMenuGrab" type="button" aria-label="Fermer"></button>
+  <p class="row-menu-title" id="rowMenuTitle"></p>
+  <ul class="row-menu-list" id="rowMenuList"></ul>
+</div>
+
 <nav class="tabs" aria-label="Navigation mobile">
   <button class="tab" data-go="home" data-tab="home"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Accueil</button>
   <button class="tab" data-go="services" data-tab="services"><svg class="ico" aria-hidden="true"><use href="#i-grid"/></svg>Services</button>
@@ -4143,6 +4169,94 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     document.addEventListener("touchend", end);
     document.addEventListener("touchcancel", end);
   })();
+  /* ----- Menu contextuel (appui long sur une ligne du Coffre ou de l'Agenda) : reprend les mêmes
+     actions que les icônes déjà dans la ligne (gardées, pour le clavier et la souris) ; chaque entrée
+     clique le vrai bouton (comme le bouton rouge du glissement), donc passe par le même répartiteur
+     central et la même bannière « Annuler ». ----- */
+  var ACT_LABEL = { "doc-date": "Ajouter une date liée", "doc-open": "Télécharger", "doc-attach": "Joindre le fichier", "del-doc": "Supprimer", "del-date": "Supprimer" };
+  var rowMenuOpenedAt = 0;
+  function closeRowMenu() {
+    var m = $("#rowMenu"), sc = $("#rowMenuScrim");
+    if (m.hidden) return;
+    if (reduceMotion) { m.hidden = true; sc.hidden = true; return; }
+    m.classList.remove("dragging");
+    m.style.transform = "translateY(105%)";
+    sc.style.opacity = "0";
+    setTimeout(function () { m.hidden = true; sc.hidden = true; m.style.transform = ""; sc.style.opacity = ""; }, 230);
+  }
+  function openRowMenu(row, btns) {
+    var list = $("#rowMenuList"); list.textContent = "";
+    btns.forEach(function (b) {
+      var li = el("li");
+      var item = el("button", "row-menu-item" + (/^del-/.test(b.getAttribute("data-act") || "") ? " danger" : ""));
+      item.type = "button"; item.setAttribute("role", "menuitem");
+      var svg = b.querySelector("svg"); if (svg) item.appendChild(svg.cloneNode(true));
+      item.appendChild(el("span", "", ACT_LABEL[b.getAttribute("data-act")] || b.getAttribute("aria-label") || ""));
+      item.addEventListener("click", function () { closeRowMenu(); b.click(); });
+      li.appendChild(item); list.appendChild(li);
+    });
+    var t = row.querySelector(".dt-main .g-title");
+    $("#rowMenuTitle").textContent = t ? t.textContent : "";
+    $("#rowMenu").hidden = false;
+    $("#rowMenuScrim").hidden = false;
+    rowMenuOpenedAt = Date.now();
+  }
+  (function () {
+    var TIMEOUT = 500, TOL = 10;
+    var timer = null, row = null, btns = null, x0 = null, y0 = null;
+    function cancel() { if (timer) { clearTimeout(timer); timer = null; } row = null; }
+    document.addEventListener("touchstart", function (e) {
+      cancel();
+      if (e.touches.length > 1 || !(e.target.closest)) return;
+      var r = e.target.closest(".dt-row");
+      if (!r || e.target.closest(".icon-btn") || e.target.closest(".swipe-del")) return;
+      var wrap = r.closest(".swipe-wrap");
+      if (wrap && wrap.classList.contains("swipe-open")) return; // déjà ouverte sur le bouton rouge : pas de double menu
+      var found = r.querySelectorAll(".dt-end .icon-btn[data-act]");
+      if (!found.length) return;
+      row = r; btns = found; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+      timer = setTimeout(function () {
+        timer = null;
+        if (navigator.vibrate) navigator.vibrate(10);
+        openRowMenu(row, btns); row = null;
+      }, TIMEOUT);
+    }, { passive: true });
+    document.addEventListener("touchmove", function (e) {
+      if (!timer) return;
+      var t = e.touches[0];
+      if (Math.abs(t.clientX - x0) > TOL || Math.abs(t.clientY - y0) > TOL) cancel();
+    }, { passive: true });
+    document.addEventListener("touchend", cancel);
+    document.addEventListener("touchcancel", cancel);
+    window.addEventListener("scroll", cancel, { passive: true });
+  })();
+  (function () {
+    var m = $("#rowMenu"), y0 = null, dy = 0;
+    m.addEventListener("touchstart", function (e) {
+      if (m.scrollTop > 0 || e.touches.length > 1) { y0 = null; return; }
+      y0 = e.touches[0].clientY; dy = 0;
+    }, { passive: true });
+    m.addEventListener("touchmove", function (e) {
+      if (y0 == null) return;
+      dy = e.touches[0].clientY - y0;
+      if (dy <= 0) { if (dy < -6) y0 = null; m.style.transform = ""; return; }
+      e.preventDefault();
+      m.classList.add("dragging");
+      m.style.transform = "translateY(" + dy + "px)";
+    }, { passive: false });
+    function end() {
+      if (y0 == null) return;
+      y0 = null;
+      m.classList.remove("dragging");
+      if (dy > 90) closeRowMenu(); else m.style.transform = "";
+    }
+    m.addEventListener("touchend", end);
+    m.addEventListener("touchcancel", end);
+  })();
+  $("#rowMenuScrim").addEventListener("click", function () {
+    if (Date.now() - rowMenuOpenedAt > 300) closeRowMenu(); // ignore un clic synthétisé juste après l'ouverture (relâché du doigt resté sur place)
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("#rowMenu").hidden) closeRowMenu(); });
   function toggleMenu(kind) {
     var isMega = kind === "mega";
     var panel = isMega ? $("#mega") : $("#moreSheet");

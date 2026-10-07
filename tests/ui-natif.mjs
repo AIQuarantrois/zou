@@ -94,7 +94,7 @@ assert.equal(await shown(page, "#siteFoot"), false, "pas de pied de page de site
 await page.locator("#moreBtn").click(); await page.waitForTimeout(350);
 const sheet = await page.locator("#moreSheet").innerText();
 for (const t of ["Contact", "À propos", "Mentions légales", "Confidentialité", "Conditions d'utilisation", "Cookies", "Accessibilité", "Plan du site", "Information juridique générale"]) assert.ok(sheet.includes(t), "manque dans « Plus » : " + t);
-await page.locator(".sheet-grab").click(); await page.waitForTimeout(350);
+await page.locator("#moreSheet .sheet-grab").click(); await page.waitForTimeout(350);
 assert.equal(await page.locator("#moreSheet").isHidden(), true, "la poignée ferme la feuille");
 assert.equal(await page.locator("#scrim").isHidden(), true);
 await page.locator("#moreBtn").click(); await page.waitForTimeout(350);

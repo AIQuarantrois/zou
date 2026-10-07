@@ -155,5 +155,55 @@ assert.equal(await page.locator('[data-view="agenda"]').getByText("Impôts").cou
 await ctx.close();
 ok("le bouton rouge révélé passe par le même répartiteur et la même bannière « Annuler » que l'icône corbeille");
 
+// ---- 9. Menu contextuel (appui long sur une ligne du Coffre ou de l'Agenda) : mêmes actions que les
+// icônes de la ligne, dans une feuille nommée ; appui court ou doigt qui bouge -> rien ; aucune action
+// sur une ligne sans icône (Dossiers) ; une entrée déclenche la même action (et la même annulation) que
+// l'icône correspondante.
+async function longPress(page, locator, ms = 600) {
+  const box = await locator.boundingBox();
+  const pt = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await locator.evaluate((el, p) => {
+    const t = new Touch({ identifier: 9, target: el, clientX: p.x, clientY: p.y });
+    el.dispatchEvent(new TouchEvent("touchstart", { touches: [t], bubbles: true, cancelable: true }));
+  }, pt);
+  await page.waitForTimeout(ms);
+  await page.evaluate(() => document.dispatchEvent(new TouchEvent("touchend", { touches: [], bubbles: true, cancelable: true })));
+  return pt;
+}
+({ ctx, page } = await open());
+await page.goto(BASE + "/#agenda"); await page.waitForTimeout(200);
+await page.fill("#a-title", "Audience prud'homale"); await page.fill("#a-date", "2031-05-20");
+await page.click('#agendaForm button[type="submit"]'); await page.waitForTimeout(250);
+const dateRow = page.locator('.dt-row:has-text("Audience prud\'homale")');
+await longPress(page, dateRow, 300);
+await page.waitForTimeout(150);
+assert.equal(await page.locator("#rowMenu").isHidden(), true, "appui trop court : pas de menu");
+await longPress(page, dateRow);
+await page.waitForTimeout(150);
+assert.equal(await page.locator("#rowMenu").isHidden(), false, "appui long : le menu s'ouvre");
+assert.equal(await page.locator("#rowMenuTitle").textContent(), "Audience prud'homale", "le menu nomme la ligne");
+assert.deepEqual(await page.locator(".row-menu-item").allTextContents(), ["Supprimer"], "les mêmes actions que l'icône de la ligne (ici, une seule)");
+await page.waitForTimeout(350); // passé la garde anti-clic-fantôme (doigt resté sur place au relâché)
+await page.locator("#rowMenuScrim").click({ position: { x: 10, y: 10 } });
+await page.waitForTimeout(300);
+assert.equal(await page.locator("#rowMenu").isHidden(), true, "un tap en dehors referme le menu, sans rien déclencher");
+assert.equal(await page.locator('[data-view="agenda"]').getByText("Audience prud'homale").count(), 1, "la ligne est toujours là");
+await longPress(page, dateRow);
+await page.waitForTimeout(150);
+await page.locator(".row-menu-item", { hasText: "Supprimer" }).click();
+await page.waitForTimeout(300);
+assert.equal(await page.locator("#rowMenu").isHidden(), true, "le menu se referme après l'action");
+assert.equal(await page.locator('[data-view="agenda"]').getByText("Audience prud'homale").count(), 0, "« Supprimer » depuis le menu agit, comme l'icône corbeille");
+assert.match(await page.locator("#toast").textContent(), /Date supprimée\.\s*Annuler/, "même bannière « Annuler »");
+await ctx.close();
+({ ctx, page } = await open());
+await page.goto(BASE + "/#vault"); await page.waitForTimeout(200);
+const docRow = page.locator('[data-view="vault"] .dt-row').first();
+await longPress(page, docRow);
+await page.waitForTimeout(150);
+assert.ok((await page.locator(".row-menu-item").allTextContents()).includes("Ajouter une date liée"), "Coffre : les actions de la ligne (ajouter une date, supprimer…) apparaissent aussi");
+await ctx.close();
+ok("menu contextuel (appui long) : mêmes actions que la ligne, nommé, refermable sans effet, une entrée agit comme l'icône correspondante");
+
 await browser.close();
 if (problems.length) { console.log("PROBLÈMES :"); for (const p of problems) console.log(p); process.exit(1); }
