@@ -92,5 +92,42 @@ assert.equal(await page.locator("#installSec").isVisible(), false, "ni dans « P
 await ctx.close();
 ok("une fois l'application installée, plus aucune invitation à l'installer (bas de plan, « Plus »)");
 
+// ---- 5. Geste de retour au bord gauche (comme iOS) : seuil franchi -> retour, comme le bouton de l'en-tête ;
+// trop court -> l'écran revient en place ; rien sur l'accueil (pas de retour) ni sur grand écran (pas de geste).
+async function edgeSwipe(page, totalDx, steps = 8, startX = 10) {
+  await page.evaluate((x) => {
+    const t = new Touch({ identifier: 3, target: document.body, clientX: x, clientY: 400 });
+    document.dispatchEvent(new TouchEvent("touchstart", { touches: [t], bubbles: true, cancelable: true }));
+  }, startX);
+  for (let i = 1; i <= steps; i++) {
+    await page.evaluate((x) => {
+      const t = new Touch({ identifier: 3, target: document.body, clientX: x, clientY: 400 });
+      document.dispatchEvent(new TouchEvent("touchmove", { touches: [t], bubbles: true, cancelable: true }));
+    }, startX + Math.round((totalDx * i) / steps));
+    await page.waitForTimeout(16);
+  }
+  await page.evaluate(() => document.dispatchEvent(new TouchEvent("touchend", { touches: [], bubbles: true, cancelable: true })));
+}
+({ ctx, page } = await open({ touch: true, reduced: true }, "/#vie.visa"));
+await edgeSwipe(page, 30);
+await page.waitForTimeout(250);
+assert.equal(await page.evaluate(() => location.hash), "#vie.visa", "glissement trop court : pas de retour");
+assert.equal(await page.locator('[data-view="vie"]').evaluate((e) => e.style.transform), "", "l'écran revient bien à sa place (transform effacé)");
+await edgeSwipe(page, 100);
+await page.waitForTimeout(250);
+assert.notEqual(await page.evaluate(() => location.hash), "#vie.visa", "glissement au-delà du seuil : retour déclenché, comme le bouton de l'en-tête");
+await ctx.close();
+({ ctx, page } = await open({ touch: true, reduced: true }, "/#home"));
+await edgeSwipe(page, 150);
+await page.waitForTimeout(250);
+assert.equal(await page.evaluate(() => location.hash), "#home", "sur un écran racine (rien à quitter) : le geste reste sans effet");
+await ctx.close();
+({ ctx, page } = await open({ viewport: { width: 1280, height: 900 }, touch: true, reduced: true }, "/#vie.visa"));
+await edgeSwipe(page, 150);
+await page.waitForTimeout(250);
+assert.equal(await page.evaluate(() => location.hash), "#vie.visa", "sur grand écran (bouton « Retour » déjà absent) : le geste reste sans effet");
+await ctx.close();
+ok("geste de retour au bord gauche : seuil franchi -> retour (comme l'en-tête), trop court -> en place, rien sur l'accueil ni sur grand écran");
+
 await browser.close();
 if (problems.length) { console.log("PROBLÈMES :"); for (const p of problems) console.log(p); process.exit(1); }

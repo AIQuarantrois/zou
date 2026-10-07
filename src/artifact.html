@@ -1171,6 +1171,12 @@ a, button, input, select, textarea, summary, [role="button"], .tab, .btn, .link-
   .nav-pop { animation: nav-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
 }
 @media (prefers-reduced-motion: reduce) { .nav-push, .nav-pop { animation: none; } }
+/* Geste de retour au bord gauche (comme iOS) : l'écran courant suit le doigt depuis le tout bord, une
+   ombre portée à gauche donne la sensation qu'il se soulève, puis il revient en place ou complète le
+   retour (--headBack prend le relais, avec sa propre entrée .nav-pop pour l'écran précédent). */
+[data-view].nav-drag { box-shadow: -24px 0 32px -24px rgba(16, 19, 24, 0.35); }
+[data-view].nav-drag-snap { transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@media (prefers-reduced-motion: reduce) { [data-view].nav-drag-snap { transition: none; } }
 /* En-tête d'écran : retour en haut à gauche, titre qui apparaît quand le grand titre passe sous l'en-tête */
 .head-in { position: relative; }
 .head-back { display: none; align-items: center; gap: 0; min-height: 44px; max-width: 30%; margin-left: -10px; padding: 0 6px 0 0; background: none; border: 0; color: var(--accent); font-size: calc(16px * var(--fs, 1)); font-weight: 500; }
@@ -4089,6 +4095,53 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       }
       closeAll(); // un tap ailleurs (y compris sur la ligne elle-même, une fois ouverte) la referme
     });
+  })();
+  /* ----- Geste de retour au bord gauche (comme iOS) : un doigt posé dans les 24 derniers pixels de
+     l'écran, sur un écran empilé (téléphone), fait glisser l'écran ; relâché au-delà du seuil (ou
+     flick rapide), le même chemin que le bouton « Retour » de l'en-tête (headBack) prend le relais. ----- */
+  (function () {
+    var EDGE = 24, THRESHOLD = 80;
+    var view = null, x0 = null, y0 = null, dx = 0, t0 = 0, locked = null;
+    document.addEventListener("touchstart", function (e) {
+      view = null;
+      if (e.touches.length > 1 || window.innerWidth >= 1000 || !document.body.classList.contains("is-sub")) return;
+      if (e.touches[0].clientX > EDGE) return;
+      var sc = $("#scrim"); if (sc && !sc.hidden) return; // une feuille est ouverte par-dessus : pas de double geste
+      if (e.target.closest && e.target.closest(".swipe-body")) return; // priorité au glissement de suppression d'une ligne
+      var v = $('[data-view="' + cur.name + '"]');
+      if (!v) return;
+      view = v; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; t0 = Date.now(); locked = null;
+      view.classList.remove("nav-drag-snap");
+    }, { passive: true });
+    document.addEventListener("touchmove", function (e) {
+      if (!view) return;
+      var t = e.touches[0], ddx = t.clientX - x0, ddy = t.clientY - y0;
+      if (!locked) {
+        if (Math.abs(ddx) < 6 && Math.abs(ddy) < 6) return;
+        locked = Math.abs(ddx) > Math.abs(ddy) ? "h" : "v";
+        if (locked === "v" || ddx < 0) { view = null; return; }
+      }
+      e.preventDefault();
+      dx = Math.min(window.innerWidth, ddx);
+      view.classList.add("nav-drag");
+      view.style.transform = "translateX(" + dx + "px)";
+    }, { passive: false });
+    function end() {
+      if (!view) return;
+      var v = view, fast = dx / Math.max(1, Date.now() - t0) > 0.5;
+      view = null;
+      if (dx > THRESHOLD || (fast && dx > 24)) {
+        v.classList.remove("nav-drag");
+        v.style.transform = "";
+        headBack();
+      } else {
+        v.classList.add("nav-drag-snap");
+        v.style.transform = "";
+        setTimeout(function () { v.classList.remove("nav-drag", "nav-drag-snap"); }, reduceMotion ? 0 : 220);
+      }
+    }
+    document.addEventListener("touchend", end);
+    document.addEventListener("touchcancel", end);
   })();
   function toggleMenu(kind) {
     var isMega = kind === "mega";
