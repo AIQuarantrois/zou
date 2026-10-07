@@ -47,29 +47,33 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="ad-login">
+    <div className="ad-login-page">
       <style>{ADMIN_CSS}</style>
-      <h1>ZOU · Backoffice</h1>
-      {step === "email" ? (
-        <form onSubmit={sendCode} className="ad-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div className="ad-field">
-            <label htmlFor="ad-email">Adresse e-mail</label>
-            <input id="ad-email" type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          {err && <p className="ad-err">{err}</p>}
-          <button className="ad-btn" type="submit" disabled={busy}>Recevoir le code</button>
-        </form>
-      ) : (
-        <form onSubmit={verify} className="ad-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <p className="ad-ok">Code envoyé à {email}.</p>
-          <div className="ad-field">
-            <label htmlFor="ad-code">Code à 6 chiffres</label>
-            <input id="ad-code" inputMode="numeric" pattern="[0-9]{6}" required autoFocus maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} />
-          </div>
-          {err && <p className="ad-err">{err}</p>}
-          <button className="ad-btn" type="submit" disabled={busy || code.length !== 6}>Se connecter</button>
-        </form>
-      )}
+      <div className="ad-login">
+        <h1>ZOU <small style={{ fontFamily: "var(--font-ui)", fontWeight: 500, fontSize: 15, color: "var(--ink-3)" }}>Backoffice</small></h1>
+        <div className="ad-card">
+          {step === "email" ? (
+            <form onSubmit={sendCode} className="ad-card-pad">
+              <div className="ad-field">
+                <label htmlFor="ad-email">Adresse e-mail</label>
+                <input id="ad-email" type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              {err && <p className="ad-err">{err}</p>}
+              <button className="ad-btn" type="submit" disabled={busy}>Recevoir le code</button>
+            </form>
+          ) : (
+            <form onSubmit={verify} className="ad-card-pad">
+              <p className="ad-lede" style={{ margin: 0 }}>Code envoyé à {email}.</p>
+              <div className="ad-field">
+                <label htmlFor="ad-code">Code à 6 chiffres</label>
+                <input id="ad-code" inputMode="numeric" pattern="[0-9]{6}" required autoFocus maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} />
+              </div>
+              {err && <p className="ad-err">{err}</p>}
+              <button className="ad-btn" type="submit" disabled={busy || code.length !== 6}>Se connecter</button>
+            </form>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

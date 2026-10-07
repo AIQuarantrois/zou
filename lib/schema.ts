@@ -212,6 +212,13 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX IF NOT EXISTS emergency_contacts_public_idx ON emergency_contacts (active, sort_order)`,
     ],
   },
+  {
+    id: "005_pros_featured",
+    statements: [
+      // Mise en avant dans l'annuaire, pilotée depuis le backoffice (prépare la monétisation : lot 5).
+      `ALTER TABLE pros ADD COLUMN IF NOT EXISTS featured boolean NOT NULL DEFAULT false`,
+    ],
+  },
 ];
 
 type Run = (text: string, params?: unknown[]) => Promise<Record<string, unknown>[]>;

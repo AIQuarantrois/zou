@@ -13,10 +13,12 @@ import AdminShell from "./AdminShell";
 export default async function ProtectedAdminLayout({ children }: { children: ReactNode }) {
   if (!hasDb()) {
     return (
-      <div className="ad-login">
+      <div className="ad-denied">
         <style>{ADMIN_CSS}</style>
-        <h1>ZOU · Backoffice</h1>
-        <p className="ad-err">La base de données n'est pas encore connectée.</p>
+        <div className="ad-wrap">
+          <h1>Backoffice</h1>
+          <p className="ad-err">La base de données n'est pas encore connectée.</p>
+        </div>
       </div>
     );
   }
@@ -25,17 +27,19 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
   if (!user) redirect("/admin/login");
   if (!user.is_admin) {
     return (
-      <div className="ad-login">
+      <div className="ad-denied">
         <style>{ADMIN_CSS}</style>
-        <h1>Accès réservé</h1>
-        <p className="ad-ok">{user.email} n'a pas accès au backoffice. Demandez à un administrateur de vous l'accorder.</p>
+        <div className="ad-wrap">
+          <h1>Accès réservé</h1>
+          <p className="ad-lede">{user.email} n'a pas accès au backoffice. Demandez à un administrateur de vous l'accorder.</p>
+        </div>
       </div>
     );
   }
   return (
-    <div className="ad-shell">
+    <>
       <style>{ADMIN_CSS}</style>
       <AdminShell email={user.email}>{children}</AdminShell>
-    </div>
+    </>
   );
 }

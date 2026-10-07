@@ -134,3 +134,9 @@ export function bearerMatches(req: Request, expected: string, minLen: number) {
 export function requireAdmin(req: Request) {
   if (!bearerMatches(req, env.adminToken, 24)) throw new ApiError(401, "admin_required", "Accès réservé.");
 }
+
+/** Jeton bearer (scripts, cron) OU session administrateur (backoffice) : les deux donnent le même accès. */
+export async function requireAdminAny(req: Request): Promise<void> {
+  if (bearerMatches(req, env.adminToken, 24)) return;
+  await requireAdminSession(req);
+}

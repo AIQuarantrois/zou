@@ -77,7 +77,7 @@ const cron = await M("app/api/cron/reminders/route.ts");
 let r = await call(migrate, "POST", "/api/admin/migrate");
 assert.equal(r.status, 401); ok("migration refusée sans jeton");
 r = await call(migrate, "POST", "/api/admin/migrate", { headers: ADMIN, json: {} });
-assert.equal(r.status, 200); assert.deepEqual(r.data.applied, ["001_init", "002_legal_sources", "003_plan_feedback", "004_admin_emergency"]); ok("migration appliquée");
+assert.equal(r.status, 200); assert.deepEqual(r.data.applied, ["001_init", "002_legal_sources", "003_plan_feedback", "004_admin_emergency", "005_pros_featured"]); ok("migration appliquée");
 r = await call(migrate, "POST", "/api/admin/migrate", { headers: ADMIN, json: {} });
 assert.deepEqual(r.data.applied, []); ok("migration idempotente");
 
@@ -200,9 +200,19 @@ r = await call(pros, "POST", "/api/pros", { json: { profession: "avocat", displa
 assert.equal(r.status, 201); assert.equal(r.data.pro.status, "pending"); const pid = r.data.pro.id; ok("inscription professionnelle (en attente)");
 r = await call(pros, "POST", "/api/pros", { json: { profession: "avocat", display_name: "Me Rakoto", city: "Tana" } }); assert.equal(r.status, 409); ok("une seule fiche par compte");
 r = await call(pros, "GET", "/api/pros"); assert.equal(r.data.pros.length, 0); ok("annuaire : fiche en attente invisible");
-r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { ctx: { params: Promise.resolve({ id: pid }) }, json: { status: "verified" } }); assert.equal(r.status, 401); ok("vérification refusée sans jeton");
+r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { ctx: { params: Promise.resolve({ id: pid }) }, json: { status: "verified" } }); assert.equal(r.status, 403); ok("vérification refusée : connectée mais pas administratrice");
+{ const noCookie = cookie; cookie = ""; r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { ctx: { params: Promise.resolve({ id: pid }) }, json: { status: "verified" } }); assert.equal(r.status, 401); cookie = noCookie; }
+ok("vérification refusée : sans session ni jeton");
+r = await call(adminProId, "GET", "/api/admin/pros/" + pid, { ctx: { params: Promise.resolve({ id: pid }) } }); assert.equal(r.status, 403); ok("détail d'une fiche refusé : connectée mais pas administratrice");
 r = await call(adminPros, "GET", "/api/admin/pros", { headers: ADMIN }); assert.equal(r.data.pros.length, 1); ok("admin : file des fiches en attente");
 r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { headers: ADMIN, ctx: { params: Promise.resolve({ id: pid }) }, json: { status: "verified" } }); assert.equal(r.data.pro.status, "verified"); ok("fiche vérifiée");
+r = await call(adminProId, "GET", "/api/admin/pros/" + pid, { headers: ADMIN, ctx: { params: Promise.resolve({ id: pid }) } });
+assert.equal(r.status, 200); assert.equal(r.data.pro.display_name, "Me Rakoto"); assert.equal(r.data.pro.email, "rajo@example.com"); ok("admin : détail d'une fiche");
+r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { headers: ADMIN, ctx: { params: Promise.resolve({ id: pid }) }, json: { featured: true } });
+assert.equal(r.data.pro.featured, true); assert.equal(r.data.pro.status, "verified"); ok("fiche mise en avant, sans toucher au statut");
+r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { headers: ADMIN, ctx: { params: Promise.resolve({ id: pid }) }, json: {} }); assert.equal(r.status, 400); ok("modification vide refusée");
+r = await call(adminPros, "GET", "/api/admin/pros?status=all", { headers: ADMIN }); assert.equal(r.data.pros.length, 1); ok("admin : toutes les fiches, tous statuts confondus");
+r = await call(adminPros, "GET", "/api/admin/pros?status=rejected", { headers: ADMIN }); assert.deepEqual(r.data.pros, []); ok("admin : file des fiches rejetées, vide ici");
 r = await call(pros, "GET", "/api/pros?profession=avocat&city=tana&domain=travail"); assert.equal(r.data.pros.length, 1); assert.equal(r.data.pros[0].registration_no, "B-123"); ok("annuaire : filtres métier, ville, domaine");
 const saved = cookie; cookie = "";
 const nMails = mails.length;
@@ -223,6 +233,10 @@ r = await call(adminUsers, "PATCH", "/api/admin/users", { headers: ADMIN, json: 
 assert.equal(r.status, 200); assert.equal(r.data.user.is_admin, true); ok("compte promu administrateur (jeton bearer, casse de l'e-mail ignorée)");
 
 r = await call(adminEmergency, "GET", "/api/admin/emergency"); assert.equal(r.status, 200); assert.deepEqual(r.data.contacts, []); ok("backoffice : accès accordé une fois admin, liste vide au départ");
+r = await call(adminPros, "GET", "/api/admin/pros?status=verified"); assert.equal(r.data.pros.length, 1); assert.equal(r.data.pros[0].id, pid); ok("backoffice : file des professionnels accessible par session (pas seulement par jeton)");
+r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { ctx: { params: Promise.resolve({ id: pid }) }, json: { status: "suspended" } });
+assert.equal(r.data.pro.status, "suspended"); ok("professionnel suspendu depuis le backoffice (session)");
+r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { ctx: { params: Promise.resolve({ id: pid }) }, json: { status: "verified" } }); assert.equal(r.data.pro.status, "verified");
 r = await call(adminEmergency, "POST", "/api/admin/emergency", { json: { label: "Police" } }); assert.equal(r.status, 400); ok("numéro utile : téléphone requis");
 r = await call(adminEmergency, "POST", "/api/admin/emergency", { json: { label: "Police", phone: "117", description: "Police nationale", sort_order: 1 } });
 assert.equal(r.status, 201); assert.equal(r.data.contact.active, true); const emgId = r.data.contact.id; ok("numéro utile créé");
