@@ -63,6 +63,10 @@ const prosMe = await M("app/api/pros/me/route.ts");
 const prosContact = await M("app/api/pros/[id]/contact/route.ts");
 const adminPros = await M("app/api/admin/pros/route.ts");
 const adminProId = await M("app/api/admin/pros/[id]/route.ts");
+const adminUsers = await M("app/api/admin/users/route.ts");
+const adminEmergency = await M("app/api/admin/emergency/route.ts");
+const adminEmergencyId = await M("app/api/admin/emergency/[id]/route.ts");
+const emergency = await M("app/api/emergency/route.ts");
 const contact = await M("app/api/contact/route.ts");
 const feedback = await M("app/api/feedback/route.ts");
 const adminFeedback = await M("app/api/admin/feedback/route.ts");
@@ -73,7 +77,7 @@ const cron = await M("app/api/cron/reminders/route.ts");
 let r = await call(migrate, "POST", "/api/admin/migrate");
 assert.equal(r.status, 401); ok("migration refusée sans jeton");
 r = await call(migrate, "POST", "/api/admin/migrate", { headers: ADMIN, json: {} });
-assert.equal(r.status, 200); assert.deepEqual(r.data.applied, ["001_init", "002_legal_sources", "003_plan_feedback"]); ok("migration appliquée");
+assert.equal(r.status, 200); assert.deepEqual(r.data.applied, ["001_init", "002_legal_sources", "003_plan_feedback", "004_admin_emergency"]); ok("migration appliquée");
 r = await call(migrate, "POST", "/api/admin/migrate", { headers: ADMIN, json: {} });
 assert.deepEqual(r.data.applied, []); ok("migration idempotente");
 
@@ -207,6 +211,31 @@ assert.equal(r.status, 201); assert.equal(mails.length, nMails + 1); assert.ok(m
 cookie = saved;
 r = await call(prosMe, "GET", "/api/pros/me"); assert.equal(r.data.requests.length, 1); ok("boîte de réception du professionnel");
 r = await call(prosMe, "PATCH", "/api/pros/me", { json: { bio: "Droit du travail", domains: ["travail"] } }); assert.equal(r.data.pro.bio, "Droit du travail"); ok("fiche professionnelle modifiée");
+
+// --- backoffice : rôle administrateur et numéros utiles (contenu piloté depuis le backoffice, jamais en dur)
+{ const noCookie = cookie; cookie = ""; r = await call(adminEmergency, "GET", "/api/admin/emergency"); assert.equal(r.status, 401); cookie = noCookie; }
+ok("backoffice : refusé sans session");
+r = await call(adminEmergency, "GET", "/api/admin/emergency"); // session de rajo (connectée plus haut), pas encore admin
+assert.equal(r.status, 403); ok("backoffice : connectée mais pas administratrice -> refusé");
+r = await call(adminUsers, "PATCH", "/api/admin/users", { json: { email: "rajo@example.com", is_admin: true } }); assert.equal(r.status, 401); ok("promotion admin refusée sans jeton");
+r = await call(adminUsers, "PATCH", "/api/admin/users", { headers: ADMIN, json: { email: "inconnu@example.com", is_admin: true } }); assert.equal(r.status, 404); ok("promotion admin : compte inconnu refusé");
+r = await call(adminUsers, "PATCH", "/api/admin/users", { headers: ADMIN, json: { email: "RAJO@example.com", is_admin: true } });
+assert.equal(r.status, 200); assert.equal(r.data.user.is_admin, true); ok("compte promu administrateur (jeton bearer, casse de l'e-mail ignorée)");
+
+r = await call(adminEmergency, "GET", "/api/admin/emergency"); assert.equal(r.status, 200); assert.deepEqual(r.data.contacts, []); ok("backoffice : accès accordé une fois admin, liste vide au départ");
+r = await call(adminEmergency, "POST", "/api/admin/emergency", { json: { label: "Police" } }); assert.equal(r.status, 400); ok("numéro utile : téléphone requis");
+r = await call(adminEmergency, "POST", "/api/admin/emergency", { json: { label: "Police", phone: "117", description: "Police nationale", sort_order: 1 } });
+assert.equal(r.status, 201); assert.equal(r.data.contact.active, true); const emgId = r.data.contact.id; ok("numéro utile créé");
+r = await call(emergency, "GET", "/api/emergency"); assert.equal(r.data.contacts.length, 1); assert.equal(r.data.contacts[0].phone, "117"); ok("numéros utiles : visible publiquement, sans session");
+r = await call(adminEmergencyId, "PATCH", "/api/admin/emergency/pas-un-uuid", { ctx: { params: Promise.resolve({ id: "pas-un-uuid" }) }, json: { active: false } }); assert.equal(r.status, 400); ok("numéro utile : identifiant invalide refusé");
+r = await call(adminEmergencyId, "PATCH", "/api/admin/emergency/" + emgId, { ctx: { params: Promise.resolve({ id: emgId }) }, json: { active: false } }); assert.equal(r.data.contact.active, false); ok("numéro utile désactivé");
+r = await call(emergency, "GET", "/api/emergency"); assert.equal(r.data.contacts.length, 0); ok("numéro utile désactivé : disparaît de la liste publique");
+r = await call(adminEmergency, "GET", "/api/admin/emergency"); assert.equal(r.data.contacts.length, 1); ok("numéro utile désactivé : reste visible au backoffice");
+r = await call(adminEmergencyId, "DELETE", "/api/admin/emergency/" + emgId, { ctx: { params: Promise.resolve({ id: emgId }) } }); assert.equal(r.status, 200); ok("numéro utile supprimé");
+r = await call(adminEmergencyId, "DELETE", "/api/admin/emergency/" + emgId, { ctx: { params: Promise.resolve({ id: emgId }) } }); assert.equal(r.status, 404); ok("numéro utile déjà supprimé : 404");
+
+r = await call(adminUsers, "PATCH", "/api/admin/users", { headers: ADMIN, json: { email: "rajo@example.com", is_admin: false } }); assert.equal(r.data.user.is_admin, false);
+r = await call(adminEmergency, "GET", "/api/admin/emergency"); assert.equal(r.status, 403); ok("rôle administrateur retiré : backoffice refusé de nouveau");
 
 // --- contact support
 r = await call(contact, "POST", "/api/contact", { json: { name: "Rajo", email: "rajo@example.com", message: "Une question sur ZOU, merci." } }); assert.equal(r.status, 201); ok("formulaire de contact");

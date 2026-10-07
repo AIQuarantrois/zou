@@ -192,6 +192,26 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX IF NOT EXISTS plan_feedback_plan_idx ON plan_feedback (plan, created_at DESC)`,
     ],
   },
+  {
+    id: "004_admin_emergency",
+    statements: [
+      // Rôle d'administration, pour le backoffice (distinct du jeton bearer utilisé par les scripts et le cron).
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin boolean NOT NULL DEFAULT false`,
+
+      // Numéros utiles (secours, urgences vitales) : contenu piloté depuis le backoffice, jamais codé en dur.
+      `CREATE TABLE IF NOT EXISTS emergency_contacts (
+         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+         label text NOT NULL,
+         phone text NOT NULL,
+         description text,
+         sort_order int NOT NULL DEFAULT 0,
+         active boolean NOT NULL DEFAULT true,
+         created_at timestamptz NOT NULL DEFAULT now(),
+         updated_at timestamptz NOT NULL DEFAULT now()
+       )`,
+      `CREATE INDEX IF NOT EXISTS emergency_contacts_public_idx ON emergency_contacts (active, sort_order)`,
+    ],
+  },
 ];
 
 type Run = (text: string, params?: unknown[]) => Promise<Record<string, unknown>[]>;

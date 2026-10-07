@@ -44,7 +44,7 @@
 <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" href="/icons/splash/dark-750x1334.png">
 <link rel="preload" href="/assets/fonts/inter-4-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/app.f90a9be218.css">
+<link rel="stylesheet" href="/assets/app.e20f15b27c.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -66,6 +66,7 @@
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7 9l5-5 5 5M5 19h14"/></symbol>
   <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8a1 1 0 0 1 1-1h3l1.6-2.4a1 1 0 0 1 .8-.6h5.2a1 1 0 0 1 .8.6L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><circle cx="12" cy="13" r="3.4"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 5v11M7 11l5 5 5-5M5 19h14"/></symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z"/></symbol>
   <symbol id="i-more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></symbol>
@@ -320,6 +321,10 @@
           <div class="page-head">
             <h1 id="h-urgent" class="h-display">J'ai un problème maintenant</h1>
             <p class="lede">Choisissez votre situation. Vous voyez d'abord ce que dit la loi, puis des réflexes pratiques.</p>
+          </div>
+          <div id="emgWrap" hidden>
+            <h2 class="emg-h2">Numéros utiles</h2>
+            <div class="emg-list" id="emgList"></div>
           </div>
           <div id="urgTable"></div>
           <div class="urg-list" id="urgSrc" hidden>
@@ -1214,7 +1219,7 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.bffa036f29.js"></script>
+<script src="/assets/app.f7b5b55839.js"></script>
 <script src="/register-sw.js"></script>
 </body>
 </html>

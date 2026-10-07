@@ -4,6 +4,7 @@ import { ApiError } from "./http";
 import { one, q } from "./db";
 
 const COOKIE = "zou_session";
+export const SESSION_COOKIE = COOKIE;
 const SESSION_DAYS = 30;
 
 function b64u(buf: Buffer | string) {
@@ -59,20 +60,33 @@ export function clearCookie() {
   return `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
 }
 
-export type User = { id: string; email: string; name: string | null; phone: string | null; locale: string };
+export type User = { id: string; email: string; name: string | null; phone: string | null; locale: string; is_admin: boolean };
 
-export async function currentUser(req: Request): Promise<User | null> {
-  const tok = readCookie(req, COOKIE);
+/** Cœur commun à la lecture d'un compte à partir d'un jeton de session — utilisé par les routes d'API (cookie
+ *  lu depuis la requête) comme par les pages du backoffice (cookie lu depuis `next/headers`). */
+export async function userFromSessionToken(tok: string | null): Promise<User | null> {
   if (!tok) return null;
   const id = verifySession(tok);
   if (!id) return null;
-  const u = await one(`SELECT id, email, name, phone, locale FROM users WHERE id = $1`, [id]);
+  const u = await one(`SELECT id, email, name, phone, locale, is_admin FROM users WHERE id = $1`, [id]);
   return (u as User) ?? null;
+}
+
+export async function currentUser(req: Request): Promise<User | null> {
+  return userFromSessionToken(readCookie(req, COOKIE));
 }
 
 export async function requireUser(req: Request): Promise<User> {
   const u = await currentUser(req);
   if (!u) throw new ApiError(401, "auth_required", "Connectez-vous pour continuer.");
+  return u;
+}
+
+/** Accès au backoffice : connecté et marqué administrateur (distinct du jeton bearer `requireAdmin`, réservé
+ *  aux scripts et au cron). Utilisé par les routes d'API appelées depuis les pages du backoffice. */
+export async function requireAdminSession(req: Request): Promise<User> {
+  const u = await requireUser(req);
+  if (!u.is_admin) throw new ApiError(403, "admin_required", "Accès réservé aux administrateurs.");
   return u;
 }
 

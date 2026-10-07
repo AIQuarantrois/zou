@@ -493,6 +493,15 @@ details.src[open] > summary .ico, .src details[open] > summary .ico { transform:
 .urg-body li { display: flex; gap: 12px; align-items: flex-start; color: var(--ink-2); }
 .urg-body li::before { content: ""; width: 5px; height: 5px; margin-top: 11px; border-radius: 50%; background: var(--ink-3); flex: none; }
 @media (prefers-reduced-motion: reduce) { .urg > summary .ico { transition: none; } }
+.emg-h2 { font-size: calc(16px * var(--fs, 1)); font-weight: 700; letter-spacing: -0.01em; margin-top: 32px; }
+.emg-list { display: flex; flex-direction: column; margin-top: 12px; max-width: 840px; border: 1px solid var(--rule); border-radius: var(--r-lg); overflow: hidden; }
+.emg-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-top: 1px solid var(--rule); }
+.emg-row:first-child { border-top: 0; }
+.emg-t { font-size: calc(16px * var(--fs, 1)); font-weight: 600; }
+.emg-d { font-size: calc(14px * var(--fs, 1)); color: var(--ink-2); margin-top: 2px; }
+.emg-call { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 700; text-decoration: none; flex: none; }
+.emg-call .ico { width: 18px; height: 18px; }
+.emg-call:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .where { display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 32px; max-width: 840px; border: 1px solid var(--rule); border-radius: var(--r-lg); overflow: hidden; }
 .where-row { padding: 22px 24px; border-top: 1px solid var(--rule); }
 .where-row:first-child { border-top: 0; }
@@ -1486,6 +1495,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7 9l5-5 5 5M5 19h14"/></symbol>
   <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8a1 1 0 0 1 1-1h3l1.6-2.4a1 1 0 0 1 .8-.6h5.2a1 1 0 0 1 .8.6L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><circle cx="12" cy="13" r="3.4"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 5v11M7 11l5 5 5-5M5 19h14"/></symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z"/></symbol>
   <symbol id="i-more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></symbol>
@@ -1740,6 +1750,10 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
           <div class="page-head">
             <h1 id="h-urgent" class="h-display">J'ai un problème maintenant</h1>
             <p class="lede">Choisissez votre situation. Vous voyez d'abord ce que dit la loi, puis des réflexes pratiques.</p>
+          </div>
+          <div id="emgWrap" hidden>
+            <h2 class="emg-h2">Numéros utiles</h2>
+            <div class="emg-list" id="emgList"></div>
           </div>
           <div id="urgTable"></div>
           <div class="urg-list" id="urgSrc" hidden>
@@ -4448,7 +4462,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (name === "vie") renderVie(arg);
     if (name === "pros") renderPros();
     if (name === "texts") initTexts();
-    if (name === "urgent") initUrgent();
+    if (name === "urgent") { initUrgent(); loadEmergency(); }
     if (name === "where") initWhere();
     if (name === "prospace") { renderPreview(); loadPro(); }
     if (name === "account") renderAccount();
@@ -6549,6 +6563,37 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       item: function (r) { return r.node; },
       cols: []
     });
+  }
+
+  /* ---- Numéros utiles : contenu piloté depuis le backoffice (jamais codé en dur), mis en cache pour
+         rester lisible hors connexion, comme le reste de l'application. ---- */
+  var EMG_KEY = "zou_emergency_v1";
+  function renderEmergency(list) {
+    var wrap = $("#emgWrap"), host = $("#emgList");
+    if (!list || !list.length) { wrap.hidden = true; return; }
+    host.textContent = "";
+    list.forEach(function (c) {
+      var row = el("div", "emg-row");
+      var txt = el("div");
+      txt.appendChild(el("div", "emg-t", c.label));
+      if (c.description) txt.appendChild(el("div", "emg-d", c.description));
+      row.appendChild(txt);
+      var a = document.createElement("a");
+      a.className = "emg-call";
+      a.href = "tel:" + c.phone.replace(/[^\d+]/g, "");
+      a.appendChild(icon("i-phone"));
+      a.appendChild(document.createTextNode(c.phone));
+      row.appendChild(a);
+      host.appendChild(row);
+    });
+    wrap.hidden = false;
+  }
+  function loadEmergency() {
+    try { var cached = JSON.parse(localStorage.getItem(EMG_KEY) || "null"); if (cached) renderEmergency(cached); } catch (e) { /* ignore */ }
+    request("GET", "/api/emergency").then(function (d) {
+      renderEmergency(d.contacts);
+      try { localStorage.setItem(EMG_KEY, JSON.stringify(d.contacts)); } catch (e) { /* ignore */ }
+    }, function () { /* hors ligne ou API indisponible : la version mise en cache (le cas échéant) reste affichée */ });
   }
   function initWhere() {
     if (whereDT) return;
