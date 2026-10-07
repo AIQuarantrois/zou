@@ -201,7 +201,36 @@ assert.ok(await page.evaluate(() => document.getElementById("main").getBoundingC
 await ctx.close();
 ok("écran large : logo, fil d'Ariane et pied de page conservés");
 
-// ---- 8. Démarrage : écrans iPhone clair et sombre, application en plein écran
+// ---- 8. Titre d'écran sur un parcours au nom long : assez de place, sans chevauchement avec la loupe
+// ou « Se connecter » (téléphone et tablette), bouton retour réduit au chevron (zone tactile 44 px,
+// libellé du parent toujours présent pour les lecteurs d'écran, juste masqué visuellement).
+for (const w of [390, 820]) {
+  ({ ctx, page } = await open({ viewport: { width: w, height: 844 } }));
+  await page.goto(BASE + "/#vie.garantie"); await page.waitForTimeout(350);
+  const geo = await page.evaluate(() => {
+    const ht = document.querySelector("#headTitle");
+    const back = document.querySelector("#headBack");
+    const backSpan = document.querySelector("#headBackT");
+    const right = document.querySelector(".head-cta") || document.querySelector(".head-icon.only-m");
+    const htr = ht.getBoundingClientRect(), br = back.getBoundingClientRect(), rr = right.getBoundingClientRect();
+    return {
+      titleClientWidth: ht.clientWidth,
+      backWidth: Math.round(br.width), backHeight: Math.round(br.height),
+      backSpanWidth: Math.round(backSpan.getBoundingClientRect().width),
+      backSpanText: backSpan.textContent.trim(),
+      overlapsRight: !(htr.right <= rr.left || htr.left >= rr.right),
+    };
+  });
+  assert.ok(geo.titleClientWidth >= 200, `titre d'écran : au moins 200px de large à ${w}px (obtenu ${geo.titleClientWidth})`);
+  assert.ok(geo.backWidth >= 44 && geo.backHeight >= 44, `bouton retour : zone tactile ≥ 44px à ${w}px (${geo.backWidth}x${geo.backHeight})`);
+  assert.ok(geo.backSpanWidth <= 2, "libellé du bouton retour masqué visuellement (réservé aux lecteurs d'écran)");
+  assert.equal(geo.backSpanText, "Copropriété et sûretés", "libellé du parent toujours présent dans le DOM");
+  assert.equal(geo.overlapsRight, false, `titre d'écran : pas de chevauchement avec la loupe/« Se connecter » à ${w}px`);
+  await ctx.close();
+}
+ok("titre d'écran sur un nom de parcours long : assez de place aux deux largeurs, bouton retour réduit au chevron (libellé accessible, zone tactile 44px), sans chevauchement");
+
+// ---- 9. Démarrage : écrans iPhone clair et sombre, application en plein écran
 ({ ctx, page } = await open());
 const links = await page.locator('link[rel="apple-touch-startup-image"]').evaluateAll((ls) => ls.map((l) => [l.getAttribute("href"), l.media]));
 assert.equal(links.length, 20);

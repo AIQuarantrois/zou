@@ -1229,8 +1229,9 @@ a, button, input, select, textarea, summary, [role="button"], .tab, .btn, .link-
 .head-title.on { opacity: 1; }
 @media (max-width: 999px) {
   .site-head.is-stack .brand { display: none; }
-  .site-head.is-stack .head-back { display: inline-flex; }
-  .site-head.is-stack .head-title { display: block; }
+  .site-head.is-stack .head-back { display: inline-flex; min-width: 44px; margin-left: 0; padding: 0; justify-content: center; }
+  .site-head.is-stack .head-back span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .site-head.is-stack .head-title { display: block; position: static; transform: none; flex: 1 1 auto; min-width: 0; max-width: none; text-align: center; margin: 0 4px; }
   body.is-sub [data-view]:not([hidden]) .back:not(.vie-backstep), body.is-sub [data-view]:not([hidden]) .crumb { display: none; }
   /* Pas de pied de page de site dans une application : ses liens sont dans « Plus » */
   .site-foot { display: none; }
