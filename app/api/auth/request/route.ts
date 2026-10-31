@@ -12,6 +12,7 @@ export const POST = api(async (req) => {
   const addr = email(b.email);
   await limit(ipKey(req, "otp-ip"), 10, 3600);
   await limit("otp-mail:" + addr, 5, 3600);
+  await limit("otp-all", env.codeMailHourly, 3600);
 
   const code = newCode();
   await storeCode(addr, code);

@@ -18,7 +18,16 @@ export const env = {
   get blobStoreId() { return process.env.BLOB_STORE_ID || ""; },
   get supportEmail() { return process.env.SUPPORT_EMAIL || ""; },
   get siteUrl() { return process.env.SITE_URL || ""; },
+  // Plafonds globaux par heure, toutes adresses confondues : bornent la facture de l'assistant et le quota d'envoi
+  // d'e-mails quand une attaque change d'adresse à chaque requête. Atteints, ils refusent aussi les vrais visiteurs.
+  get askAnonHourly() { return positive(process.env.ZOU_ASK_ANON_HOURLY, 200); },
+  get codeMailHourly() { return positive(process.env.ZOU_CODE_MAIL_HOURLY, 100); },
 };
+
+function positive(v: string | undefined, dflt: number) {
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? n : dflt;
+}
 
 export function capabilities() {
   return {

@@ -44,7 +44,7 @@
 <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" href="/icons/splash/dark-750x1334.png">
 <link rel="preload" href="/assets/fonts/inter-4-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/app.4cc7ca2c78.css">
+<link rel="stylesheet" href="/assets/app.cc7841947b.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -895,6 +895,27 @@
               </div>
               <p class="hint" style="margin-top:12px">Après déconnexion, vos données restent sur cet appareil et sur votre compte.</p>
             </div>
+            <div class="calc form-card" style="margin-top:16px">
+              <span class="label">Sécurité</span>
+              <p class="sub" style="margin:6px 0 12px">Téléphone perdu, ordinateur partagé : fermez votre compte sur tous les appareils où il est ouvert, celui-ci compris.</p>
+              <div class="cta-row">
+                <button class="btn btn-ghost" type="button" data-act="logout-all">Déconnecter tous les appareils</button>
+              </div>
+            </div>
+            <form class="calc form-card" id="accDelete" novalidate style="margin-top:16px">
+              <span class="label">Supprimer mon compte</span>
+              <p class="sub" style="margin:6px 0 12px">Efface définitivement votre compte, vos dossiers, vos dates, vos documents et leurs fichiers, ainsi que votre fiche professionnelle si vous en avez une. Les données de cet appareil sont effacées aussi. Cette action ne peut pas être annulée.</p>
+              <div class="fields">
+                <div class="field field-wide">
+                  <label for="acc-del-email">Pour confirmer, saisissez votre adresse e-mail</label>
+                  <input type="email" id="acc-del-email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false">
+                </div>
+              </div>
+              <p class="err" id="acc-del-err" role="alert"></p>
+              <div class="cta-row">
+                <button class="btn btn-danger" type="submit" id="acc-del-submit">Supprimer définitivement</button>
+              </div>
+            </form>
           </div>
         </section>
 
@@ -1219,7 +1240,7 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.6fea4a2a47.js"></script>
+<script src="/assets/app.cea6f71035.js"></script>
 <script src="/register-sw.js"></script>
 </body>
 </html>

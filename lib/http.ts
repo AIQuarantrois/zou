@@ -66,10 +66,26 @@ export function clientIp(req: Request) {
   return (xf ? xf.split(",")[0] : req.headers.get("x-real-ip") || "0.0.0.0").trim();
 }
 
-/** Empreinte de l'IP : on ne stocke jamais l'adresse en clair. */
+/**
+ * Ce qu'on limite pour une adresse : en IPv6 le bloc /64, que reçoit d'ordinaire un seul abonné (sinon il suffirait
+ * de changer les 64 derniers bits pour repartir de zéro) ; en IPv4, y compris notée « ::ffff:1.2.3.4 », l'adresse.
+ */
+export function ipBucket(ip: string): string {
+  const s = ip.trim().toLowerCase().replace(/^\[|\]$/g, "").replace(/%.*$/, "");
+  const v4 = s.match(/^(?:::ffff:)?(\d{1,3}(?:\.\d{1,3}){3})$/);
+  if (v4) return v4[1];
+  if (!s.includes(":")) return s;
+  const [head, tail] = s.split("::");
+  const h = head ? head.split(":") : [];
+  const t = tail ? tail.split(":") : [];
+  const groups = tail === undefined ? h : [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill("0"), ...t];
+  return groups.slice(0, 4).map((g) => (parseInt(g, 16) || 0).toString(16)).join(":") + "::/64";
+}
+
+/** Empreinte de l'IP (de son bloc /64 en IPv6) : on ne stocke jamais l'adresse en clair. */
 export function ipKey(req: Request, scope: string) {
   const secret = env.authSecret || "zou-dev";
-  return scope + ":" + createHmac("sha256", secret).update(clientIp(req)).digest("hex").slice(0, 24);
+  return scope + ":" + createHmac("sha256", secret).update(ipBucket(clientIp(req))).digest("hex").slice(0, 24);
 }
 
 // ---------- Validation ----------

@@ -10,7 +10,30 @@ const [h, p, s] = t.split(".");
 assert.equal(verifySession(`${h}.${Buffer.from(JSON.stringify({ sub: "x", exp: 9999999999 })).toString("base64url")}.${s}`), null);
 assert.equal(verifySession(t, Date.now() + 31 * 86400e3), null);
 assert.equal(verifySession("a.b"), null);
-console.log("  ok jetons de session : signature, altération, expiration");
+{
+  const { readSession } = await import("../lib/auth.ts");
+  assert.equal(readSession(signSession("u", 3)).v, 3);
+  // Jeton émis avant les versions de session (sans « v ») : vaut version 0, la session reste ouverte après la mise à jour.
+  const head = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+  const pay = Buffer.from(JSON.stringify({ sub: "u", iat: 1, exp: 9999999999 })).toString("base64url");
+  const { createHmac } = await import("node:crypto");
+  const sig = createHmac("sha256", process.env.AUTH_SECRET).update(`${head}.${pay}`).digest("base64url");
+  assert.deepEqual(readSession(`${head}.${pay}.${sig}`), { sub: "u", v: 0, iat: 1 });
+}
+console.log("  ok jetons de session : signature, altération, expiration, version");
+
+{
+  const { ipBucket } = await import("../lib/http.ts");
+  assert.equal(ipBucket("203.0.113.7"), "203.0.113.7");
+  assert.equal(ipBucket("::ffff:203.0.113.7"), "203.0.113.7");
+  assert.equal(ipBucket("2001:db8:a:b:1:2:3:4"), "2001:db8:a:b::/64");
+  assert.equal(ipBucket("2001:DB8:A:B::ffff"), "2001:db8:a:b::/64");
+  assert.equal(ipBucket("2001:db8::1"), "2001:db8:0:0::/64");
+  assert.equal(ipBucket("[2001:0db8:000a:000b::1]"), "2001:db8:a:b::/64");
+  assert.equal(ipBucket("fe80::1%eth0"), "fe80:0:0:0::/64");
+  assert.notEqual(ipBucket("2001:db8:a:b::1"), ipBucket("2001:db8:a:c::1"));
+  console.log("  ok limitation par adresse : bloc /64 en IPv6, IPv4 telle quelle");
+}
 
 assert.equal(toTsQuery("Combien de préavis pour une démission ?"), "preavis:* | demission:*");
 assert.equal(toTsQuery("a'; DROP TABLE users; --"), "drop:* | table:* | users:*");

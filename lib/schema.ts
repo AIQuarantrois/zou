@@ -219,6 +219,13 @@ export const MIGRATIONS: Migration[] = [
       `ALTER TABLE pros ADD COLUMN IF NOT EXISTS featured boolean NOT NULL DEFAULT false`,
     ],
   },
+  {
+    id: "006_session_version",
+    statements: [
+      // Version des sessions d'un compte, inscrite dans chaque jeton : l'incrémenter révoque toutes les sessions ouvertes.
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version int NOT NULL DEFAULT 0`,
+    ],
+  },
 ];
 
 type Run = (text: string, params?: unknown[]) => Promise<Record<string, unknown>[]>;

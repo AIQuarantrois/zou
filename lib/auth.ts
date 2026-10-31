@@ -6,6 +6,9 @@ import { one, q } from "./db";
 const COOKIE = "zou_session";
 export const SESSION_COOKIE = COOKIE;
 const SESSION_DAYS = 30;
+// Le backoffice exige une connexion récente : un cookie volé ou oublié sur un appareil partagé n'y donne pas accès
+// pendant 30 jours. L'application publique garde la durée normale.
+export const ADMIN_SESSION_HOURS = 12;
 
 function b64u(buf: Buffer | string) {
   return Buffer.from(buf).toString("base64url");
@@ -20,13 +23,21 @@ function sign(data: string) {
   return createHmac("sha256", secret()).update(data).digest();
 }
 
-export function signSession(userId: string, now = Date.now()) {
+/** `version` : users.session_version au moment de la connexion ; l'incrémenter révoque tous les jetons déjà émis. */
+export function signSession(userId: string, version = 0, now = Date.now()) {
   const head = b64u(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const pay = b64u(JSON.stringify({ sub: userId, iat: Math.floor(now / 1000), exp: Math.floor(now / 1000) + SESSION_DAYS * 86400 }));
+  const pay = b64u(JSON.stringify({ sub: userId, v: version, iat: Math.floor(now / 1000), exp: Math.floor(now / 1000) + SESSION_DAYS * 86400 }));
   return `${head}.${pay}.${b64u(sign(`${head}.${pay}`))}`;
 }
 
+export type Session = { sub: string; v: number; iat: number };
+
 export function verifySession(token: string, now = Date.now()): string | null {
+  return readSession(token, now)?.sub ?? null;
+}
+
+/** Jeton signé et non expiré → son contenu. Un jeton émis avant les versions de session vaut version 0. */
+export function readSession(token: string, now = Date.now()): Session | null {
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const expected = sign(`${parts[0]}.${parts[1]}`);
@@ -36,7 +47,7 @@ export function verifySession(token: string, now = Date.now()): string | null {
   try {
     const p = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
     if (typeof p.sub !== "string" || typeof p.exp !== "number" || p.exp * 1000 < now) return null;
-    return p.sub;
+    return { sub: p.sub, v: typeof p.v === "number" ? p.v : 0, iat: typeof p.iat === "number" ? p.iat : 0 };
   } catch { return null; }
 }
 
@@ -64,12 +75,23 @@ export type User = { id: string; email: string; name: string | null; phone: stri
 
 /** Cœur commun à la lecture d'un compte à partir d'un jeton de session — utilisé par les routes d'API (cookie
  *  lu depuis la requête) comme par les pages du backoffice (cookie lu depuis `next/headers`). */
-export async function userFromSessionToken(tok: string | null): Promise<User | null> {
+export async function sessionFromToken(tok: string | null): Promise<{ user: User; iat: number } | null> {
   if (!tok) return null;
-  const id = verifySession(tok);
-  if (!id) return null;
-  const u = await one(`SELECT id, email, name, phone, locale, is_admin FROM users WHERE id = $1`, [id]);
-  return (u as User) ?? null;
+  const s = readSession(tok);
+  if (!s) return null;
+  const u = await one(`SELECT id, email, name, phone, locale, is_admin, session_version FROM users WHERE id = $1`, [s.sub]);
+  if (!u || Number(u.session_version) !== s.v) return null; // « déconnecter tous les appareils » est passé depuis
+  const { session_version: _, ...user } = u;
+  return { user: user as User, iat: s.iat };
+}
+
+export async function userFromSessionToken(tok: string | null): Promise<User | null> {
+  return (await sessionFromToken(tok))?.user ?? null;
+}
+
+/** Connexion assez récente pour le backoffice (voir ADMIN_SESSION_HOURS). */
+export function adminSessionFresh(iat: number, now = Date.now()) {
+  return now - iat * 1000 < ADMIN_SESSION_HOURS * 3600_000;
 }
 
 export async function currentUser(req: Request): Promise<User | null> {
@@ -85,9 +107,11 @@ export async function requireUser(req: Request): Promise<User> {
 /** Accès au backoffice : connecté et marqué administrateur (distinct du jeton bearer `requireAdmin`, réservé
  *  aux scripts et au cron). Utilisé par les routes d'API appelées depuis les pages du backoffice. */
 export async function requireAdminSession(req: Request): Promise<User> {
-  const u = await requireUser(req);
-  if (!u.is_admin) throw new ApiError(403, "admin_required", "Accès réservé aux administrateurs.");
-  return u;
+  const s = await sessionFromToken(readCookie(req, COOKIE));
+  if (!s) throw new ApiError(401, "auth_required", "Connectez-vous pour continuer.");
+  if (!s.user.is_admin) throw new ApiError(403, "admin_required", "Accès réservé aux administrateurs.");
+  if (!adminSessionFresh(s.iat)) throw new ApiError(401, "admin_session_expired", "Session d'administration expirée : reconnectez-vous.");
+  return s.user;
 }
 
 // ---------- Codes à usage unique ----------

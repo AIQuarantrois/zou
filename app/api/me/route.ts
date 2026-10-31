@@ -1,7 +1,8 @@
-import { api, json, body, sameOrigin, str } from "@/lib/http";
-import { currentUser, requireUser } from "@/lib/auth";
-import { q } from "@/lib/db";
+import { api, json, body, sameOrigin, str, ApiError } from "@/lib/http";
+import { clearCookie, currentUser, requireUser } from "@/lib/auth";
+import { q, tx } from "@/lib/db";
 import { hasDb } from "@/lib/db";
+import { deleteFiles } from "@/lib/blob";
 
 export const GET = api(async (req) => {
   if (!hasDb()) return json({ user: null });
@@ -22,4 +23,26 @@ export const PATCH = api(async (req) => {
     [user.id, name ?? null, phone ?? null]
   );
   return json({ user: rows[0] });
+});
+
+// Suppression définitive du compte, sur confirmation par l'adresse e-mail. Suivent en cascade : dossiers, échéances
+// et rappels, documents, fiche professionnelle et sa boîte de réception. Partent aussi les codes de connexion et les
+// messages envoyés au support. Restent, sans lien vers le compte : les avis sur les plans et les messages adressés à
+// des professionnels (ils appartiennent à leur destinataire). Les fichiers du coffre sont effacés après la base : un
+// fichier orphelin vaut mieux qu'un document encore listé dont le fichier aurait disparu.
+export const DELETE = api(async (req) => {
+  sameOrigin(req);
+  const user = await requireUser(req);
+  const b = await body(req, 2048);
+  if (typeof b.confirm !== "string" || b.confirm.trim().toLowerCase() !== user.email.toLowerCase()) {
+    throw new ApiError(400, "confirm_required", "Saisissez l'adresse e-mail du compte pour confirmer la suppression.");
+  }
+  const files = await q(`SELECT storage_key FROM documents WHERE user_id = $1 AND storage_key IS NOT NULL`, [user.id]);
+  await tx([
+    [`DELETE FROM contact_requests WHERE pro_id IS NULL AND from_user_id = $1`, [user.id]],
+    [`DELETE FROM otp_codes WHERE lower(email) = lower($1)`, [user.email]],
+    [`DELETE FROM users WHERE id = $1`, [user.id]],
+  ]);
+  await deleteFiles(files.map((f) => String(f.storage_key)));
+  return json({ ok: true }, 200, { "Set-Cookie": clearCookie() });
 });

@@ -15,9 +15,10 @@ export const POST = api(async (req) => {
   const user = await one(
     `INSERT INTO users (email, last_login_at) VALUES ($1, now())
      ON CONFLICT (lower(email)) DO UPDATE SET last_login_at = now()
-     RETURNING id, email, name, phone, locale`,
+     RETURNING id, email, name, phone, locale, session_version`,
     [addr]
   );
   if (!user) throw new ApiError(500, "user_error");
-  return json({ user }, 200, { "Set-Cookie": sessionCookie(signSession(String(user.id))) });
+  const { session_version, ...pub } = user;
+  return json({ user: pub }, 200, { "Set-Cookie": sessionCookie(signSession(String(user.id), Number(session_version))) });
 });
