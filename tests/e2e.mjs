@@ -220,7 +220,18 @@ r = await call(prosContact, "POST", "/api/pros/" + pid + "/contact", { ctx: { pa
 assert.equal(r.status, 201); assert.equal(mails.length, nMails + 1); assert.ok(mails.at(-1).text.includes("visiteur@example.com")); ok("contact d'un professionnel sans compte");
 cookie = saved;
 r = await call(prosMe, "GET", "/api/pros/me"); assert.equal(r.data.requests.length, 1); ok("boîte de réception du professionnel");
-r = await call(prosMe, "PATCH", "/api/pros/me", { json: { bio: "Droit du travail", domains: ["travail"] } }); assert.equal(r.data.pro.bio, "Droit du travail"); ok("fiche professionnelle modifiée");
+r = await call(prosMe, "PATCH", "/api/pros/me", { json: { domains: ["travail", "famille"], city: "Tana" } });
+assert.equal(r.data.pro.status, "verified"); ok("fiche vérifiée : domaines et ville modifiés sans nouvelle vérification");
+r = await call(prosMe, "PATCH", "/api/pros/me", { json: { display_name: "Me Rakoto", phone: r.data.pro.phone } });
+assert.equal(r.data.pro.status, "verified"); ok("fiche vérifiée : valeurs identiques renvoyées, pas de nouvelle vérification");
+r = await call(prosMe, "PATCH", "/api/pros/me", { json: { bio: "Droit du travail", domains: ["travail"] } }); assert.equal(r.data.pro.bio, "Droit du travail");
+assert.equal(r.data.pro.status, "pending"); assert.equal(r.data.pro.verified_at, null); ok("fiche vérifiée : présentation modifiée -> renvoyée en vérification");
+r = await call(pros, "GET", "/api/pros"); assert.equal(r.data.pros.length, 0); ok("annuaire : fiche en revérification invisible");
+r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { headers: ADMIN, ctx: { params: Promise.resolve({ id: pid }) }, json: { status: "verified" } });
+r = await call(prosMe, "PATCH", "/api/pros/me", { json: { display_name: "Me Rakotobe" } });
+assert.equal(r.data.pro.status, "pending"); ok("fiche vérifiée : nom affiché modifié -> renvoyée en vérification");
+r = await call(prosMe, "PATCH", "/api/pros/me", { json: { display_name: "Me Rakoto" } }); assert.equal(r.data.pro.status, "pending"); ok("fiche en attente : reste en attente");
+r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { headers: ADMIN, ctx: { params: Promise.resolve({ id: pid }) }, json: { status: "verified" } }); assert.equal(r.data.pro.status, "verified");
 
 // --- backoffice : rôle administrateur et numéros utiles (contenu piloté depuis le backoffice, jamais en dur)
 { const noCookie = cookie; cookie = ""; r = await call(adminEmergency, "GET", "/api/admin/emergency"); assert.equal(r.status, 401); cookie = noCookie; }
