@@ -3,6 +3,7 @@ import { clearCookie, currentUser, requireUser } from "@/lib/auth";
 import { q, tx } from "@/lib/db";
 import { hasDb } from "@/lib/db";
 import { deleteFiles } from "@/lib/blob";
+import { patchParts } from "@/lib/crud";
 
 export const GET = api(async (req) => {
   if (!hasDb()) return json({ user: null });
@@ -16,12 +17,12 @@ export const PATCH = api(async (req) => {
   sameOrigin(req);
   const user = await requireUser(req);
   const b = await body(req);
-  const name = b.name === undefined ? undefined : str(b.name, "name", { max: 120, optional: true }) || null;
-  const phone = b.phone === undefined ? undefined : str(b.phone, "phone", { max: 30, optional: true }) || null;
-  const rows = await q(
-    `UPDATE users SET name = COALESCE($2, name), phone = COALESCE($3, phone) WHERE id = $1 RETURNING id, email, name, phone, locale`,
-    [user.id, name ?? null, phone ?? null]
-  );
+  // Champ absent : inchangé ; vide ou nul : effacé.
+  const { set, values } = patchParts({
+    name: b.name === undefined ? undefined : str(b.name, "name", { max: 120, optional: true }) || null,
+    phone: b.phone === undefined ? undefined : str(b.phone, "phone", { max: 30, optional: true }) || null,
+  }, {}, 2);
+  const rows = await q(`UPDATE users SET ${set} WHERE id = $1 RETURNING id, email, name, phone, locale`, [user.id, ...values]);
   return json({ user: rows[0] });
 });
 

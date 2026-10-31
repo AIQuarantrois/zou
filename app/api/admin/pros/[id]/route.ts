@@ -1,4 +1,4 @@
-import { api, json, body, oneOf, uuid, ApiError } from "@/lib/http";
+import { api, json, body, oneOf, sameOrigin, uuid, ApiError } from "@/lib/http";
 import { requireAdminAny } from "@/lib/auth";
 import { q } from "@/lib/db";
 
@@ -14,6 +14,7 @@ export const GET = api(async (req, ctx: Ctx) => {
 
 // Vérifie, rejette ou suspend une fiche professionnelle, et/ou change sa mise en avant.
 export const PATCH = api(async (req, ctx: Ctx) => {
+  sameOrigin(req);
   await requireAdminAny(req);
   const id = uuid((await ctx.params).id);
   const b = await body(req, 2048);

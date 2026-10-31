@@ -83,7 +83,10 @@ r = await call(migrate, "POST", "/api/admin/migrate", { headers: ADMIN, json: {}
 assert.deepEqual(r.data.applied, []); ok("migration idempotente");
 
 r = await call(health, "GET", "/api/health");
-assert.equal(r.data.database, "ok"); assert.equal(r.data.capabilities.ai, true); ok("health");
+assert.deepEqual(Object.keys(r.data.capabilities).sort(), ["ai", "auth", "database", "files", "mail"]); assert.equal(r.data.capabilities.ai, true);
+assert.equal(r.data.database, undefined); assert.equal(r.data.legal_chunks, undefined); ok("health public : seulement ce qu'affiche l'interface");
+r = await call(health, "GET", "/api/health", { headers: ADMIN });
+assert.equal(r.data.database, "ok"); assert.equal(r.data.capabilities.admin, true); ok("health détaillé avec le jeton d'administration");
 
 // --- corpus
 r = await call(ingest, "POST", "/api/admin/ingest", { headers: ADMIN, json: { source: "code-travail", title: "Code du travail", chunks: [
@@ -134,6 +137,9 @@ r = await call(authVerify, "POST", "/api/auth/verify", { json: { email: "rajo@ex
 assert.equal(r.status, 401); ok("code à usage unique");
 r = await call(me, "GET", "/api/me"); assert.equal(r.data.user.email, "rajo@example.com"); ok("me : utilisateur connecté");
 r = await call(me, "PATCH", "/api/me", { json: { name: "Rajo" } }); assert.equal(r.data.user.name, "Rajo"); ok("me : modification du nom");
+r = await call(me, "PATCH", "/api/me", { json: { phone: "034 00 000 00" } }); assert.equal(r.data.user.name, "Rajo"); assert.equal(r.data.user.phone, "034 00 000 00");
+r = await call(me, "PATCH", "/api/me", { json: { phone: "" } }); assert.equal(r.data.user.phone, null); assert.equal(r.data.user.name, "Rajo");
+r = await call(me, "PATCH", "/api/me", { json: {} }); assert.equal(r.status, 400); ok("me : téléphone effacé, champ absent inchangé");
 
 // --- dossiers, agenda, coffre
 r = await call(cases, "POST", "/api/cases", { json: { title: "Démission", kind: "travail", data: { step: 2 } } });
@@ -256,6 +262,8 @@ r = await call(adminEmergency, "GET", "/api/admin/emergency"); assert.equal(r.st
   cookie = fresh; ok("backoffice : connexion de plus de 12 h refusée (le jeton bearer et l'application publique restent valables)");
 }
 r = await call(adminPros, "GET", "/api/admin/pros?status=verified"); assert.equal(r.data.pros.length, 1); assert.equal(r.data.pros[0].id, pid); ok("backoffice : file des professionnels accessible par session (pas seulement par jeton)");
+r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { headers: { origin: "https://evil.example" }, ctx: { params: Promise.resolve({ id: pid }) }, json: { status: "suspended" } });
+assert.equal(r.status, 403); ok("modération : origine étrangère refusée");
 r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { ctx: { params: Promise.resolve({ id: pid }) }, json: { status: "suspended" } });
 assert.equal(r.data.pro.status, "suspended"); ok("professionnel suspendu depuis le backoffice (session)");
 r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { ctx: { params: Promise.resolve({ id: pid }) }, json: { status: "verified" } }); assert.equal(r.data.pro.status, "verified");
@@ -330,6 +338,11 @@ assert.equal(last.status, 429); ok("limitation de débit des codes");
   r = await call(cases, "POST", "/api/cases", { json: { title: "Bail" } }); const delCase = r.data.case.id;
   r = await call(events, "POST", "/api/events", { json: { title: "Échéance", due_on: future, case_id: delCase } });
   r = await call(docs, "POST", "/api/documents", { json: { title: "Pièce d'identité" } }); const delDoc = r.data.document.id;
+  r = await call(docs, "POST", "/api/documents", { json: { title: "Intrus", case_id: cid } }); assert.equal(r.status, 400); assert.equal(r.data.error, "invalid_case_id");
+  r = await call(docId, "PATCH", "/api/documents/" + delDoc, { ctx: { params: Promise.resolve({ id: delDoc }) }, json: { case_id: cid } }); assert.equal(r.status, 400);
+  r = await call(events, "POST", "/api/events", { json: { title: "Intrus", due_on: future, case_id: cid } }); assert.equal(r.status, 400);
+  r = await call(docId, "PATCH", "/api/documents/" + delDoc, { ctx: { params: Promise.resolve({ id: delDoc }) }, json: { case_id: delCase } }); assert.equal(r.status, 200);
+  ok("rattachement au dossier d'un autre compte refusé (documents, dates), à son propre dossier accepté");
   const up = await fileMod.PUT(new Request(H + `/api/documents/${delDoc}/file`, { method: "PUT", headers: { host: "zou.test", cookie, "content-type": "application/pdf" }, body: new TextEncoder().encode("%PDF id") }), { params: Promise.resolve({ id: delDoc }) });
   assert.equal(up.status, 200);
   r = await call(contact, "POST", "/api/contact", { headers: IP, json: { name: "Efface", email: "efface@example.com", message: "Message au support avant départ." } });

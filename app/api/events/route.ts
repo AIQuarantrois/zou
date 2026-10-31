@@ -1,7 +1,7 @@
-import { api, json, body, sameOrigin, str, isoDate, intArray, uuid } from "@/lib/http";
+import { api, json, body, sameOrigin, str, isoDate, intArray } from "@/lib/http";
 import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
-import { optClientId } from "@/lib/crud";
+import { optClientId, ownCaseId } from "@/lib/crud";
 import { scheduleReminders } from "@/lib/reminders";
 import { EVENT_COLS, day } from "@/lib/cols";
 
@@ -22,7 +22,7 @@ export const POST = api(async (req) => {
      VALUES ($1, $2, $3, $4, $5, $6::int[], $7, $8)
      ON CONFLICT (user_id, client_id) WHERE client_id IS NOT NULL DO UPDATE SET updated_at = now()
      RETURNING ${EVENT_COLS}`,
-    [u.id, b.case_id ? uuid(b.case_id, "case_id") : null, optClientId(b.client_id), str(b.title, "title", { max: 200 }), dueOn, remind,
+    [u.id, await ownCaseId(b.case_id, u.id), optClientId(b.client_id), str(b.title, "title", { max: 200 }), dueOn, remind,
      str(b.source, "source", { max: 40, optional: true }) || "manual", str(b.note, "note", { max: 1000, optional: true }) || null]
   ))[0];
   await scheduleReminders(String(row.id), day(row.due_on), row.remind_days);
