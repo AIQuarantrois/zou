@@ -50,6 +50,7 @@ const ingest = await M("app/api/admin/ingest/route.ts");
 const authReq = await M("app/api/auth/request/route.ts");
 const authVerify = await M("app/api/auth/verify/route.ts");
 const authOut = await M("app/api/auth/logout/route.ts");
+const authOutAll = await M("app/api/auth/logout-all/route.ts");
 const me = await M("app/api/me/route.ts");
 const cases = await M("app/api/cases/route.ts");
 const caseId = await M("app/api/cases/[id]/route.ts");
@@ -77,7 +78,7 @@ const cron = await M("app/api/cron/reminders/route.ts");
 let r = await call(migrate, "POST", "/api/admin/migrate");
 assert.equal(r.status, 401); ok("migration refusée sans jeton");
 r = await call(migrate, "POST", "/api/admin/migrate", { headers: ADMIN, json: {} });
-assert.equal(r.status, 200); assert.deepEqual(r.data.applied, ["001_init", "002_legal_sources", "003_plan_feedback", "004_admin_emergency", "005_pros_featured"]); ok("migration appliquée");
+assert.equal(r.status, 200); assert.deepEqual(r.data.applied, ["001_init", "002_legal_sources", "003_plan_feedback", "004_admin_emergency", "005_pros_featured", "006_session_version"]); ok("migration appliquée");
 r = await call(migrate, "POST", "/api/admin/migrate", { headers: ADMIN, json: {} });
 assert.deepEqual(r.data.applied, []); ok("migration idempotente");
 
@@ -244,6 +245,16 @@ r = await call(adminUsers, "PATCH", "/api/admin/users", { headers: ADMIN, json: 
 assert.equal(r.status, 200); assert.equal(r.data.user.is_admin, true); ok("compte promu administrateur (jeton bearer, casse de l'e-mail ignorée)");
 
 r = await call(adminEmergency, "GET", "/api/admin/emergency"); assert.equal(r.status, 200); assert.deepEqual(r.data.contacts, []); ok("backoffice : accès accordé une fois admin, liste vide au départ");
+{
+  const { signSession } = await import("../lib/auth.ts");
+  const fresh = cookie; const uid = (await call(me, "GET", "/api/me")).data.user.id;
+  cookie = "zou_session=" + signSession(uid, 0, Date.now() - 13 * 3600e3);
+  r = await call(adminEmergency, "GET", "/api/admin/emergency"); assert.equal(r.status, 401); assert.equal(r.data.error, "admin_session_expired");
+  r = await call(adminPros, "GET", "/api/admin/pros"); assert.equal(r.status, 401);
+  r = await call(me, "GET", "/api/me"); assert.equal(r.data.user.email, "rajo@example.com");
+  r = await call(adminPros, "GET", "/api/admin/pros", { headers: ADMIN }); assert.equal(r.status, 200);
+  cookie = fresh; ok("backoffice : connexion de plus de 12 h refusée (le jeton bearer et l'application publique restent valables)");
+}
 r = await call(adminPros, "GET", "/api/admin/pros?status=verified"); assert.equal(r.data.pros.length, 1); assert.equal(r.data.pros[0].id, pid); ok("backoffice : file des professionnels accessible par session (pas seulement par jeton)");
 r = await call(adminProId, "PATCH", "/api/admin/pros/" + pid, { ctx: { params: Promise.resolve({ id: pid }) }, json: { status: "suspended" } });
 assert.equal(r.data.pro.status, "suspended"); ok("professionnel suspendu depuis le backoffice (session)");
@@ -289,6 +300,64 @@ assert.equal(again.data.sent, 0); ok("rappel envoyé une seule fois");
 let last;
 for (let i = 0; i < 6; i++) last = await call(authReq, "POST", "/api/auth/request", { json: { email: "spam@example.com" } });
 assert.equal(last.status, 429); ok("limitation de débit des codes");
+
+// --- déconnexion de tous les appareils (sessions révocables)
+{
+  const IP = { "x-forwarded-for": "203.0.113.7" };
+  const login = async (addr) => {
+    const c = await call(authReq, "POST", "/api/auth/request", { headers: IP, json: { email: addr } });
+    const v = await call(authVerify, "POST", "/api/auth/verify", { headers: IP, json: { email: addr, code: c.data.dev_code } });
+    assert.equal(v.status, 200); assert.equal(v.data.user.session_version, undefined); return cookie;
+  };
+  const phone = cookie; const laptop = await login("rajo@example.com");
+  r = await call(me, "GET", "/api/me"); assert.equal(r.data.user.email, "rajo@example.com");
+  cookie = ""; r = await call(authOutAll, "POST", "/api/auth/logout-all", { json: {} }); assert.equal(r.status, 401);
+  cookie = laptop; r = await call(authOutAll, "POST", "/api/auth/logout-all", { headers: { origin: "https://evil.example" }, json: {} }); assert.equal(r.status, 403);
+  r = await call(authOutAll, "POST", "/api/auth/logout-all", { json: {} }); assert.equal(r.status, 200); assert.equal(cookie, "");
+  for (const c of [phone, laptop]) {
+    cookie = c;
+    r = await call(me, "GET", "/api/me"); assert.equal(r.data.user, null);
+    r = await call(cases, "GET", "/api/cases"); assert.equal(r.status, 401);
+  }
+  ok("déconnexion de tous les appareils : chaque session déjà ouverte est refusée");
+  await login("rajo@example.com");
+  r = await call(cases, "GET", "/api/cases"); assert.equal(r.status, 200); assert.ok(r.data.cases.length > 0); ok("reconnexion après révocation : données intactes");
+
+  // --- suppression du compte
+  const keep = cookie;
+  await login("efface@example.com");
+  const fileMod = await M("app/api/documents/[id]/file/route.ts");
+  r = await call(cases, "POST", "/api/cases", { json: { title: "Bail" } }); const delCase = r.data.case.id;
+  r = await call(events, "POST", "/api/events", { json: { title: "Échéance", due_on: future, case_id: delCase } });
+  r = await call(docs, "POST", "/api/documents", { json: { title: "Pièce d'identité" } }); const delDoc = r.data.document.id;
+  const up = await fileMod.PUT(new Request(H + `/api/documents/${delDoc}/file`, { method: "PUT", headers: { host: "zou.test", cookie, "content-type": "application/pdf" }, body: new TextEncoder().encode("%PDF id") }), { params: Promise.resolve({ id: delDoc }) });
+  assert.equal(up.status, 200);
+  r = await call(contact, "POST", "/api/contact", { headers: IP, json: { name: "Efface", email: "efface@example.com", message: "Message au support avant départ." } });
+  const store = globalThis.__zouBlob; const nFiles = store.size;
+  const { q } = await import("../lib/db.ts");
+  const uid = (await call(me, "GET", "/api/me")).data.user.id;
+  r = await call(me, "DELETE", "/api/me", { json: {} }); assert.equal(r.status, 400); assert.equal(r.data.error, "confirm_required");
+  r = await call(me, "DELETE", "/api/me", { json: { confirm: "rajo@example.com" } }); assert.equal(r.status, 400); ok("suppression du compte : confirmation par la bonne adresse exigée");
+  const gone = cookie;
+  r = await call(me, "DELETE", "/api/me", { headers: { origin: "https://evil.example" }, json: { confirm: "efface@example.com" } }); assert.equal(r.status, 403);
+  r = await call(me, "DELETE", "/api/me", { json: { confirm: " Efface@Example.com " } }); assert.equal(r.status, 200); assert.equal(cookie, "");
+  assert.equal(store.size, nFiles - 1); ok("suppression du compte : fichiers du coffre effacés");
+  const left = await q(`SELECT (SELECT count(*) FROM users WHERE id = $1)::int AS u, (SELECT count(*) FROM cases WHERE user_id = $1)::int AS c,
+      (SELECT count(*) FROM events WHERE user_id = $1)::int AS e, (SELECT count(*) FROM documents WHERE user_id = $1)::int AS d,
+      (SELECT count(*) FROM otp_codes WHERE email = 'efface@example.com')::int AS o,
+      (SELECT count(*) FROM contact_requests WHERE reply_to = 'efface@example.com')::int AS m`, [uid]);
+  assert.deepEqual(left[0], { u: 0, c: 0, e: 0, d: 0, o: 0, m: 0 }); ok("suppression du compte : compte, dossiers, dates, documents, codes et messages au support effacés");
+  cookie = gone; r = await call(me, "GET", "/api/me"); assert.equal(r.data.user, null); ok("suppression du compte : l'ancienne session ne donne plus accès");
+  cookie = keep; r = await call(me, "GET", "/api/me"); assert.equal(r.data.user.email, "rajo@example.com"); ok("suppression du compte : les autres comptes ne sont pas touchés");
+}
+
+// --- plafond global des questions sans compte (toutes adresses confondues)
+{
+  const saved = cookie; cookie = "";
+  process.env.ZOU_ASK_ANON_HOURLY = "1";
+  r = await call(ask, "POST", "/api/ask", { headers: { "x-forwarded-for": "198.51.100.9" }, json: { question: "Combien de préavis pour une démission ?" } });
+  assert.equal(r.status, 429); delete process.env.ZOU_ASK_ANON_HOURLY; cookie = saved; ok("plafond global des questions sans compte");
+}
 
 // --- déconnexion
 r = await call(authOut, "POST", "/api/auth/logout", { json: {} }); assert.equal(cookie, ""); r = await call(cases, "GET", "/api/cases"); assert.equal(r.status, 401); ok("déconnexion");

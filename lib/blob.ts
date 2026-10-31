@@ -41,3 +41,11 @@ export async function deleteFile(key: string | null | undefined) {
   if (!key || !hasBlob()) return;
   try { await del(key, auth()); } catch (e) { console.error("blob_delete_failed", e); }
 }
+
+/** Plusieurs fichiers d'un coup (suppression d'un compte), par paquets, même règle sans échec bloquant. */
+export async function deleteFiles(keys: string[]) {
+  if (!keys.length || !hasBlob()) return;
+  for (let i = 0; i < keys.length; i += 100) {
+    try { await del(keys.slice(i, i + 100), auth()); } catch (e) { console.error("blob_delete_failed", e); }
+  }
+}

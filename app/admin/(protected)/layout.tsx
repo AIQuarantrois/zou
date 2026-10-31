@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 export const dynamic = "force-dynamic";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { userFromSessionToken, SESSION_COOKIE } from "@/lib/auth";
+import { adminSessionFresh, sessionFromToken, SESSION_COOKIE } from "@/lib/auth";
 import { hasDb } from "@/lib/db";
 import { ADMIN_CSS } from "../styles";
 import AdminShell from "./AdminShell";
@@ -23,8 +23,9 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
     );
   }
   const jar = await cookies();
-  const user = await userFromSessionToken(jar.get(SESSION_COOKIE)?.value ?? null);
-  if (!user) redirect("/admin/login");
+  const session = await sessionFromToken(jar.get(SESSION_COOKIE)?.value ?? null);
+  if (!session) redirect("/admin/login");
+  const user = session.user;
   if (!user.is_admin) {
     return (
       <div className="ad-denied">
@@ -36,6 +37,8 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
       </div>
     );
   }
+  // Connexion trop ancienne pour le backoffice : nouveau code demandé (l'application publique reste connectée).
+  if (!adminSessionFresh(session.iat)) redirect("/admin/login");
   return (
     <>
       <style>{ADMIN_CSS}</style>

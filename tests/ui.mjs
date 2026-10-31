@@ -215,6 +215,29 @@ assert.equal(evFinal.status, 200, JSON.stringify(evFinal.data));
 assert.deepEqual(evFinal.data.events.map((e) => e.title), ["Fin du bail"]);
 ok("effacer un appareil connecté ne supprime rien du compte");
 
+// 9. Déconnecter tous les appareils, puis supprimer le compte
+await page.click('[data-act="logout-all"]');
+await page.waitForSelector("#accGuest:not([hidden])");
+assert.equal((await api(page, "GET", "/api/me")).data.user, null);
+ok("déconnecter tous les appareils");
+await page.fill("#acc-email", "rina@example.mg");
+await page.click("#acc-submit");
+await page.waitForSelector("#acc-code-box:not([hidden])");
+await page.click("#acc-submit");
+await page.waitForSelector("#accUser:not([hidden])");
+await waitSync(page);
+await page.fill("#acc-del-email", "autre@example.mg");
+await page.click("#acc-del-submit");
+assert.match(await page.locator("#acc-del-err").textContent(), /rina@example\.mg/);
+assert.equal((await api(page, "GET", "/api/me")).data.user.email, "rina@example.mg");
+await page.fill("#acc-del-email", "Rina@Example.mg");
+await page.click("#acc-del-submit");
+await page.waitForFunction(() => /compte et ses données ont été supprimés/.test(document.querySelector("#toast").textContent));
+assert.equal((await api(page, "GET", "/api/me")).data.user, null);
+const guestEvents = await page.evaluate(() => JSON.parse(localStorage.getItem("dm_state_v2") || "null"));
+assert.ok(!guestEvents || !(guestEvents.dates || []).some((d) => d.title === "Fin du bail"));
+ok("supprimer son compte : confirmation exigée, compte et données de l'appareil effacés");
+
 await browser.close();
 if (problems.length) { console.log("\nPROBLÈMES :\n" + problems.join("\n")); process.exit(1); }
 console.log(`\n${n} scénarios réussis, aucune erreur console`);

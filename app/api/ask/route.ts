@@ -1,5 +1,6 @@
 import { api, json, body, sameOrigin, str, ipKey } from "@/lib/http";
 import { currentUser } from "@/lib/auth";
+import { env } from "@/lib/env";
 import { limit } from "@/lib/ratelimit";
 import { answer, retrieve } from "@/lib/ask";
 
@@ -13,7 +14,10 @@ export const POST = api(async (req) => {
   const question = str(b.question, "question", { min: 6, max: 1000 });
   const user = await currentUser(req).catch(() => null);
   if (user) await limit("ask-user:" + user.id, 60, 3600);
-  else await limit(ipKey(req, "ask-ip"), 15, 3600);
+  else {
+    await limit(ipKey(req, "ask-ip"), 15, 3600);
+    await limit("ask-anon-all", env.askAnonHourly, 3600);
+  }
 
   const passages = await retrieve(question);
   if (!passages.length) {
