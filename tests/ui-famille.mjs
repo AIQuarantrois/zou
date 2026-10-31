@@ -10,6 +10,12 @@ let n = 0;
 const ok = (m) => console.log("  ok", ++n, m);
 const ISO = (d) => d.toISOString().slice(0, 10);
 const plusDays = (k) => { const d = new Date(); d.setDate(d.getDate() + k); return ISO(new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12)); };
+// Même règle que addMonths de l'application : même quantième, ramené au dernier jour du mois s'il n'existe pas (31 → 30).
+const plusMonths = (iso, m) => {
+  const d = new Date(iso + "T12:00:00"), x = new Date(d.getFullYear(), d.getMonth() + m, 1, 12);
+  x.setDate(Math.min(d.getDate(), new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate()));
+  return ISO(x);
+};
 const fr = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
 async function open(viewport = { width: 390, height: 844 }) {
@@ -113,7 +119,8 @@ await page.goto(BASE + "/#home"); await start(page, "Nous nous séparons");
 await pick(page, "Non", true); await pick(page, "Oui, nous avons un acte"); await pick(page, "Oui", true); await pick(page, "Le divorce a été prononcé");
 await setDate(page, plusDays(-10));
 t = await plan(page);
-assert.match(t, /Faire transcrire le divorce/); assert.match(t, new RegExp(fr(plusDays(20)).replace(/\s/g, "\\s"))); assert.match(t, /deux parts égales/); assert.match(t, /intérêt supérieur/);
+// « Dans le mois de la décision » (art. 70) : un mois calendaire, pas 30 jours (les deux diffèrent selon le mois).
+assert.match(t, /Faire transcrire le divorce/); assert.match(t, new RegExp(fr(plusMonths(plusDays(-10), 1)).replace(/\s/g, "\\s"))); assert.match(t, /deux parts égales/); assert.match(t, /intérêt supérieur/);
 ok("séparation : transcription du divorce dans le mois (date calculée), partage et enfants");
 await page.goto(BASE + "/#vie.separation"); await page.locator("#vieBody .link-btn", { hasText: "Modifier mes réponses" }).click();
 await pick(page, "Oui, il y a des violences"); await pick(page, "Oui, nous avons un acte"); await pick(page, "Oui", true); await pick(page, "Le divorce a été prononcé");
