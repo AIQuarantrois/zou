@@ -1,7 +1,7 @@
 import { api, json, body, sameOrigin, str, isoDate, uuid, ApiError } from "@/lib/http";
 import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
-import { patchParts } from "@/lib/crud";
+import { ownCaseId, patchParts } from "@/lib/crud";
 import { DOC_COLS } from "@/lib/cols";
 import { deleteFile } from "@/lib/blob";
 
@@ -17,7 +17,7 @@ export const PATCH = api(async (req, ctx: Ctx) => {
     kind: b.kind === undefined ? undefined : str(b.kind, "kind", { max: 40 }),
     expires_on: b.expires_on === undefined ? undefined : (b.expires_on ? isoDate(b.expires_on, "expires_on") : null),
     note: b.note === undefined ? undefined : str(b.note, "note", { max: 1000, optional: true }) || null,
-    case_id: b.case_id === undefined ? undefined : (b.case_id ? uuid(b.case_id, "case_id") : null),
+    case_id: b.case_id === undefined ? undefined : await ownCaseId(b.case_id, u.id),
   });
   const row = (await q(`UPDATE documents SET ${set}, updated_at = now() WHERE id = $1 AND user_id = $2 RETURNING ${DOC_COLS}`, [id, u.id, ...values]))[0];
   if (!row) throw new ApiError(404, "not_found");

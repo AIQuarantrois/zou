@@ -1,7 +1,7 @@
-import { api, json, body, sameOrigin, str, isoDate, uuid } from "@/lib/http";
+import { api, json, body, sameOrigin, str, isoDate } from "@/lib/http";
 import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
-import { intIn, optClientId } from "@/lib/crud";
+import { intIn, optClientId, ownCaseId } from "@/lib/crud";
 import { DOC_COLS } from "@/lib/cols";
 
 export const GET = api(async (req) => {
@@ -19,7 +19,7 @@ export const POST = api(async (req) => {
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      ON CONFLICT (user_id, client_id) WHERE client_id IS NOT NULL DO UPDATE SET updated_at = now()
      RETURNING ${DOC_COLS}`,
-    [u.id, b.case_id ? uuid(b.case_id, "case_id") : null, optClientId(b.client_id), str(b.title, "title", { max: 200 }),
+    [u.id, await ownCaseId(b.case_id, u.id), optClientId(b.client_id), str(b.title, "title", { max: 200 }),
      str(b.kind, "kind", { max: 40, optional: true }) || "autre", str(b.mime, "mime", { max: 100, optional: true }) || null,
      b.size_bytes === undefined ? null : intIn(b.size_bytes, "size_bytes", 0, 1_000_000_000),
      b.expires_on ? isoDate(b.expires_on, "expires_on") : null, str(b.note, "note", { max: 1000, optional: true }) || null]

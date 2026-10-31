@@ -2323,8 +2323,9 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
               <div class="cta-row">
                 <button class="btn btn-ghost" type="button" data-act="sync-now">Synchroniser maintenant</button>
                 <button class="link-btn" type="button" data-act="logout">Se déconnecter</button>
+                <button class="link-btn" type="button" data-act="logout-wipe">Se déconnecter et effacer cet appareil</button>
               </div>
-              <p class="hint" style="margin-top:12px">Après déconnexion, vos données restent sur cet appareil et sur votre compte.</p>
+              <p class="hint" style="margin-top:12px">Après déconnexion, vos données restent sur cet appareil et sur votre compte. Sur un appareil partagé, effacez-les de cet appareil : elles restent sur votre compte.</p>
             </div>
             <div class="calc form-card" style="margin-top:16px">
               <span class="label">Sécurité</span>
@@ -7271,6 +7272,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         break;
       case "sync-now": runSync(true); break;
       case "logout": logout(); break;
+      case "logout-wipe": logout(true); break;
       case "logout-all": logoutAll(); break;
       case "copy-letter": copyText(letterText()); break;
       case "save-letter":
@@ -10333,11 +10335,22 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     if (expired) toast("Votre session a expiré. Reconnectez-vous pour reprendre la sauvegarde.");
   }
   var loggingOut = false;
-  function logout() {
-    loggingOut = true; clearTimeout(syncTimer);
-    request("POST", "/api/auth/logout", {}).catch(function () { /* on se déconnecte localement quoi qu'il arrive */ }).then(function () {
-      loggingOut = false;
-      signedOut(false); toast("Vous êtes déconnecté. Vos données restent sur cet appareil.");
+  // wipe : efface aussi cet appareil (appareil partagé), seulement une fois tout envoyé au compte, pour ne rien perdre
+  // de ce qui n'était pas encore sauvegardé.
+  function logout(wipe) {
+    clearTimeout(syncTimer);
+    var saved = wipe ? push().then(uploadPending) : Promise.resolve();
+    saved.then(function () {
+      loggingOut = true;
+      return request("POST", "/api/auth/logout", {}).catch(function () { /* on se déconnecte localement quoi qu'il arrive */ }).then(function () {
+        loggingOut = false;
+        signedOut(false);
+        if (wipe) { wipeDevice(); toast("Vous êtes déconnecté et cet appareil est effacé. Vos données restent sur votre compte."); }
+        else toast("Vous êtes déconnecté. Vos données restent sur cet appareil.");
+      });
+    }, function (e) {
+      toast("Rien n'a été effacé : certaines modifications ne sont pas encore sauvegardées sur votre compte (" + errText(e) + "). Réessayez une fois en ligne.");
+      scheduleSync();
     });
   }
   function logoutAll() {

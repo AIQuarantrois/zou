@@ -1,4 +1,5 @@
-import { ApiError } from "./http";
+import { ApiError, uuid } from "./http";
+import { one } from "./db";
 
 /** Construit « col = $n » pour un UPDATE partiel à partir des champs réellement fournis. */
 export function patchParts(fields: Record<string, unknown>, casts: Record<string, string> = {}, firstParam = 3) {
@@ -19,6 +20,14 @@ export function intIn(v: unknown, name: string, min: number, max: number): numbe
   const n = Number(v);
   if (!Number.isInteger(n) || n < min || n > max) throw new ApiError(400, "invalid_" + name);
   return n;
+}
+
+/** Dossier de rattachement : absent → null ; sinon un dossier du même compte, jamais celui d'un autre. */
+export async function ownCaseId(v: unknown, userId: string): Promise<string | null> {
+  if (!v) return null;
+  const id = uuid(v, "case_id");
+  if (!(await one(`SELECT 1 FROM cases WHERE id = $1 AND user_id = $2`, [id, userId]))) throw new ApiError(400, "invalid_case_id", "Dossier introuvable.");
+  return id;
 }
 
 export function optClientId(v: unknown): string | null {
