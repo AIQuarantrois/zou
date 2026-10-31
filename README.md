@@ -54,7 +54,7 @@ Assistant d'information juridique sur le droit malgache. Next.js (App Router) su
 ## Routes
 
 Publiques : `GET /api/health`, `POST /api/ask`, `POST /api/feedback` (avis « ce plan vous a-t-il aidé ? » et signalement d'erreur, sans compte, 20 par heure et par adresse), `GET /api/pros`, `POST /api/pros/:id/contact`, `POST /api/contact`, `POST /api/auth/request|verify|logout`, `GET /api/emergency` (numéros utiles).
-Connecté : `/api/me`, `/api/cases`, `/api/events`, `/api/documents`, `/api/import`, `/api/pros` (inscription), `/api/pros/me`.
+Connecté : `/api/me`, `/api/cases`, `/api/events`, `/api/documents`, `/api/import`, `/api/pros` (inscription), `/api/pros/me` (modifier son nom affiché, son téléphone, son e-mail public ou sa présentation renvoie une fiche vérifiée en vérification ; domaines, langues et ville non).
 Admin (jeton bearer, scripts et cron) : `/api/admin/migrate`, `/api/admin/ingest`, `GET /api/admin/feedback?kind=erreur|avis` (retours sur les plans et statistiques par plan), `PATCH /api/admin/users` (rôle administrateur).
 Admin (jeton bearer OU session + rôle `is_admin`) : `/api/admin/pros`, `/api/admin/pros/:id` (`GET` détail, `PATCH` statut et mise en avant).
 Admin (session + rôle `is_admin`, backoffice) : `/api/admin/emergency`, `/api/admin/emergency/:id` (numéros utiles).
