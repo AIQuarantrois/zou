@@ -2619,7 +2619,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
         </select>
         <span id="langHint" class="sr">Seul le français est disponible dans cette version.</span>
       </div>
-      <p class="foot-copy">© 2026 ZOU. Version de démonstration.</p>
+      <p class="foot-copy">© 2026 ZOU, édité par Quarantrois SARL. Version de démonstration.</p>
     </div>
   </div>
 </footer>
@@ -2653,7 +2653,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
       <li><button class="q-row" data-go="prospace"><span class="q-text"><span class="g-title">Espace professionnel</span><span class="g-desc">Avocats, notaires, huissiers, médiateurs</span></span><span class="q-end"><svg class="ico ico-s" aria-hidden="true"><use href="#i-chev"/></svg></span></button></li>
     </ul></section>
   <nav class="sheet-legal" aria-label="Informations légales"><button data-go="page.legal">Mentions légales</button><button data-go="page.privacy">Confidentialité</button><button data-go="page.terms">Conditions d'utilisation</button><button data-go="page.cookies">Cookies</button><button data-go="page.a11y">Accessibilité</button><button data-go="page.sitemap">Plan du site</button></nav>
-  <p class="sheet-about"><strong>Information juridique générale.</strong> ZOU ne remplace pas l'avis d'un avocat, d'un notaire ou d'un autre professionnel du droit. Français ; malagasy et anglais bientôt. © 2026 ZOU, version de démonstration.</p>
+  <p class="sheet-about"><strong>Information juridique générale.</strong> ZOU ne remplace pas l'avis d'un avocat, d'un notaire ou d'un autre professionnel du droit. Français ; malagasy et anglais bientôt. © 2026 ZOU, édité par Quarantrois SARL, version de démonstration.</p>
 </div>
 
 <div class="scrim" id="rowMenuScrim" hidden></div>
@@ -6978,9 +6978,10 @@ TOOL_FN["controle-cdd"] = function (v, H) {
         var left = el("div", "prose");
         left.style.marginTop = "0";
         left.appendChild(el("h2", "", "Nous écrire"));
-        var p1 = el("p"); richText(p1, "Courriel : [à compléter]"); left.appendChild(p1);
-        var p2 = el("p"); richText(p2, "Téléphone : [à compléter]"); left.appendChild(p2);
-        var p3 = el("p"); richText(p3, "Adresse : [à compléter], Antananarivo, Madagascar"); left.appendChild(p3);
+        left.appendChild(el("p", "", "ZOU est édité par Quarantrois SARL."));
+        var p1 = el("p"); p1.appendChild(document.createTextNode("Courriel : "));
+        var mailLink = el("a", "", "contact@zou-mg.app"); mailLink.href = "mailto:contact@zou-mg.app"; p1.appendChild(mailLink); left.appendChild(p1);
+        var p3 = el("p"); richText(p3, "Adresse : Ilafy, Antananarivo, Madagascar"); left.appendChild(p3);
         left.appendChild(el("h3", "", "Délai de réponse"));
         left.appendChild(el("p", "", "Nous répondons en principe sous quelques jours ouvrés. Pour une situation urgente, ne nous attendez pas : voyez la rubrique Urgence ou contactez un professionnel."));
         linkIn(left, "Questions fréquentes", "page.help");
@@ -7029,9 +7030,9 @@ TOOL_FN["controle-cdd"] = function (v, H) {
       build: function (body) {
         prose(body, [
           ["h2", "Éditeur du service"],
-          ["p", "Dénomination : [à compléter]. Forme juridique et capital : [à compléter]. Siège social : [à compléter], Madagascar. NIF et numéro de statistique : [à compléter]. Directeur de la publication : [à compléter]. Contact : voir la page Contact."],
+          ["p", "Dénomination : Quarantrois SARL. Forme juridique et capital : société à responsabilité limitée, capital de 2 000 000 Ar. Siège social : Ilafy, Antananarivo, Madagascar. NIF : 6 019 045 982. Numéro de statistique : 47110 11 2024 0 11498. RCS : Antananarivo 2024 B 01469. Contact : contact@zou-mg.app (voir aussi la page Contact)."],
           ["h2", "Hébergement"],
-          ["p", "Hébergeur : [à compléter]. Adresse : [à compléter]."],
+          ["p", "Hébergeur : Vercel Inc. (États-Unis). Adresse : 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis."],
           ["h2", "Nature des informations"],
           ["p", "Les contenus sont une information juridique générale tirée de textes cités. Ils ne constituent pas une consultation juridique et ne remplacent pas l'avis d'un avocat, d'un notaire ou d'un autre professionnel du droit. Les textes officiels publiés au Journal officiel de la République de Madagascar font foi."],
           ["h2", "Propriété intellectuelle"],
@@ -7060,11 +7061,11 @@ TOOL_FN["controle-cdd"] = function (v, H) {
           ["h2", "Partage avec un professionnel"],
           ["p", "Un professionnel ne reçoit que ce que vous choisissez de lui transmettre : les documents que vous cochez et le message que vous écrivez."],
           ["h2", "Vos droits"],
-          ["p", "Vous pouvez demander l'accès, la rectification et la suppression de vos données, et vous opposer à leur traitement. Pour exercer ces droits : [à compléter]. Cadre légal applicable à Madagascar : loi relative à la protection des données à caractère personnel [à confirmer par un juriste, référence et autorité de contrôle]."],
+          ["p", "Vous pouvez demander l'accès, la rectification et la suppression de vos données, et vous opposer à leur traitement. Pour exercer ces droits : écrivez à contact@zou-mg.app. Cadre légal applicable à Madagascar : loi relative à la protection des données à caractère personnel [à confirmer par un juriste, référence et autorité de contrôle]."],
           ["h2", "Sécurité"],
           ["p", "Mesures prévues pour la version complète : chiffrement des échanges, chiffrement des documents au repos, accès limité, journalisation des accès. Détail : [à compléter]."],
           ["h2", "Contact"],
-          ["p", "Responsable du traitement : [à compléter]. Contact : voir la page Contact."]
+          ["p", "Responsable du traitement : Quarantrois SARL. Contact : contact@zou-mg.app (voir aussi la page Contact)."]
         ], { draft: true });
       }
     },
