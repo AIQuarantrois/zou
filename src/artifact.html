@@ -1874,7 +1874,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
           </div>
           <div class="note mt" role="note" style="max-width:820px">
             <svg class="ico"><use href="#i-info"/></svg>
-            <p><strong>Adresses, horaires et contacts</strong> seront ajoutés dans la version complète, après vérification auprès de chaque administration. Cette démonstration n'en invente aucun.</p>
+            <p><strong>Adresses, horaires et contacts</strong> seront ajoutés dans la version complète, après vérification auprès de chaque administration.</p>
           </div>
         </section>
 <!-- ANSWER -->
@@ -2619,7 +2619,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
         </select>
         <span id="langHint" class="sr">Seul le français est disponible dans cette version.</span>
       </div>
-      <p class="foot-copy">© 2026 ZOU, édité par Quarantrois SARL. Version de démonstration.</p>
+      <p class="foot-copy">© 2026 ZOU, édité par Quarantrois SARL.</p>
     </div>
   </div>
 </footer>
@@ -2653,7 +2653,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
       <li><button class="q-row" data-go="prospace"><span class="q-text"><span class="g-title">Espace professionnel</span><span class="g-desc">Avocats, notaires, huissiers, médiateurs</span></span><span class="q-end"><svg class="ico ico-s" aria-hidden="true"><use href="#i-chev"/></svg></span></button></li>
     </ul></section>
   <nav class="sheet-legal" aria-label="Informations légales"><button data-go="page.legal">Mentions légales</button><button data-go="page.privacy">Confidentialité</button><button data-go="page.terms">Conditions d'utilisation</button><button data-go="page.cookies">Cookies</button><button data-go="page.a11y">Accessibilité</button><button data-go="page.sitemap">Plan du site</button></nav>
-  <p class="sheet-about"><strong>Information juridique générale.</strong> ZOU ne remplace pas l'avis d'un avocat, d'un notaire ou d'un autre professionnel du droit. Français ; malagasy et anglais bientôt. © 2026 ZOU, édité par Quarantrois SARL, version de démonstration.</p>
+  <p class="sheet-about"><strong>Information juridique générale.</strong> ZOU ne remplace pas l'avis d'un avocat, d'un notaire ou d'un autre professionnel du droit. Français ; malagasy et anglais bientôt. © 2026 ZOU, édité par Quarantrois SARL.</p>
 </div>
 
 <div class="scrim" id="rowMenuScrim" hidden></div>
@@ -6909,13 +6909,6 @@ TOOL_FN["controle-cdd"] = function (v, H) {
   }
   function prose(body, blocks, opts) {
     opts = opts || {};
-    if (opts.draft) {
-      var b = el("div", "draft-banner");
-      b.setAttribute("role", "note");
-      b.appendChild(el("strong", "", "Version de démonstration. "));
-      b.appendChild(document.createTextNode("Ce texte est un projet de rédaction. Les passages marqués « à compléter » doivent être renseignés et l'ensemble relu par un juriste avant toute mise en ligne publique."));
-      body.appendChild(b);
-    }
     var box = el("div", "prose");
     blocks.forEach(function (bl) {
       var t = bl[0], v = bl[1], n;
@@ -6941,7 +6934,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
     ["D'où viennent les informations ?", "Chaque guide, calcul et lettre cite l'article dont il est tiré, avec un extrait. Les textes utilisés sont listés dans la rubrique « Textes juridiques ». Quand une information manque dans ces textes ou que deux passages se contredisent, elle est signalée dans l'encadré « À confirmer avant d'agir »."],
     ["Les textes sont-ils à jour ?", "Ils correspondent aux versions que nous avons en main. Une loi peut avoir été modifiée depuis. Les textes officiels du Journal officiel de la République de Madagascar font foi. Si un point vous semble dépassé, écrivez-nous depuis la page Contact."],
     ["Dois-je créer un compte pour l'utiliser ?", "Non. Vous pouvez consulter les guides, faire les calculs, rédiger des lettres et tenir votre agenda sans compte. Vos documents et vos dates restent alors sur cet appareil. Un compte servira à sauvegarder et à retrouver vos données sur plusieurs appareils, et à recevoir des rappels."],
-    ["Où sont enregistrés mes documents et mes dates ?", "Dans cette version de démonstration, uniquement dans le stockage de votre navigateur, sur cet appareil. Si vous videz les données du navigateur ou changez d'appareil, ils ne suivent pas. Rien n'est envoyé à un serveur."],
+    ["Où sont enregistrés mes documents et mes dates ?", "Dans cette version, uniquement dans le stockage de votre navigateur, sur cet appareil. Si vous videz les données du navigateur ou changez d'appareil, ils ne suivent pas. Rien n'est envoyé à un serveur."],
     ["Les rappels de dates fonctionnent-ils ?", "Pas encore dans cette version : les dates sont enregistrées et classées, mais aucune notification n'est envoyée. Les rappels par notification, WhatsApp ou SMS seront disponibles avec le compte."],
     ["Les lettres types ont-elles une valeur juridique ?", "Ce sont des modèles de rédaction fondés sur les articles cités. Relisez-les, complétez les passages en couleur et gardez une preuve de remise (récépissé, décharge ou envoi recommandé). Pour un enjeu important, faites-les relire par un professionnel."],
     ["Comment sont calculés les délais et les montants ?", "Chaque calcul explique sa règle et cite son article sous le résultat, dans « Comment c'est calculé ». Les résultats sont indicatifs : ils dépendent des informations saisies et des textes en vigueur. Les cas particuliers sont signalés."],
@@ -7032,7 +7025,7 @@ TOOL_FN["controle-cdd"] = function (v, H) {
           ["h2", "Éditeur du service"],
           ["p", "Dénomination : Quarantrois SARL. Forme juridique et capital : société à responsabilité limitée, capital de 2 000 000 Ar. Siège social : Ilafy, Antananarivo, Madagascar. NIF : 6 019 045 982. Numéro de statistique : 47110 11 2024 0 11498. RCS : Antananarivo 2024 B 01469. Contact : contact@zou-mg.app (voir aussi la page Contact)."],
           ["h2", "Hébergement"],
-          ["p", "Hébergeur : Vercel Inc. (États-Unis). Adresse : 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis."],
+          ["p", "Hébergeur : Vercel Inc. (États-Unis). Adresse : 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis."],
           ["h2", "Nature des informations"],
           ["p", "Les contenus sont une information juridique générale tirée de textes cités. Ils ne constituent pas une consultation juridique et ne remplacent pas l'avis d'un avocat, d'un notaire ou d'un autre professionnel du droit. Les textes officiels publiés au Journal officiel de la République de Madagascar font foi."],
           ["h2", "Propriété intellectuelle"],
@@ -7055,13 +7048,13 @@ TOOL_FN["controle-cdd"] = function (v, H) {
             "Vous pouvez tout effacer à tout moment."
           ]],
           ["h2", "Données enregistrées sur votre appareil"],
-          ["p", "L'application enregistre dans le stockage de votre navigateur : les noms des documents que vous ajoutez, vos dates et leurs rappels, l'avancement de vos démarches et les champs que vous remplissez dans les lettres. Cette version de démonstration n'envoie rien à un serveur."],
+          ["p", "L'application enregistre dans le stockage de votre navigateur : les noms des documents que vous ajoutez, vos dates et leurs rappels, l'avancement de vos démarches et les champs que vous remplissez dans les lettres. Cette version n'envoie rien à un serveur."],
           ["h2", "Données qui seront traitées avec un compte"],
           ["p", "Avec un compte, le service traitera : vos coordonnées, vos documents et vos dates sauvegardés, vos demandes de contact avec un professionnel. Finalités : fournir le service, sauvegarder vos données, envoyer vos rappels. Base : votre consentement et l'exécution du service. Durée de conservation : [à compléter]."],
           ["h2", "Partage avec un professionnel"],
           ["p", "Un professionnel ne reçoit que ce que vous choisissez de lui transmettre : les documents que vous cochez et le message que vous écrivez."],
           ["h2", "Vos droits"],
-          ["p", "Vous pouvez demander l'accès, la rectification et la suppression de vos données, et vous opposer à leur traitement. Pour exercer ces droits : écrivez à contact@zou-mg.app. Cadre légal applicable à Madagascar : loi relative à la protection des données à caractère personnel [à confirmer par un juriste, référence et autorité de contrôle]."],
+          ["p", "Vous pouvez demander l'accès, la rectification et la suppression de vos données, et vous opposer à leur traitement. Pour exercer ces droits : écrivez à contact@zou-mg.app. Cadre légal applicable à Madagascar : loi n° 2014-038 du 9 janvier 2015 sur la protection des données à caractère personnel ; autorité de contrôle : Commission malagasy de l'informatique et des libertés (CMIL)."],
           ["h2", "Sécurité"],
           ["p", "Mesures prévues pour la version complète : chiffrement des échanges, chiffrement des documents au repos, accès limité, journalisation des accès. Détail : [à compléter]."],
           ["h2", "Contact"],
