@@ -71,4 +71,4 @@ Admin (session + rôle `is_admin`, backoffice) : `/api/admin/emergency`, `/api/a
 - Rappels : seul l'e-mail est envoyé (les canaux WhatsApp/SMS ont été retirés de l'interface). Le partage de documents avec un professionnel n'existe pas encore : la demande de contact transmet un message.
 - Synchronisation sans fusion fine : une modification locale non envoyée l'emporte sur le serveur ; sinon le serveur l'emporte. La démarche « Démissionner » d'un nouvel appareil remplace celle du compte si elle a déjà été commencée sur cet appareil avant la connexion.
 - CSP : `style-src 'unsafe-inline'` reste nécessaire (attributs `style` de l'interface).
-- La balise `noindex` de `app.html` est volontaire jusqu'au lancement.
+- `app.html` est indexable (balise générée par `scripts/pack-app.mjs`, avec canonical, Open Graph et données structurées). `offline.html` reste en `noindex`.
