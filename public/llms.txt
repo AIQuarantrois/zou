@@ -1,0 +1,23 @@
+# ZOU
+
+> ZOU est un assistant d'information juridique sur le droit malgache, édité par Quarantrois SARL (Antananarivo). Il explique les démarches en langage clair à partir des textes de loi, propose des calculs (délais, indemnités), des modèles de documents et un assistant qui répond à partir de ces textes. Gratuit à l'inscription. Application web installable (PWA), en français, sur une seule page.
+
+Important : ZOU fournit de l'information juridique, pas un conseil d'avocat. Les réponses se vérifient auprès d'un professionnel du droit en cas d'enjeu important.
+
+## Domaines couverts (97 guides pas à pas)
+- Travail : contrat, CDD, congés, heures supplémentaires, rupture (32 guides)
+- Foncier : immatriculation d'un terrain, opposition, succession (14 guides)
+- Pénal : porter plainte, constitution de partie civile (18 guides)
+- Civil : appel d'un jugement, caducité (8 guides)
+- Prévoyance et protection sociale : affiliation, cotisations, contrainte (14 guides)
+- Hygiène, santé et sécurité au travail (11 guides)
+
+## Outils
+Calculs (30 outils, par exemple heures supplémentaires, allocation de congé payé, indemnité de dédit-formation, dates du congé de maternité) et modèles de documents (32 modèles).
+
+## Pages
+- [Application](https://zou-mg.app/)
+- [Plan du site](https://zou-mg.app/sitemap.xml)
+
+## Contact
+contact@zou-mg.app

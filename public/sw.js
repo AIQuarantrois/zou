@@ -1,6 +1,6 @@
 /* ZOU : service worker (généré par scripts/pack-app.mjs depuis scripts/sw.src.js : ne pas modifier public/sw.js à la main).
    Toute l'application est mise en cache dès l'installation ; elle s'ouvre hors ligne. Les appels /api ne sont jamais mis en cache. */
-const VERSION = "zou-a752a35b7d";
+const VERSION = "zou-0aa9e306d3";
 const PRECACHE = [
   "/app.html",
   "/offline.html",
