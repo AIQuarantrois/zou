@@ -260,6 +260,7 @@ input[type=checkbox]:focus-visible, input[type=radio]:focus-visible { outline: 2
   display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-height: 60px; padding: 16px 20px; text-align: left;
   background: none; border: 0; border-top: 1px solid var(--rule); font-size: calc(16px * var(--fs, 1)); color: var(--ink); transition: background 0.12s ease;
 }
+a.q-row { text-decoration: none; }
 .q-list > li:first-child .q-row, .action-list > li:first-child .q-row { border-top: 0; }
 @media (hover: hover) { .q-row:hover { background: var(--wash); } }
 .q-text { min-width: 0; flex: 1; }
@@ -2565,6 +2566,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
           <nav aria-labelledby="fc2"><ul>
             <li><a href="#services.tool" data-go="services.tool">Calculateurs</a></li>
             <li><a href="#services.model" data-go="services.model">Lettres types</a></li>
+            <li><a href="/guides">Tous les guides en pages web</a></li>
             <li><a href="#urgent" data-go="urgent">Urgence</a></li>
             <li><a href="#where" data-go="where">Où aller</a></li>
             <li><a href="#texts" data-go="texts">Textes juridiques</a></li>
@@ -2632,6 +2634,7 @@ body.home .hero .suggest button { background: rgba(6, 10, 34, 0.42); color: #FFF
   <section><h2 class="sheet-h">Ressources</h2>
     <ul>
       <li><button class="q-row" data-go="texts"><span class="q-text"><span class="g-title">Textes juridiques</span><span class="g-desc">Les sources de chaque réponse</span></span><span class="q-end"><svg class="ico ico-s" aria-hidden="true"><use href="#i-chev"/></svg></span></button></li>
+      <li><a class="q-row" href="/guides"><span class="q-text"><span class="g-title">Guides en pages web</span><span class="g-desc">Chaque démarche expliquée sur sa propre page</span></span><span class="q-end"><svg class="ico ico-s" aria-hidden="true"><use href="#i-chev"/></svg></span></a></li>
       <li><button class="q-row" data-go="page.help"><span class="q-text"><span class="g-title">Centre d'aide</span><span class="g-desc">Questions fréquentes, nous écrire</span></span><span class="q-end"><svg class="ico ico-s" aria-hidden="true"><use href="#i-chev"/></svg></span></button></li>
       <li><button class="q-row" data-go="page.contact"><span class="q-text"><span class="g-title">Contact</span><span class="g-desc">Écrire à l'équipe ZOU</span></span><span class="q-end"><svg class="ico ico-s" aria-hidden="true"><use href="#i-chev"/></svg></span></button></li>
       <li><button class="q-row" data-go="page.about"><span class="q-text"><span class="g-title">À propos</span><span class="g-desc">Qui fait ZOU, d'où viennent les réponses</span></span><span class="q-end"><svg class="ico ico-s" aria-hidden="true"><use href="#i-chev"/></svg></span></button></li>
