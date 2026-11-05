@@ -192,7 +192,8 @@ ${parDomaine.map((p) => `<h2 id="${esc(p.dom)}">${esc(p.label.cat)}</h2>\n<p cla
 
   const llms = readFileSync(new URL("llms.txt", pub), "utf8");
   const bloc = `## Guides (${n} pages, une par démarche)\n- [Tous les guides](${SITE}/guides)\n${parDomaine.map((p) => `- ${p.label.cat} : ${p.liste.length} guides, par exemple [${p.liste[0].title}](${SITE}/guides/${p.liste[0].id})`).join("\n")}\n`;
-  writeFileSync(new URL("llms.txt", pub), llms.replace(/## Guides \([\s\S]*?(?=\n## |$)/, "").replace(/\n## Pages/, `\n${bloc}\n## Pages`));
+  const llmsOut = llms.replace(/## Guides \([\s\S]*?(?=\n## |$)/, "").replace(/\n## Pages/, `\n${bloc}\n## Pages`).replace(/\n{3,}/g, "\n\n");
+  writeFileSync(new URL("llms.txt", pub), llmsOut);
   return { n, cssName };
 }
 
