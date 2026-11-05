@@ -25,6 +25,8 @@ export default {
         { source: "/guides/:id", destination: "/guides/:id.html" },
         { source: "/outils", destination: "/outils.html" },
         { source: "/outils/:id", destination: "/outils/:id.html" },
+        { source: "/modeles", destination: "/modeles.html" },
+        { source: "/modeles/:id", destination: "/modeles/:id.html" },
       ],
       afterFiles: [],
       fallback: [],
@@ -36,6 +38,8 @@ export default {
       { source: "/guides/:id.html", destination: "/guides/:id", permanent: true },
       { source: "/outils.html", destination: "/outils", permanent: true },
       { source: "/outils/:id.html", destination: "/outils/:id", permanent: true },
+      { source: "/modeles.html", destination: "/modeles", permanent: true },
+      { source: "/modeles/:id.html", destination: "/modeles/:id", permanent: true },
     ];
   },
   async headers() {
