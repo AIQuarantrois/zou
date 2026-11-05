@@ -23,6 +23,8 @@ export default {
         { source: "/", destination: "/app.html" },
         { source: "/guides", destination: "/guides.html" },
         { source: "/guides/:id", destination: "/guides/:id.html" },
+        { source: "/outils", destination: "/outils.html" },
+        { source: "/outils/:id", destination: "/outils/:id.html" },
       ],
       afterFiles: [],
       fallback: [],
@@ -32,6 +34,8 @@ export default {
     return [
       { source: "/guides.html", destination: "/guides", permanent: true },
       { source: "/guides/:id.html", destination: "/guides/:id", permanent: true },
+      { source: "/outils.html", destination: "/outils", permanent: true },
+      { source: "/outils/:id.html", destination: "/outils/:id", permanent: true },
     ];
   },
   async headers() {
