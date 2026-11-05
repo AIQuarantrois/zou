@@ -7,7 +7,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 var(--font
 a{color:var(--accent)}a:hover{color:var(--accent-hover)}
 header.top{border-bottom:1px solid var(--rule)}
 header.top div{max-width:760px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-header.top .nav2{display:flex;gap:18px}
+header.top .nav2{display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end}
 header.top a.logo{font:800 22px var(--font-disp);color:var(--ink);text-decoration:none;letter-spacing:-.02em}
 main{max-width:760px;margin:0 auto;padding:24px 20px 56px}
 nav.fil{font-size:14px;color:var(--ink-3);margin-bottom:12px}nav.fil a{color:var(--ink-3)}
@@ -24,6 +24,7 @@ ol.steps{padding-left:1.3em}ol.steps li{margin:0 0 14px}ol.steps b{display:block
 .sub{color:var(--ink-3);font-size:14px}
 table.tab{border-collapse:collapse;width:100%;min-width:560px;font-size:15px;margin:8px 0 4px;overflow-wrap:normal}table.tab th,table.tab td{border:1px solid var(--rule);padding:8px 10px;text-align:left}table.tab th{background:var(--wash)}
 .tabwrap{overflow-x:auto}
+.doc{background:#fff;color:#14171C;border:1px solid var(--rule);border-radius:4px;padding:20px 22px;margin:12px 0;font-family:"Times New Roman",Times,"Liberation Serif",serif;font-size:17px;line-height:1.55}.doc p{margin:0 0 12px}.doc mark{background:#FFF1B8;color:#14171C;padding:0 2px;border-radius:2px}
 .ex{background:var(--accent-soft);border-radius:6px;padding:12px 16px;margin:12px 0}
 main{overflow-wrap:anywhere}
 ul.pts{padding-left:1.2em}ul.pts li{margin:0 0 12px}

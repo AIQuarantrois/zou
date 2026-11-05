@@ -32,7 +32,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 var(--font
 a{color:var(--accent)}a:hover{color:var(--accent-hover)}
 header.top{border-bottom:1px solid var(--rule)}
 header.top div{max-width:760px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-header.top .nav2{display:flex;gap:18px}
+header.top .nav2{display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end}
 header.top a.logo{font:800 22px var(--font-disp);color:var(--ink);text-decoration:none;letter-spacing:-.02em}
 main{max-width:760px;margin:0 auto;padding:24px 20px 56px}
 nav.fil{font-size:14px;color:var(--ink-3);margin-bottom:12px}nav.fil a{color:var(--ink-3)}
@@ -49,6 +49,7 @@ ol.steps{padding-left:1.3em}ol.steps li{margin:0 0 14px}ol.steps b{display:block
 .sub{color:var(--ink-3);font-size:14px}
 table.tab{border-collapse:collapse;width:100%;min-width:560px;font-size:15px;margin:8px 0 4px;overflow-wrap:normal}table.tab th,table.tab td{border:1px solid var(--rule);padding:8px 10px;text-align:left}table.tab th{background:var(--wash)}
 .tabwrap{overflow-x:auto}
+.doc{background:#fff;color:#14171C;border:1px solid var(--rule);border-radius:4px;padding:20px 22px;margin:12px 0;font-family:"Times New Roman",Times,"Liberation Serif",serif;font-size:17px;line-height:1.55}.doc p{margin:0 0 12px}.doc mark{background:#FFF1B8;color:#14171C;padding:0 2px;border-radius:2px}
 .ex{background:var(--accent-soft);border-radius:6px;padding:12px 16px;margin:12px 0}
 main{overflow-wrap:anywhere}
 ul.pts{padding-left:1.2em}ul.pts li{margin:0 0 12px}
@@ -103,7 +104,7 @@ export function buildGuides({ src, pub }) {
 ${ld}
 </head>
 <body>
-<header class="top"><div><a class="logo" href="/">ZOU</a><span class="nav2"><a href="/guides">Guides</a><a href="/outils">Outils</a></span></div></header>
+<header class="top"><div><a class="logo" href="/">ZOU</a><span class="nav2"><a href="/guides">Guides</a><a href="/outils">Outils</a><a href="/modeles">Modèles</a></span></div></header>
 <main>
 `;
   const foot = `
@@ -294,12 +295,107 @@ ${guidesLies.length ? `<h2>Guides liés : ${esc(label.cat)}</h2>\n<ul class="lis
 ${parDomOut.map((p) => `<h2 id="${esc(p.k)}">${esc(p.label.cat)}</h2>\n<ul class="liste">${p.liste.map((t) => `<li><a href="/outils/${esc(t.slug)}">${esc(t.title)}</a><span>${esc(t.lede)}</span></li>`).join("")}</ul>`).join("\n")}
 ` + foot);
 
-  const all = [SITE + "/", SITE + "/guides", ...urls, SITE + "/outils", ...toolUrls];
+
+  // ---------- Modèles de documents : une page par modèle (texte de la lettre avec ses blancs à remplir) ----------
+  const fnSrc = (name) => grab(new RegExp(`(  function ${name}\\([^)]*\\) \\{[^\\n]*\\})`), name);
+  const prelude = [
+    "function today() { return { ph: true }; }",
+    'function fmtLong(d) { return d && d.ph ? "[date]" : "[date]"; }',
+    'function parse(s) { return { ph: true }; }',
+    fnSrc("plural"), fnSrc("num"),
+  ].join("\n");
+  const helpStart = src.indexOf("  function mseg(t)");
+  const helpEnd = src.indexOf("function sign(v)", helpStart);
+  const helpers = src.slice(helpStart, src.indexOf("\n", helpEnd));
+  const mStart = src.indexOf("  var MODELS = {");
+  const mEnd = src.indexOf("\n  };\n", mStart);
+  if (helpStart < 0 || mStart < 0 || mEnd < 0) throw new Error("MODELS ou ses fonctions d'aide introuvables");
+  const HANDM = vm.runInNewContext(`${prelude}\n${helpers}\n(${src.slice(mStart + "  var MODELS = ".length, mEnd + 4)})`, Object.create(null), { timeout: 2000 });
+  const MSLUGS = { certificat: "modele-demande-certificat-de-travail", solde: "modele-reclamation-solde-de-tout-compte", dispense: "modele-demande-dispense-de-preavis" };
+  const shortLabel = (l) => String(l).replace(/\s*\(.*$/, "").trim();
+  const segHtml = (segs) => segs.map((g) => (g.br ? "<br>" : g.ph ? `<mark>${esc(g.t)}</mark>` : esc(g.t))).join("");
+  const modelsList = [];
+  for (const [id, M] of Object.entries(HANDM)) {
+    if (!MSLUGS[id]) throw new Error(`Modèle sans adresse : ${id}`);
+    const v = {};
+    for (const f of M.fields) if (f.type === "select" || f.type === "number") v[f.id] = f.value ?? "";
+    const paras = M.paras(v).map((p) => `<p>${segHtml(p)}</p>`);
+    modelsList.push({ slug: MSLUGS[id], appId: id, domain: "travail", title: M.title, lede: M.lede, cite: M.src, fields: M.fields.map((f) => ({ label: f.label, options: optLabels(f) })), paras });
+  }
+  for (const dom of content) {
+    for (const m of dom.models) {
+      const lab = Object.fromEntries(m.fields.map((f) => [f.id, `[${shortLabel(f.label)}]`]));
+      const paras = m.paragraphs.map((p) => `<p>${esc(p).replace(/\{(\w+)\}/g, (_, k) => `<mark>${lab[k] ? esc(lab[k]) : "[…]"}</mark>`)}</p>`);
+      modelsList.push({ slug: m.id, appId: m.id, domain: dom.domain, title: m.title, lede: m.desc, cite: m.cite, fields: m.fields.map((f) => ({ label: f.label, options: optLabels(f) })), paras });
+    }
+  }
+  mkdirSync(new URL("modeles/", pub), { recursive: true });
+  for (const f of readdirSync(new URL("modeles/", pub))) rmSync(new URL(`modeles/${f}`, pub));
+  const modelUrls = [];
+  for (const t of modelsList) {
+    const label = DOMAINES[t.domain];
+    const path = `/modeles/${t.slug}`;
+    const guidesLies = (content.find((d) => d.domain === t.domain)?.guides || []).slice(0, 4);
+    const outilsLies = toolsList.filter((x) => x.domain === t.domain).slice(0, 4);
+    const desc = cut(`${t.lede}. Modèle de lettre à remplir et à imprimer.`.replace(/\.\s*\./g, "."), 158);
+    const title = `${t.title} : modèle de lettre · ZOU`;
+    const ld = jsonLd({
+      "@context": "https://schema.org",
+      "@graph": [
+        { "@type": "Article", headline: t.title, description: cut(t.lede, 300), inLanguage: "fr", mainEntityOfPage: SITE + path, articleSection: label.cat, author: { "@type": "Organization", name: "ZOU", url: SITE + "/" }, publisher: { "@type": "Organization", name: "ZOU", url: SITE + "/", logo: { "@type": "ImageObject", url: SITE + "/og.png" } }, image: SITE + "/og.png" },
+        { "@type": "BreadcrumbList", itemListElement: [
+          { "@type": "ListItem", position: 1, name: "ZOU", item: SITE + "/" },
+          { "@type": "ListItem", position: 2, name: "Modèles de documents", item: SITE + "/modeles" },
+          { "@type": "ListItem", position: 3, name: t.title, item: SITE + path },
+        ] },
+      ],
+    });
+    const fields = t.fields.map((i) => `<li>${esc(i.label)}${i.options.length ? `<span class="sub"> : ${esc(i.options.join(" ; "))}</span>` : ""}</li>`).join("\n");
+    const html = head({ title, desc, path, ld }) + `
+<nav class="fil" aria-label="Fil d'Ariane"><a href="/">ZOU</a> › <a href="/modeles">Modèles de documents</a> › <a href="/modeles#${esc(t.domain)}">${esc(label.cat)}</a></nav>
+<h1>${esc(t.title)}</h1>
+<ul class="meta"><li>Modèle de lettre</li><li>${esc(label.cat)}</li>${t.cite && t.cite.length <= 40 ? `<li>${esc(t.cite)}</li>` : ""}</ul>
+<p class="lead">${esc(t.lede)}</p>
+<p><a class="cta" href="/#model.${esc(t.appId)}">Remplir ce modèle dans l'application ZOU</a><br><span class="sub">Vous renseignez vos informations, la lettre se complète et peut s'imprimer.</span></p>
+<h2>Le texte du modèle</h2>
+<p class="sub">Les passages surlignés sont à remplacer par vos informations.</p>
+<div class="doc">
+${t.paras.join("\n")}
+</div>
+<h2>Ce qu'il faut renseigner</h2>
+<ul class="pts">
+${fields}
+</ul>
+${t.cite ? `<h2>Base légale</h2>\n<p>${esc(t.cite)}</p>` : ""}
+<div class="note">Relisez la lettre et adaptez-la à votre situation avant de l'envoyer, et gardez une preuve de remise. En cas d'enjeu important, faites-la vérifier.</div>
+${guidesLies.length ? `<h2>Guides liés : ${esc(label.cat)}</h2>\n<ul class="liste">${guidesLies.map((x) => `<li><a href="/guides/${esc(x.id)}">${esc(x.title)}</a><span>${esc(x.desc)}</span></li>`).join("")}</ul>` : ""}
+${outilsLies.length ? `<h2>Outils de calcul liés</h2>\n<ul class="liste">${outilsLies.map((x) => `<li><a href="/outils/${esc(x.slug)}">${esc(x.title)}</a></li>`).join("")}</ul>` : ""}
+` + foot;
+    writeFileSync(new URL(`modeles/${t.slug}.html`, pub), html);
+    modelUrls.push(SITE + path);
+  }
+  const modDesc = `${modelsList.length} modèles de lettres et de documents sur le droit malgache (travail, terrain, procédure, protection sociale), à remplir et à imprimer.`;
+  const modLd = jsonLd({
+    "@context": "https://schema.org",
+    "@graph": [
+      { "@type": "CollectionPage", name: "Modèles de documents ZOU : lettres types en droit malgache", url: SITE + "/modeles", inLanguage: "fr", description: modDesc },
+      { "@type": "ItemList", itemListElement: modelsList.map((t, i) => ({ "@type": "ListItem", position: i + 1, url: `${SITE}/modeles/${t.slug}`, name: t.title })) },
+    ],
+  });
+  const parDomMod = Object.keys(DOMAINES).map((k) => ({ k, label: DOMAINES[k], liste: modelsList.filter((t) => t.domain === k) })).filter((x) => x.liste.length);
+  writeFileSync(new URL("modeles.html", pub), head({ title: "Modèles de documents ZOU : lettres types en droit malgache", desc: modDesc, path: "/modeles", ld: modLd }).replace('og:type" content="article"', 'og:type" content="website"') + `
+<h1>Les modèles de documents ZOU</h1>
+<p class="lead">${esc(modDesc)}</p>
+<p><a class="cta" href="/#services.model">Ouvrir les lettres types dans l'application</a></p>
+${parDomMod.map((p) => `<h2 id="${esc(p.k)}">${esc(p.label.cat)}</h2>\n<ul class="liste">${p.liste.map((t) => `<li><a href="/modeles/${esc(t.slug)}">${esc(t.title)}</a><span>${esc(t.lede)}</span></li>`).join("")}</ul>`).join("\n")}
+` + foot);
+
+  const all = [SITE + "/", SITE + "/guides", ...urls, SITE + "/outils", ...toolUrls, SITE + "/modeles", ...modelUrls];
   writeFileSync(new URL("sitemap.xml", pub), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${all.map((u) => `<url><loc>${u}</loc></url>`).join("\n")}\n</urlset>\n`);
 
   const llms = readFileSync(new URL("llms.txt", pub), "utf8");
   const bloc = `## Outils de calcul (${toolsList.length} pages)\n- [Tous les outils](${SITE}/outils)\n- Par exemple : [Combien de préavis pour démissionner](${SITE}/outils/preavis-demission-duree), [Indemnité de licenciement](${SITE}/outils/indemnite-licenciement)\n\n## Guides (${n} pages, une par démarche)\n- [Tous les guides](${SITE}/guides)\n${parDomaine.map((p) => `- ${p.label.cat} : ${p.liste.length} guides, par exemple [${p.liste[0].title}](${SITE}/guides/${p.liste[0].id})`).join("\n")}\n`;
-  const llmsOut = llms.replace(/## Outils de calcul \([\s\S]*?(?=\n## |$)/, "").replace(/## Guides \([\s\S]*?(?=\n## |$)/, "").replace(/\n## Pages/, `\n${bloc}\n## Pages`).replace(/\n{3,}/g, "\n\n");
+  const llmsOut = llms.replace(/## Modèles de documents \([\s\S]*?(?=\n## |$)/, "").replace(/## Outils de calcul \([\s\S]*?(?=\n## |$)/, "").replace(/## Guides \([\s\S]*?(?=\n## |$)/, "").replace(/\n## Pages/, `\n${bloc}\n## Pages`).replace(/\n{3,}/g, "\n\n");
   writeFileSync(new URL("llms.txt", pub), llmsOut);
   return { n, cssName };
 }
