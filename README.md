@@ -72,3 +72,8 @@ Admin (session + rôle `is_admin`, backoffice) : `/api/admin/emergency`, `/api/a
 - Synchronisation sans fusion fine : une modification locale non envoyée l'emporte sur le serveur ; sinon le serveur l'emporte. La démarche « Démissionner » d'un nouvel appareil remplace celle du compte si elle a déjà été commencée sur cet appareil avant la connexion.
 - CSP : `style-src 'unsafe-inline'` reste nécessaire (attributs `style` de l'interface).
 - `app.html` est indexable (balise générée par `scripts/pack-app.mjs`, avec canonical, Open Graph et données structurées). `offline.html` reste en `noindex`.
+
+## Pages de guides (référencement)
+- `scripts/build-guides.mjs`, appelé par `npm run pack:app`, génère `public/guides/<id>.html` (une page par guide, 97 au 05/11/2026), `public/guides.html`, `public/assets/guides.<hash>.css`, `public/sitemap.xml` et le bloc « Guides » de `public/llms.txt`. Source : le tableau `CONTENT` de `src/artifact.html` (les mêmes données que l'application, aucune phrase juridique ajoutée). Ne pas éditer ces fichiers à la main.
+- Adresses propres `/guides` et `/guides/<id>` (réécritures dans `next.config.mjs`) ; `/guides/<id>.html` redirige en 308 vers l'adresse propre.
+- Chaque page renvoie vers l'application par `/#guide.<id>`.

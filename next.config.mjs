@@ -18,7 +18,21 @@ export default {
   poweredByHeader: false,
   reactStrictMode: true,
   async rewrites() {
-    return { beforeFiles: [{ source: "/", destination: "/app.html" }], afterFiles: [], fallback: [] };
+    return {
+      beforeFiles: [
+        { source: "/", destination: "/app.html" },
+        { source: "/guides", destination: "/guides.html" },
+        { source: "/guides/:id", destination: "/guides/:id.html" },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
+  async redirects() {
+    return [
+      { source: "/guides.html", destination: "/guides", permanent: true },
+      { source: "/guides/:id.html", destination: "/guides/:id", permanent: true },
+    ];
   },
   async headers() {
     const common = [
