@@ -4,6 +4,7 @@
 // Appelé par pack-app.mjs ; peut aussi se lancer seul : node scripts/build-guides.mjs
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
+import vm from "node:vm";
 
 export const SITE = "https://zou-mg.app";
 
@@ -31,6 +32,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 var(--font
 a{color:var(--accent)}a:hover{color:var(--accent-hover)}
 header.top{border-bottom:1px solid var(--rule)}
 header.top div{max-width:760px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+header.top .nav2{display:flex;gap:18px}
 header.top a.logo{font:800 22px var(--font-disp);color:var(--ink);text-decoration:none;letter-spacing:-.02em}
 main{max-width:760px;margin:0 auto;padding:24px 20px 56px}
 nav.fil{font-size:14px;color:var(--ink-3);margin-bottom:12px}nav.fil a{color:var(--ink-3)}
@@ -45,6 +47,9 @@ p.lead{font-size:19px;color:var(--ink-2)}
 ol.steps{padding-left:1.3em}ol.steps li{margin:0 0 14px}ol.steps b{display:block}
 .cite{color:var(--ink-3);font-size:14px;white-space:nowrap}
 .sub{color:var(--ink-3);font-size:14px}
+table.tab{border-collapse:collapse;width:100%;min-width:560px;font-size:15px;margin:8px 0 4px;overflow-wrap:normal}table.tab th,table.tab td{border:1px solid var(--rule);padding:8px 10px;text-align:left}table.tab th{background:var(--wash)}
+.tabwrap{overflow-x:auto}
+.ex{background:var(--accent-soft);border-radius:6px;padding:12px 16px;margin:12px 0}
 main{overflow-wrap:anywhere}
 ul.pts{padding-left:1.2em}ul.pts li{margin:0 0 12px}
 .note{background:var(--warn-bg);color:var(--warn-text);border-radius:6px;padding:14px 16px;font-size:15px;margin:24px 0}
@@ -98,7 +103,7 @@ export function buildGuides({ src, pub }) {
 ${ld}
 </head>
 <body>
-<header class="top"><div><a class="logo" href="/">ZOU</a><a href="/guides">Tous les guides</a></div></header>
+<header class="top"><div><a class="logo" href="/">ZOU</a><span class="nav2"><a href="/guides">Guides</a><a href="/outils">Outils</a></span></div></header>
 <main>
 `;
   const foot = `
@@ -187,12 +192,114 @@ ${parDomaine.map((p) => `<h2 id="${esc(p.dom)}">${esc(p.label.cat)}</h2>\n<p cla
 ` + foot;
   writeFileSync(new URL("guides.html", pub), idx);
 
-  const all = [SITE + "/", SITE + "/guides", ...urls];
+
+  // ---------- Outils de calcul : une page par outil (explication, règle, exemple), le calcul se fait dans l'application ----------
+  const grab = (re, what) => { const mm = src.match(re); if (!mm) throw new Error(what + " introuvable dans src/artifact.html"); return mm[1]; };
+  const evalJs = (code) => vm.runInNewContext("(" + code + ")", Object.create(null), { timeout: 2000 });
+  const TABLE = evalJs(grab(/var TABLE = (\{[\s\S]*?\n  \});/, "TABLE"));
+  const CAT_GROUPS = evalJs(grab(/var CAT_GROUPS = (\[[\s\S]*?\n  \]);/, "CAT_GROUPS"));
+  const SEN_HINT = evalJs(grab(/var SEN_HINT = ("(?:[^"\\]|\\.)*");/, "SEN_HINT"));
+  const tStart = src.indexOf("  var TOOLS = {");
+  const tEnd = src.indexOf("\n  };\n", tStart);
+  if (tStart < 0 || tEnd < 0) throw new Error("TOOLS introuvable");
+  const HAND = evalJs(src.slice(tStart + "  var TOOLS = ".length, tEnd + 4));
+  const SLUGS = { notice: "preavis-demission-duree", severance: "indemnite-licenciement", leave: "conges-payes-acquis", deadlines: "delai-reclamer-salaires-conges" };
+  const optLabels = (f) => (f.options || []).map((o) => (Array.isArray(o) ? o[1] : o));
+  const toolsList = [];
+  for (const [id, T] of Object.entries(HAND)) {
+    if (!SLUGS[id]) throw new Error(`Outil sans adresse : ${id}`);
+    const noteM = String(T.compute).match(/note: ("(?:[^"\\]|\\.)*")/);
+    toolsList.push({
+      slug: SLUGS[id], appId: id, domain: "travail", title: T.title, lede: T.lede, cite: T.src,
+      inputs: (T.fields || []).map((f) => ({ label: f.label, options: optLabels(f) })),
+      how: (T.how || []).map((x) => ({ t: x.t, c: x.c })), note: noteM ? JSON.parse(noteM[1]) : "", table: id === "notice",
+    });
+  }
+  for (const dom of content) {
+    for (const t of dom.tools) {
+      toolsList.push({
+        slug: t.id, appId: t.id, domain: dom.domain, title: t.title, lede: t.desc, cite: t.cite,
+        inputs: t.inputs.map((i) => ({ label: i.label, options: optLabels(i) })),
+        how: [{ t: t.formula, c: t.cite }], example: t.example || "", note: "",
+      });
+    }
+  }
+  mkdirSync(new URL("outils/", pub), { recursive: true });
+  for (const f of readdirSync(new URL("outils/", pub))) rmSync(new URL(`outils/${f}`, pub));
+  const toolUrls = [];
+  const SEN_LABELS = { lt8d: "Moins de 8 jours", lt3m: "Moins de 3 mois", lt1y: "Moins d'un an", gt1y: "Plus d'un an", gt5y: "Plus de 5 ans" };
+  for (const t of toolsList) {
+    const label = DOMAINES[t.domain];
+    const path = `/outils/${t.slug}`;
+    const guidesLies = (content.find((d) => d.domain === t.domain)?.guides || []).slice(0, 5);
+    const desc = cut(`${t.lede}. ${t.how[0]?.t || ""}`.replace(/\.\s*\./g, "."), 158);
+    const title = `${t.title} · Outil de calcul ZOU`;
+    const ld = jsonLd({
+      "@context": "https://schema.org",
+      "@graph": [
+        { "@type": "Article", headline: t.title, description: cut(t.lede, 300), inLanguage: "fr", mainEntityOfPage: SITE + path, articleSection: label.cat, author: { "@type": "Organization", name: "ZOU", url: SITE + "/" }, publisher: { "@type": "Organization", name: "ZOU", url: SITE + "/", logo: { "@type": "ImageObject", url: SITE + "/og.png" } }, image: SITE + "/og.png" },
+        { "@type": "BreadcrumbList", itemListElement: [
+          { "@type": "ListItem", position: 1, name: "ZOU", item: SITE + "/" },
+          { "@type": "ListItem", position: 2, name: "Outils de calcul", item: SITE + "/outils" },
+          { "@type": "ListItem", position: 3, name: t.title, item: SITE + path },
+        ] },
+      ],
+    });
+    const inputs = t.inputs.map((i) => `<li>${esc(i.label)}${i.options.length ? `<span class="sub"> : ${esc(i.options.join(" ; "))}</span>` : ""}</li>`).join("\n");
+    const how = t.how.map((h) => `<li>${esc(h.t)}${h.c ? ` <span class="cite">(${esc(h.c)})</span>` : ""}</li>`).join("\n");
+    const table = t.table
+      ? `<h2>Durée du préavis selon l'ancienneté et le groupe</h2>
+<div class="tabwrap"><table class="tab"><thead><tr><th>Ancienneté</th>${CAT_GROUPS.map((_, i) => `<th>Groupe ${i + 1}</th>`).join("")}</tr></thead><tbody>
+${Object.keys(TABLE).map((k) => `<tr><th>${esc(SEN_LABELS[k] || k)}</th>${TABLE[k].map((c) => `<td>${esc(c[1])}</td>`).join("")}</tr>`).join("\n")}
+</tbody></table></div>
+<p class="sub">${esc(SEN_HINT)} Les jours sont des jours calendaires.</p>
+<ul class="pts">${CAT_GROUPS.map((g, i) => `<li><b>Groupe ${i + 1}.</b> ${esc(g)}</li>`).join("")}</ul>`
+      : "";
+    const html = head({ title, desc, path, ld }) + `
+<nav class="fil" aria-label="Fil d'Ariane"><a href="/">ZOU</a> › <a href="/outils">Outils de calcul</a> › <a href="/outils#${esc(t.domain)}">${esc(label.cat)}</a></nav>
+<h1>${esc(t.title)}</h1>
+<ul class="meta"><li>Calcul en 1 minute</li><li>${esc(label.cat)}</li>${t.cite ? `<li>${esc(t.cite)}</li>` : ""}</ul>
+<p class="lead">${esc(t.lede)}</p>
+<p><a class="cta" href="/#tool.${esc(t.appId)}">Faire le calcul dans l'application ZOU</a><br><span class="sub">Vous entrez vos chiffres, le résultat s'affiche tout de suite.</span></p>
+<h2>Ce qu'il faut renseigner</h2>
+<ul class="pts">
+${inputs}
+</ul>
+<h2>Comment le calcul est fait</h2>
+<ul class="pts">
+${how}
+</ul>
+${t.example ? `<div class="ex"><b>Exemple.</b> ${esc(t.example.replace(/^Exemple\s*:?\s*/i, ""))}</div>` : ""}
+${table}
+${t.note ? `<div class="note"><b>À savoir</b><br>${esc(t.note)}</div>` : ""}
+<div class="note">Le résultat est indicatif et fondé sur les textes cités. Votre convention collective, votre contrat ou votre situation particulière peuvent changer la réponse : en cas d'enjeu important, faites-la vérifier.</div>
+${guidesLies.length ? `<h2>Guides liés : ${esc(label.cat)}</h2>\n<ul class="liste">${guidesLies.map((x) => `<li><a href="/guides/${esc(x.id)}">${esc(x.title)}</a><span>${esc(x.desc)}</span></li>`).join("")}</ul>` : ""}
+` + foot;
+    writeFileSync(new URL(`outils/${t.slug}.html`, pub), html);
+    toolUrls.push(SITE + path);
+  }
+  const outDesc = `${toolsList.length} outils de calcul sur le droit malgache (préavis, indemnités, congés, délais, procédure), expliqués à partir des textes de loi.`;
+  const outLd = jsonLd({
+    "@context": "https://schema.org",
+    "@graph": [
+      { "@type": "CollectionPage", name: "Outils de calcul ZOU : le droit malgache en chiffres", url: SITE + "/outils", inLanguage: "fr", description: outDesc },
+      { "@type": "ItemList", itemListElement: toolsList.map((t, i) => ({ "@type": "ListItem", position: i + 1, url: `${SITE}/outils/${t.slug}`, name: t.title })) },
+    ],
+  });
+  const parDomOut = Object.keys(DOMAINES).map((k) => ({ k, label: DOMAINES[k], liste: toolsList.filter((t) => t.domain === k) })).filter((x) => x.liste.length);
+  writeFileSync(new URL("outils.html", pub), head({ title: "Outils de calcul ZOU : le droit malgache en chiffres", desc: outDesc, path: "/outils", ld: outLd }).replace('og:type" content="article"', 'og:type" content="website"') + `
+<h1>Les outils de calcul ZOU</h1>
+<p class="lead">${esc(outDesc)}</p>
+<p><a class="cta" href="/#services.tool">Ouvrir les calculateurs dans l'application</a></p>
+${parDomOut.map((p) => `<h2 id="${esc(p.k)}">${esc(p.label.cat)}</h2>\n<ul class="liste">${p.liste.map((t) => `<li><a href="/outils/${esc(t.slug)}">${esc(t.title)}</a><span>${esc(t.lede)}</span></li>`).join("")}</ul>`).join("\n")}
+` + foot);
+
+  const all = [SITE + "/", SITE + "/guides", ...urls, SITE + "/outils", ...toolUrls];
   writeFileSync(new URL("sitemap.xml", pub), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${all.map((u) => `<url><loc>${u}</loc></url>`).join("\n")}\n</urlset>\n`);
 
   const llms = readFileSync(new URL("llms.txt", pub), "utf8");
-  const bloc = `## Guides (${n} pages, une par démarche)\n- [Tous les guides](${SITE}/guides)\n${parDomaine.map((p) => `- ${p.label.cat} : ${p.liste.length} guides, par exemple [${p.liste[0].title}](${SITE}/guides/${p.liste[0].id})`).join("\n")}\n`;
-  const llmsOut = llms.replace(/## Guides \([\s\S]*?(?=\n## |$)/, "").replace(/\n## Pages/, `\n${bloc}\n## Pages`).replace(/\n{3,}/g, "\n\n");
+  const bloc = `## Outils de calcul (${toolsList.length} pages)\n- [Tous les outils](${SITE}/outils)\n- Par exemple : [Combien de préavis pour démissionner](${SITE}/outils/preavis-demission-duree), [Indemnité de licenciement](${SITE}/outils/indemnite-licenciement)\n\n## Guides (${n} pages, une par démarche)\n- [Tous les guides](${SITE}/guides)\n${parDomaine.map((p) => `- ${p.label.cat} : ${p.liste.length} guides, par exemple [${p.liste[0].title}](${SITE}/guides/${p.liste[0].id})`).join("\n")}\n`;
+  const llmsOut = llms.replace(/## Outils de calcul \([\s\S]*?(?=\n## |$)/, "").replace(/## Guides \([\s\S]*?(?=\n## |$)/, "").replace(/\n## Pages/, `\n${bloc}\n## Pages`).replace(/\n{3,}/g, "\n\n");
   writeFileSync(new URL("llms.txt", pub), llmsOut);
   return { n, cssName };
 }
