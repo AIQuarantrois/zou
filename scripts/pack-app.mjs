@@ -5,6 +5,7 @@ import { splashLinks } from "./splash-sizes.mjs";
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { transform } from "esbuild";
+import { buildGuides } from "./build-guides.mjs";
 
 const src = readFileSync(new URL("../src/artifact.html", import.meta.url), "utf8");
 
@@ -81,6 +82,8 @@ ${body}
 </html>
 `;
 writeFileSync(new URL("../public/app.html", import.meta.url), html);
+const g = buildGuides({ src, pub: new URL("../public/", import.meta.url) });
+console.log("guides", g.n, g.cssName);
 console.log("app.html", html.length, "octets;", cssName, jsName);
 
 // Service worker : la liste des fichiers à garder hors ligne et la version du cache sont calculées ici,

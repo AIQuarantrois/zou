@@ -15,6 +15,16 @@ Important : ZOU fournit de l'information juridique, pas un conseil d'avocat. Les
 ## Outils
 Calculs (30 outils, par exemple heures supplémentaires, allocation de congé payé, indemnité de dédit-formation, dates du congé de maternité) et modèles de documents (32 modèles).
 
+
+## Guides (97 pages, une par démarche)
+- [Tous les guides](https://zou-mg.app/guides)
+- Travail : 32 guides, par exemple [Obtenir et comprendre mon contrat de travail](https://zou-mg.app/guides/contrat-ecrit-embauche)
+- Terrain : 14 guides, par exemple [Faire immatriculer mon terrain](https://zou-mg.app/guides/immatriculer-terrain)
+- Procédure pénale : 18 guides, par exemple [Porter plainte](https://zou-mg.app/guides/porter-plainte)
+- Procédure civile : 8 guides, par exemple [Faire appel d'un jugement civil](https://zou-mg.app/guides/faire-appel-civil)
+- Protection sociale : 14 guides, par exemple [Employeur : s'affilier, déclarer et verser les cotisations](https://zou-mg.app/guides/employeur-affiliation-cotisations)
+- Santé et sécurité : 11 guides, par exemple [Le Code d’hygiène s’applique-t-il à mon lieu de travail ?](https://zou-mg.app/guides/code-applicable-mon-lieu-de-travail)
+
 ## Pages
 - [Application](https://zou-mg.app/)
 - [Plan du site](https://zou-mg.app/sitemap.xml)
